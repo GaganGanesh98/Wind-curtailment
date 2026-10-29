@@ -23,7 +23,7 @@ Amprion and TransnetBW; **not** in TenneT.
 
 **The redispatch control now holds too.** v2's claim that the bias "survives the redispatch
 control" is **confirmed** on independently re-downloaded Netztransparenz data (§4): the
-stratified excess error is −1,789 MW for DE, CI [−2,811, −908], and remains significant in
+stratified excess error is −1,788.5 MW for DE, CI [−2,809.8, −907.3], and remains significant in
 50Hertz, Amprion and TransnetBW. Every v2 figure in that section reproduces within 4.4%.
 Both the bias and its main alternative explanation have therefore been checked.
 
@@ -301,14 +301,44 @@ other rows use all 2,059. This is why Amprion's DA bias reads −430.0 here and 
 Data: Netztransparenz redispatch measures, 1 Oct 2025 – 28 Oct 2026, exported manually on
 29 Oct 2026 (timezone UTC) and archived at
 `data/raw/netztransparenz/redispatch_2025-10-01_2026-10-28_UTC_dl2026-10-29.csv`.
-24,947 measures; after keeping renewable ("Erneuerbar") **downward** measures and excluding
-solar-named plants, **6,751 measures** remain. Each measure's energy is spread evenly over
-its quarter-hours (energy ÷ duration) and assigned to the instructing TSO
-(`ANWEISENDER_UENB`), giving 31,057 (quarter-hour, TSO) cells.
+**Filter chain**, from 24,947 measures to the 6,703 used:
 
-Renewable redispatch is concentrated in **TenneT (7.387 TWh)** and **50Hertz (1.184 TWh)**.
-Amprion (0.020 TWh) and TransnetBW (0.006 TWh) have almost none. This matches v2's 7.4 /
-1.3 / 0.02 / 0.006 TWh.
+| Step | Dropped | Left |
+|---|---|---|
+| All measures in the export | — | 24,947 |
+| Keep `PRIMAERENERGIEART = Erneuerbar` | 17,797 | 7,150 |
+| Keep `RICHTUNG = Wirkleistungseinspeisung reduzieren` | 16 | 7,134 |
+| Drop excluded `GRUND_DER_MASSNAHME` (see below) | 67 | 7,067 |
+| Drop solar-named plants | 364 | **6,703** |
+
+**`GRUND_DER_MASSNAHME` within renewable reductions**, and what is done with each:
+
+| Rows | Reason | Treatment |
+|---|---|---|
+| 7,024 | Strombedingter Redispatch | **included** — congestion-driven, the target category |
+| 20 | Spannungsbedingter Redispatch | **included** — grid-driven |
+| 16 | Strombedingter Redispatch kurativ | **included** — grid-driven |
+| 7 | Strom- und Spannungsbedingter RD | **included** — grid-driven |
+| 67 | Probefahrt | **excluded** — a test run of a reserve plant, not congestion curtailment (0.0088 TWh, 0.1% of the energy) |
+
+**No cross-border countertrade row is a renewable reduction in this export.** The 592
+DE-DK1/DK2 countertrade measures are all conventional or "Sonstiges". The exclusion filter
+covers countertrade anyway, so a future export cannot slip one in unnoticed.
+
+**Renewable reduction energy by instructing TSO:**
+
+| Area | Before solar exclusion | **After solar exclusion (used)** | v2 |
+|---|---|---|---|
+| TenneT DE | 7.387 | **7.382** | 7.4 |
+| 50Hertz | 1.323 | **1.183** | 1.3 |
+| Amprion | 0.024 | **0.020** | 0.02 |
+| TransnetBW | 0.006 | **0.006** | 0.006 |
+| **Total** | 8.740 | **8.591** | ~8.7 |
+
+Each measure's energy is spread evenly over its quarter-hours (energy ÷ duration) and
+assigned to the instructing TSO (`ANWEISENDER_UENB`), giving 31,022 (quarter-hour, TSO)
+cells. Redispatch is concentrated in TenneT and 50Hertz; Amprion and TransnetBW have almost
+none. v2's volumes are reproduced.
 
 **Test C.** Compare negative-price QHs with positive-price QHs at the same redispatch level
 (5 bins: bin 0 is exactly zero, bins 1–4 are quartiles of the strictly positive values) and
@@ -316,10 +346,10 @@ the same forecast-level decile, weight by negative-QH counts, and bootstrap over
 
 | Area | Raw bias, neg QHs (MW) | Excess, test C (MW) | 95% CI | CI excludes 0 | Neg QHs with any RE redispatch | v2 excess | Δ |
 |---|---|---|---|---|---|---|---|
-| DE | −1,684.4 | **−1,789.0** | [−2,810.6, −907.8] | ✅ | 96.2% | −1,713 | +4.4% |
-| 50Hertz | −832.7 | **−739.6** | [−1,110.9, −411.8] | ✅ | 62.7% | −741 | −0.2% |
+| DE | −1,684.4 | **−1,788.5** | [−2,809.8, −907.3] | ✅ | 96.2% | −1,713 | +4.4% |
+| 50Hertz | −832.7 | **−742.7** | [−1,115.7, −414.9] | ✅ | 62.7% | −741 | +0.2% |
 | Amprion | −431.3 | **−511.2** | [−703.8, −337.7] | ✅ | 1.8% | −501 | +2.0% |
-| TenneT DE | −325.9 | **−396.6** | [−919.9, +83.8] | ❌ | 94.4% | −402 | −1.3% |
+| TenneT DE | −325.9 | **−396.5** | [−919.2, +83.8] | ❌ | 94.4% | −402 | −1.4% |
 | TransnetBW | −94.4 | **−93.7** | [−128.9, −59.0] | ✅ | 5.6% | −93 | +0.8% |
 
 Every v2 figure reproduces within 4.4%; **no difference exceeds 10%**. The coverage shares
@@ -367,15 +397,40 @@ The TenneT volume moving from 0.0 to 7.387 TWh against v2's 7.4 TWh is what iden
 bug. **If a figure disagrees with v2 by an order of magnitude, suspect the pipeline before
 the data.**
 
-### Difference from v2 worth noting
+### Solar-named share: 5.15% here, 0.6% in v2 — v2's filter was too narrow
 
-**Solar-named exclusion: 5.37% of renewable reduction rows here, against v2's 0.6%.**
-Flagged as F7. The regex used here (`solar|photovolt|\bpv\b`) is evidently broader than
-v2's. It removes 383 measures rather than roughly 43. This is the conservative direction —
-it can only remove genuine wind redispatch from the control, which if anything understates
-how much redispatch the stratification absorbs — but the plant-name filter remains the
-weakest link in this test and should be replaced by a proper carrier field if one can be
-obtained.
+Three numbers have been in circulation; all three are now explained.
+
+- **13%** — printed by the very first run, before the TenneT bug was fixed. An artefact of
+  the broken denominator: the share is computed as solar ÷ (solar + kept), and with all
+  7,606 TenneT measures wrongly dropped the denominator collapsed. 383 ÷ (383 + 2,552)
+  = 13.0%. Not a real number; disregard it.
+- **5.15%** — the correct figure for the filter used here (364 of 7,067 rows after the
+  Probefahrt exclusion).
+- **0.6%** — v2. **v2's filter missed the large PV parks**, and this is a defect in v2, not
+  in v3.
+
+The evidence is in the plant names. A tight regex of `solar|photovoltaik` matches just
+**15 rows (0.21%)**, all small Amprion DSO pools named `…_CR_PHOTOVOLTAIK`. It misses the
+three entries that carry nearly all the solar energy, because they are named with the
+abbreviation instead:
+
+| Rows | Plant | Area |
+|---|---|---|
+| 197 | `50H PV Witznitz` | 50Hertz |
+| 115 | `50H PV Bartow` | 50Hertz |
+| 46 | `50H PV Haidemühl` | 50Hertz |
+
+These are real, large solar parks — Witznitz is among the largest in Germany — and they
+amount to **0.143 TWh** that v2 almost certainly left inside its "wind" redispatch series,
+nearly all of it in 50Hertz. That is why 50Hertz's volume here is 1.183 TWh against v2's
+1.3 TWh: the difference is PV that should never have been counted.
+
+So **v3's exclusion is the more correct one** and the earlier F7 framing ("v3's regex is too
+broad") was wrong and is withdrawn. The plant-name filter is still the weakest link in this
+test — it depends on naming conventions, and a pooled entry such as `UW …` could hide PV —
+so it should be replaced by a proper carrier field if one can be obtained. But the direction
+of the v2/v3 difference favours v3.
 
 ## 5. Check 3 — TSO forecast method (carried over from v2, **not re-verified in v3**)
 
@@ -529,5 +584,8 @@ Result tables: `results/00_data_quality.csv`, `00_dst_check.csv`, `01_sample_siz
   bidding-zone price. This mismatch is immaterial at these magnitudes but is stated for
   completeness.
 
-**F7 — solar-named exclusion share: 5.37% (v3) vs 0.6% (v2). Cause: regex breadth.**
-See §4. Conservative direction; the plant-name filter is the weakest link in test C.
+**F7 — solar-named exclusion share: 5.15% (v3) vs 0.6% (v2). Cause: v2's filter was too
+narrow.** v2 matched only `solar`/`photovoltaik` and so missed three large PV parks named
+`50H PV …`, leaving ~0.143 TWh of solar inside its wind redispatch series, nearly all in
+50Hertz. v3's figure is the more correct one. An earlier draft of this flag blamed v3's
+regex for being too broad; that was wrong and is withdrawn. See §4.

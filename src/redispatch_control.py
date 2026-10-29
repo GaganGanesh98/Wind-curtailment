@@ -68,6 +68,13 @@ TSO_MAP = {
 # ("Wirkleistungseinspeisung erhoehen"), including a handful on renewables.
 REDUCE_RE = re.compile(r"reduzier", re.IGNORECASE)
 
+# GRUND_DER_MASSNAHME values to drop. "Probefahrt" is a test run / trial start of a
+# reserve power plant, not congestion-driven curtailment, so it does not belong in a
+# redispatch control. Cross-border countertrade (DE-DK1/DK2) is also excluded on
+# principle; in this export no countertrade row is a renewable reduction, so the
+# filter is a no-op for it, but it is kept so a future export cannot slip one in.
+EXCLUDE_GRUND_RE = re.compile(r"(probefahrt|countertrade)", re.IGNORECASE)
+
 FIELD_CANDIDATES = {
     "start_date":  ["beginn_datum", "datum_beginn", "beginn datum", "start_datum"],
     "start_time":  ["beginn_uhrzeit", "uhrzeit_beginn", "beginn uhrzeit", "start_uhrzeit"],
@@ -83,6 +90,7 @@ FIELD_CANDIDATES = {
     "instructing": ["anweisender_uenb", "anweisender_übertragungsnetzbetreiber",
                     "anweisender uenb", "anweisender_unb", "anweisender ünb"],
     "direction":   ["richtung", "art_der_massnahme", "massnahme"],
+    "reason":      ["grund_der_massnahme", "grund", "massnahmengrund"],
     "carrier":     ["primaerenergieart", "primärenergieart", "energietraeger",
                     "energieträger", "erzeugungsart"],
     "plant":       ["betroffene_anlage", "anlage", "name_der_anlage", "kraftwerk",
@@ -196,7 +204,10 @@ def main() -> int:
 
     recs = []
     unmapped_tso: set[str] = set()
-    n_solar = n_nonre = n_badtime = n_badtso = n_notreduce = 0
+    n_solar = n_nonre = n_badtime = n_badtso = n_notreduce = n_badgrund = 0
+    reason_rows: dict[str, int] = {}
+    excluded_reason_rows: dict[str, int] = {}
+    energy_by_tso: dict[str, float] = {}
     for r in meas.iter_rows(named=True):
         carrier = (r["carrier"] or "")
         if "erneuerbar" not in carrier.lower():
@@ -204,6 +215,12 @@ def main() -> int:
             continue
         if not REDUCE_RE.search(r["direction"] or ""):
             n_notreduce += 1
+            continue
+        reason = (r.get("reason") or "").strip()
+        reason_rows[reason] = reason_rows.get(reason, 0) + 1
+        if EXCLUDE_GRUND_RE.search(reason):
+            n_badgrund += 1
+            excluded_reason_rows[reason] = excluded_reason_rows.get(reason, 0) + 1
             continue
         plant = r["plant"] or ""
         if SOLAR_RE.search(plant):
@@ -227,14 +244,29 @@ def main() -> int:
         except (TypeError, ValueError):
             continue
         recs.append((start, end, energy, tso))
+        energy_by_tso[tso] = energy_by_tso.get(tso, 0.0) + energy
 
     print(f"  kept {len(recs)} renewable reduction measures "
           f"(dropped: non-renewable {n_nonre}, upward/not-reduction {n_notreduce}, "
-          f"solar-named {n_solar}, unmapped TSO {n_badtso}, "
-          f"bad timestamps {n_badtime}; of {n0})")
+          f"excluded reason {n_badgrund}, solar-named {n_solar}, "
+          f"unmapped TSO {n_badtso}, bad timestamps {n_badtime}; of {n0})")
     if n0:
-        print(f"  solar-named share of renewable rows: "
+        print(f"  solar-named share of renewable reduction rows: "
               f"{100.0 * n_solar / max(1, n_solar + len(recs)):.2f}%")
+
+    # ---- sanity checks -----------------------------------------------------
+    print("-" * 72)
+    print("SANITY CHECKS")
+    print("  GRUND_DER_MASSNAHME among renewable reductions (before exclusions):")
+    for k, v in sorted(reason_rows.items(), key=lambda t: -t[1]):
+        mark = "  EXCLUDED" if EXCLUDE_GRUND_RE.search(k) else ""
+        print(f"    {v:6d}  {k}{mark}")
+    if excluded_reason_rows:
+        print(f"  excluded by reason: {dict(excluded_reason_rows)}")
+    print("  renewable reduction energy by instructing TSO:")
+    for tso, e in sorted(energy_by_tso.items(), key=lambda t: -t[1]):
+        print(f"    {tso:12s} {e / 1e6:7.4f} TWh")
+    print(f"    {'TOTAL':12s} {sum(energy_by_tso.values()) / 1e6:7.4f} TWh")
 
     # ---- spread each measure's energy evenly over its quarter-hours --------
     # MW in each covered quarter-hour = energy / duration_in_hours.
