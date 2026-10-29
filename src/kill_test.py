@@ -36,7 +36,9 @@ from smard_config import (  # noqa: E402
     RESULTS_DIR,
     SEED,
 )
-from stats_boot import ci_excludes_zero, eventday_bootstrap_mean  # noqa: E402
+from stats_boot import (  # noqa: E402
+    ci_excludes_zero, eventday_bootstrap_mean, eventday_bootstrap_ratio,
+)
 
 WIND_GATE_MW = 10_000.0  # "windy" gate: DE day-ahead wind forecast >= 10 GW
 EASTER_DAYS = ["2026-04-05", "2026-04-06"]
@@ -235,15 +237,33 @@ def main() -> int:
                         round(float(day_sum[i] / total_err), 4) if total_err else "",
                         rank_mean[uniq[i]]])
 
+    da_neg = da[m]
+
     def run(label, keep):
         mean, clo, chi, n_qh, n_days = eventday_bootstrap_mean(
             e_neg[keep], d_neg[keep], n_boot=N_BOOT, seed=SEED)
-        print(f"  {label:34s} QHs={n_qh:5d} days={n_days:4d} "
-              f"mean e={mean:9.1f} [{clo:9.1f}, {chi:9.1f}]")
+        # Relative bias: mean e / mean day-ahead forecast over the same
+        # quarter-hours. Numerator and denominator are resampled on the same
+        # drawn event-days, so the CI accounts for both moving together.
+        # This matters because the absolute bias scales with how much wind was
+        # forecast, so a deeper MW bias on windy days is not by itself a
+        # larger forecasting failure.
+        rel, rlo, rhi, _, _ = eventday_bootstrap_ratio(
+            e_neg[keep], da_neg[keep], d_neg[keep], n_boot=N_BOOT, seed=SEED)
+        mean_fc = float(np.nanmean(da_neg[keep]))
+        print(f"  {label:38s} QHs={n_qh:5d} days={n_days:4d} "
+              f"e={mean:9.1f} [{clo:8.1f},{chi:8.1f}]  "
+              f"fc={mean_fc:8.1f}  rel={100*rel:6.1f}% "
+              f"[{100*rlo:6.1f},{100*rhi:6.1f}]")
         return {"variant": label, "qhs": n_qh, "days": n_days,
                 "mean_e_mw": round(mean, 1), "ci_lo_mw": round(clo, 1),
                 "ci_hi_mw": round(chi, 1),
-                "ci_excludes_zero": ci_excludes_zero(clo, chi)}
+                "ci_excludes_zero": ci_excludes_zero(clo, chi),
+                "mean_da_forecast_mw": round(mean_fc, 1),
+                "rel_bias_pct": round(100 * rel, 2),
+                "rel_ci_lo_pct": round(100 * rlo, 2),
+                "rel_ci_hi_pct": round(100 * rhi, 2),
+                "rel_ci_excludes_zero": ci_excludes_zero(rlo, rhi)}
 
     rob = [
         run("all negative QHs", np.ones(len(e_neg), dtype=bool)),
@@ -254,17 +274,19 @@ def main() -> int:
             ~np.isin(d_neg, worst5_sum)),
         run("windy only (DE DA forecast >= 10 GW)",
             np.array([gate_by_ts.get(int(t), False) for t in ts[m]])),
+        run("not windy (DE DA forecast < 10 GW)",
+            ~np.array([gate_by_ts.get(int(t), False) for t in ts[m]])),
     ]
+    blank = {k: "" for k in ("qhs", "days", "ci_lo_mw", "ci_hi_mw",
+                             "ci_excludes_zero", "mean_da_forecast_mw",
+                             "rel_bias_pct", "rel_ci_lo_pct", "rel_ci_hi_pct",
+                             "rel_ci_excludes_zero")}
     rob.append({"variant": "top-5-day share of total negative-QH error "
                            "(days ranked by mean e; v2 def), %",
-                "qhs": "", "days": "",
-                "mean_e_mw": round(100.0 * top5_share_mean, 1), "ci_lo_mw": "",
-                "ci_hi_mw": "", "ci_excludes_zero": ""})
+                "mean_e_mw": round(100.0 * top5_share_mean, 1), **blank})
     rob.append({"variant": "top-5-day share of total negative-QH error "
                            "(days ranked by total error), %",
-                "qhs": "", "days": "",
-                "mean_e_mw": round(100.0 * top5_share_sum, 1), "ci_lo_mw": "",
-                "ci_hi_mw": "", "ci_excludes_zero": ""})
+                "mean_e_mw": round(100.0 * top5_share_sum, 1), **blank})
     print(f"  {'top5 share (ranked by mean e)':34s} "
           f"{100.0 * top5_share_mean:.1f}%   days={worst5_mean}")
     print(f"  {'top5 share (ranked by total err)':34s} "

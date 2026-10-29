@@ -80,3 +80,35 @@ def ci_excludes_zero(lo: float, hi: float) -> bool:
     if not (np.isfinite(lo) and np.isfinite(hi)):
         return False
     return (lo > 0 and hi > 0) or (lo < 0 and hi < 0)
+
+
+def eventday_bootstrap_ratio(numer, denom, days, n_boot: int = 5000,
+                             seed: int = SEED):
+    """Ratio of two pooled means (e.g. mean e / mean forecast) with an
+    event-day bootstrap CI.
+
+    Numerator and denominator are resampled together on the same drawn days,
+    so the ratio's sampling variation reflects that both move with the day
+    composition. Returns (ratio, lo, hi, n_values, n_days) as a fraction.
+    """
+    numer = np.asarray(numer, dtype=float)
+    denom = np.asarray(denom, dtype=float)
+    days = np.asarray(days)
+    ok = np.isfinite(numer) & np.isfinite(denom)
+    numer, denom, days = numer[ok], denom[ok], days[ok]
+    if len(numer) == 0:
+        return np.nan, np.nan, np.nan, 0, 0
+
+    uniq, inv = np.unique(days, return_inverse=True)
+    n_sum = np.bincount(inv, weights=numer, minlength=len(uniq))
+    d_sum = np.bincount(inv, weights=denom, minlength=len(uniq))
+    n_days = len(uniq)
+    ratio = float(n_sum.sum() / d_sum.sum()) if d_sum.sum() else np.nan
+    if n_days < 2:
+        return ratio, np.nan, np.nan, len(numer), n_days
+
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, n_days, size=(n_boot, n_days))
+    boot = n_sum[idx].sum(axis=1) / d_sum[idx].sum(axis=1)
+    lo, hi = np.percentile(boot, [2.5, 97.5])
+    return ratio, float(lo), float(hi), len(numer), n_days

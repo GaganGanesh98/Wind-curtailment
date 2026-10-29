@@ -41,6 +41,7 @@ should not be repeated to a supervisor as if it had been reproduced.
 | §2 robustness, ex-worst-5 | ✅ after resolving a definition ambiguity | ⚠️ see F2 |
 | §3 Check 1, MAE + ID bias | ✅ | DE ID bias −1,394.3 vs −1,394 |
 | §3 Check 1, "DA == ID" share | ⚠️ differs >10% | see F1 |
+| §3 intraday vintage | ➕ new in v3 | settled from the SMARD manual — no fixed vintage; leakage risk |
 | §4 Check 2 (redispatch) | ❌ **not computed** | blocked on data access |
 | §5 Check 3 (TSO forecast times) | ➖ carried over, **not re-verified** | documentary, see §5 |
 
@@ -91,6 +92,11 @@ Three things were checked rather than assumed:
    by checking that the hourly series equals the *sum* of its four quarter-hours
    (35,298.69 = 8,844.80 + 8,813.77 + 8,821.85 + 8,818.27). Everything here is converted to
    MW (× 4). v2 reported MW and reproduces exactly, so v2 applied the same conversion.
+   **Independently confirmed by SMARD's own manual** (Benutzerhandbuch 02/2025, §1.2.2 and
+   §1.3, archived at `data/raw/smard_benutzerhandbuch_02-2025.pdf`): publication on the
+   ENTSO-E platform is "in der Einheit [MW] je Viertelstunde", and for SMARD "werden die von
+   ENTSO-E bereitgestellten Daten **durch vier dividiert**". Multiplying by 4 inverts exactly
+   that, recovering the ENTSO-E MW value.
 
 **Panel integrity.** 37,732 quarter-hours × 5 areas = 188,660 rows, stored UTC.
 DST checks all pass: **100 QH** on 2025-10-26 and 2026-10-25, **92 QH** on 2026-03-29,
@@ -145,22 +151,41 @@ being the smallest in MW.
 
 ### Robustness (DE, all negative QHs)
 
-| Variant | QHs | Days | Mean e (MW) | 95% CI | v2 | Δ |
-|---|---|---|---|---|---|---|
-| All negative QHs | 2,059 | 99 | **−1,684.4** | [−2,693.6, −806.5] | −1,684 | 0.0% |
-| Without 5–6 Apr 2026 | 1,951 | 97 | **−1,113.9** | [−1,671.3, −558.1] | −1,114 | 0.0% |
-| Without 5 worst days *(by mean e — v2's definition)* | 1,915 | 94 | **−994.2** | [−1,546.3, −466.6] | −994 | 0.0% |
-| Without 5 worst days *(by total error contributed)* | 1,781 | 94 | **−773.8** | [−1,211.5, −316.2] | — | ⚠️ new |
-| Windy only (DE DA forecast ≥ 10 GW) | 1,347 | 65 | **−2,402.3** | [−3,748.3, −1,172.1] | — | new |
+Reported both in MW and as **relative bias** (mean e ÷ mean day-ahead forecast over the
+same quarter-hours). The relative column is the one to read across subsamples: the MW bias
+scales with how much wind was forecast, so a deeper MW bias on windy days is not by itself
+a larger forecasting failure. Both CIs resample the same event-days; for the ratio the
+numerator and denominator are resampled together.
+
+| Variant | QHs | Days | Mean e (MW) | 95% CI (MW) | Mean forecast (MW) | **Relative bias** | 95% CI (rel) | v2 (MW) |
+|---|---|---|---|---|---|---|---|---|
+| All negative QHs | 2,059 | 99 | **−1,684.4** | [−2,693.6, −806.5] | 18,579.6 | **−9.1%** | [−13.2, −4.8] | −1,684 |
+| Without 5–6 Apr 2026 | 1,951 | 97 | **−1,113.9** | [−1,671.3, −558.1] | 17,698.5 | **−6.3%** | [−8.8, −3.5] | −1,114 |
+| Without 5 worst days *(by mean e — v2's definition)* | 1,915 | 94 | **−994.2** | [−1,546.3, −466.6] | 17,336.3 | **−5.7%** | [−8.2, −3.0] | −994 |
+| Without 5 worst days *(by total error contributed)* | 1,781 | 94 | **−773.8** | [−1,211.5, −316.2] | 15,392.1 | **−5.0%** | [−7.8, −2.1] | ⚠️ new |
+| Windy only (DE DA forecast ≥ 10 GW) | 1,347 | 65 | **−2,402.3** | [−3,748.3, −1,172.1] | 25,812.0 | **−9.3%** | [−13.8, −4.9] | new |
+| Not windy (DE DA forecast < 10 GW) | 712 | 44 | **−326.3** | [−678.8, **+17.7**] | 4,896.9 | **−6.7%** | [−13.3, **+0.4**] | new |
 
 Share of total negative-QH error from the top 5 days:
 **45.1%** under v2's ranking (by mean e), **60.3%** when days are ranked by the error they
 actually contribute. See F2.
 
-The bias is **larger, not smaller, in windy quarter-hours** (−2,402 MW vs −1,684 MW
-overall) — the subsample that matters most for the thesis. The CI still excludes zero.
-Heavy tails are real: the five worst days are 5% of event-days and up to 60% of the error.
-But the bias survives every exclusion tested, with a CI excluding zero in all of them.
+**The windy subsample is not more biased — it is the same bias on a bigger base.**
+In MW the windy bias looks 43% deeper (−2,402 vs −1,684 MW), but the mean forecast is also
+39% higher (25.8 vs 18.6 GW). In relative terms the two are **indistinguishable: −9.3%
+[−13.8, −4.9] versus −9.1% [−13.2, −4.8]**, with almost completely overlapping intervals.
+*(An earlier draft of this note read the MW figures as "the bias is larger in windy
+quarter-hours". That was a scale artefact and is withdrawn.)*
+
+What the relative view shows instead is cleaner and more useful: the over-forecast behaves
+as a roughly **constant ~9% proportional haircut** on the day-ahead forecast whenever prices
+are negative, not as a fixed MW offset. A multiplicative correction is therefore the more
+natural model form than an additive one — worth testing explicitly in RQ2.
+
+The non-windy subsample is the only one whose CI touches zero, in both MW and relative
+terms, on 712 QHs / 44 days. Heavy tails are real: the five worst days are 5% of event-days
+and 45–60% of the error. But the bias survives every exclusion tested, and in relative
+terms it never falls below −5.0% with an interval excluding zero.
 
 Figures: `figures/bias_by_price_band_<area>.png` (one per area) and
 `figures/bias_by_price_band_all_areas.png`.
@@ -202,6 +227,45 @@ own published precision — giving ≤0.17%. **v3's number is the stronger form 
 conclusion**: the two series are almost never equal, so the day-ahead series is not a
 relabelled intraday series. Use the tolerance-explicit table above in the thesis; "≤3%"
 without a stated tolerance should not be quoted.
+
+### Which intraday vintage does SMARD publish? **Answered — and it is not a fixed vintage**
+
+Settled from the primary source: SMARD **Benutzerhandbuch 02/2025, §1.3**
+(archived at `data/raw/smard_benutzerhandbuch_02-2025.pdf`). The TSOs produce intraday
+wind/solar forecasts for the delivery day under **Art. 14(2)(d) of Reg. (EU) 543/2013**, and:
+
+> "Die Daten des untertäglichen Handels werden **regelmäßig aktualisiert**, wobei
+> **mindestens eine Aktualisierung um 08:00 Uhr am Tag der tatsächlichen Lieferung** an die
+> ENTSO-E Transparenzplattform übermittelt wird."
+
+Three consequences, and the first two are the important ones:
+
+1. **There is no single intraday vintage.** The series is *regularly updated*, with 08:00 on
+   the delivery day being a stated **minimum**, not the freeze time. The published value for
+   a given quarter-hour may come from a much later run — possibly close to delivery. SMARD's
+   API serves one value per timestamp, with no vintage snapshots, so the vintage of any
+   individual quarter-hour **cannot be recovered from this dataset**.
+2. **The intraday series is therefore unusable as a model input — it is leakage.** For a
+   22:00 quarter-hour, an intraday forecast refreshed at 20:00 is close to a nowcast. It
+   must be treated exactly like the redispatch data: evaluation and diagnostics only, never
+   a feature. This is a new constraint that v2 did not record.
+3. **It makes the §3 side finding stronger, not weaker.** The comparison below is against a
+   forecast of *unknown but no-earlier-than-08:00-on-delivery-day* vintage — in places
+   probably hours fresher than that. Even so it leaves most of the negative-QH bias intact.
+
+Contrast with the day-ahead series (**§1.2.2** of the same manual): day-ahead wind/solar
+forecasts are made under **Art. 14(1)(d)** and "werden **spätestens bis 18.00 Uhr des
+Vortages** an die ENTSO-E Transparenzplattform übermittelt". The manual states no update
+cycle for them, and for the *total* day-ahead generation forecast (§1.2.1) it says
+explicitly "Eine nachträgliche Aktualisierung der veröffentlichten Daten ist **nicht
+vorgesehen**". Note that the "no later updating" sentence sits in §1.2.1 (Gesamt), **not**
+in §1.2.2 (wind/PV) — so for the wind day-ahead series specifically, the absence of updates
+is implied by the asymmetry with §1.3's explicit "regelmäßig aktualisiert", not stated
+outright. Worth one line in the TSO email (see Open items).
+
+This resolves Check 1's remaining ambiguity: 123/3791 and 5127/5128 are not just different
+labels, they are **different regulatory products under different articles of Reg. 543/2013,
+with different publication regimes**.
 
 **Side finding — the intraday forecast is also biased in negative QHs**, and per area this
 is more interesting than v2 recorded (v2 gave DE only):
@@ -307,6 +371,19 @@ revision.** Immaterial; the band mean moved from +184 to +186.1 MW.
 "96% of negative QHs have RE redispatch" figure) are **neither confirmed nor contradicted**
 by v3.
 
+**F5 — v2 cites a "SMARD user manual (04/2026)"; no such edition could be found.
+Cause: citation error in v2.** The latest edition locatable on smard.de is
+**Benutzerhandbuch 02/2025** (German; the English user guide is older still, 09/2021). The
+substance v2 attributed to it — day-ahead forecasts produced by the TSOs under Reg.
+543/2013 Art. 14(1)(d) and sent to ENTSO-E by 18:00 D-1 — **is correct and is confirmed
+verbatim in §1.2.2 of the 02/2025 edition**. Only the date of the citation is wrong. Fix
+the citation before it reaches the thesis.
+
+**F6 — the "windy quarter-hours are more biased" reading is withdrawn.
+Cause: a scale artefact in an earlier v3 draft, not present in v2.** See §2: in MW the
+windy bias is 43% deeper, but on a 39% larger forecast base; in relative terms the windy
+and overall biases are statistically indistinguishable (−9.3% vs −9.1%).
+
 No difference >10% was found in any number that v3 and v2 both computed by the same
 definition.
 
@@ -341,10 +418,12 @@ Result tables: `results/00_data_quality.csv`, `00_dst_check.csv`, `01_sample_siz
   also gets 4–5 h fresher weather than the TSO forecast. Mandatory ablation: same model and
   forecast time *without* price and MaStR features. Only the gain over that ablation counts
   as price-information value for RQ2.
-- **A second baseline, new in v3.** The published **intraday** forecast is a natural third
-  baseline: it is made after prices are known and still leaves 83% of DE's negative-QH bias
-  (and *adds* 30% in Amprion). Beating it is a sharper claim than beating the day-ahead
-  forecast.
+- **A second baseline, new in v3 — but as a *reference*, never as an input.** The published
+  **intraday** forecast is made no earlier than 08:00 on the delivery day and is refreshed
+  repeatedly after that (§3), yet still leaves 83% of DE's negative-QH bias and *adds* 30%
+  in Amprion. That makes it a demanding reference point: a forecast with far more
+  information than yours will have still fails in the same quarter-hours. It **cannot be a
+  model feature** — unknown, possibly near-delivery vintage is leakage.
 - **Leakage.** Redispatch is published after the fact. Use it only to stratify the
   evaluation, never as a model input.
 - **Evaluation focus.** 50Hertz and Amprion are primary (clean, significant signal, and
@@ -369,6 +448,11 @@ Result tables: `results/00_data_quality.csv`, `00_dst_check.csv`, `01_sample_siz
       reference plants include direct-marketed plants that switch off at negative prices?
       (3) exact forecast freeze time (Amprion publishes none)?
 - [ ] Re-verify the §5 TSO forecast-time citations for v4 — v3 carried them over unchecked.
+- [ ] Add to the TSO email: is the published **day-ahead** wind forecast ever revised after
+      its 18:00 D-1 transmission? The manual states "no subsequent updating" only for the
+      *total* generation forecast (§1.2.1), not explicitly for wind/PV (§1.2.2). If the
+      wind day-ahead series were revised, e_t would be measured against a partly
+      after-the-fact forecast and the whole kill test would need rechecking.
 - [ ] Optional: ENTSO-E 14.1.D value cross-check once the API token arrives.
 
 ## Known gaps

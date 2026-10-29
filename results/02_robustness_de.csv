@@ -1,8 +1,9 @@
-variant,qhs,days,mean_e_mw,ci_lo_mw,ci_hi_mw,ci_excludes_zero
-all negative QHs,2059,99,-1684.4,-2693.6,-806.5,True
-without 5-6 Apr 2026,1951,97,-1113.9,-1671.3,-558.1,True
-without 5 worst days (by mean e; v2 def),1915,94,-994.2,-1546.3,-466.6,True
-without 5 worst days (by total error),1781,94,-773.8,-1211.5,-316.2,True
-windy only (DE DA forecast >= 10 GW),1347,65,-2402.3,-3748.3,-1172.1,True
-"top-5-day share of total negative-QH error (days ranked by mean e; v2 def), %",,,45.1,,,
-"top-5-day share of total negative-QH error (days ranked by total error), %",,,60.3,,,
+variant,qhs,days,mean_e_mw,ci_lo_mw,ci_hi_mw,ci_excludes_zero,mean_da_forecast_mw,rel_bias_pct,rel_ci_lo_pct,rel_ci_hi_pct,rel_ci_excludes_zero
+all negative QHs,2059,99,-1684.4,-2693.6,-806.5,True,18579.6,-9.07,-13.24,-4.81,True
+without 5-6 Apr 2026,1951,97,-1113.9,-1671.3,-558.1,True,17698.5,-6.29,-8.78,-3.47,True
+without 5 worst days (by mean e; v2 def),1915,94,-994.2,-1546.3,-466.6,True,17336.3,-5.73,-8.19,-2.98,True
+without 5 worst days (by total error),1781,94,-773.8,-1211.5,-316.2,True,15392.1,-5.03,-7.8,-2.08,True
+windy only (DE DA forecast >= 10 GW),1347,65,-2402.3,-3748.3,-1172.1,True,25812.0,-9.31,-13.79,-4.92,True
+not windy (DE DA forecast < 10 GW),712,44,-326.3,-678.8,17.7,False,4896.9,-6.66,-13.34,0.38,False
+"top-5-day share of total negative-QH error (days ranked by mean e; v2 def), %",,,45.1,,,,,,,,
+"top-5-day share of total negative-QH error (days ranked by total error), %",,,60.3,,,,,,,,
