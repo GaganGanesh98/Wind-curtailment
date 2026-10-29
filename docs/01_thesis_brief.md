@@ -2,8 +2,11 @@
 
 Student: Gagan Ganesh — MSc AI/ML (Big Data), SRH Hochschule Berlin, final semester
 Window: ~6 months, starting Nov 2026
-Status (28 Oct 2026): topic chosen in principle; week-1 kill test not yet run
-Last updated: 28 Oct 2026
+Status (29 Oct 2026): topic chosen in principle; **RQ1 kill test reproduced — provisional GO,
+pending the redispatch control (Check 2), which is blocked on Netztransparenz data access.**
+See `04_rq1_killtest_note_v3.md`. §51 EEG rule table built: `05_eeg_rule_table.md` and
+`data/reference/eeg_negative_price_rules.csv`.
+Last updated: 29 Oct 2026
 
 ---
 
@@ -32,13 +35,14 @@ Since 1 Oct 2025 the European day-ahead market (SDAC) clears in 15-minute steps.
 
 ## 5. Key design decisions (from the 28 Oct critique — these override the original research report)
 
-1. **Check the core assumption first.** TSO day-ahead wind/solar forecasts (ENTSO-E 14.1.D) only have to be published by 18:00 D-1, *after* day-ahead auction results (~12:45). TSOs may already correct for curtailment. RQ1 decides whether a thesis exists. Run it in week 1, not week 6.
+1. **Core assumption checked — and the original reasoning was wrong.** 18:00 D-1 is the *publication* deadline for ENTSO-E 14.1.D, not the forecast time. TenneT freezes its day-ahead wind forecast at about **08:00 D-1** and 50Hertz at about **09:00 D-1**, both well **before** the SDAC day-ahead results at **12:57 CET**. The published day-ahead forecasts are therefore **price-blind by construction**, not price-aware, so the measured bias cannot be explained away as TSOs already correcting for curtailment. (Amprion publishes no freeze time — open item.) RQ1 was run in week 1 and passed.
 2. **Replace the crude commissioning-date cohort index with a switch-off price curve.** For each plant, estimate the price below which it loses money by producing:
    - post-EEG plants (>20 years, no support): ~0 €/MWh
    - market-premium plants: ≈ −(market premium) — depends on award value (anzulegender Wert) and monthly market value
    - plants from 25 Feb 2025 under new §51: lose support in every negative-price period → ~0 €/MWh
    - older plants under 3/4/6-hour §51 rules: depends on run length of negative prices
    Aggregate to MW-that-should-switch-off as a function of price, per control area. Comparing this "should" curve with observed behaviour is the core contribution, and speaks directly to Hirth's "only half switch off" puzzle.
+   **Price clock, settled 29 Oct 2026 (§100(45) EEG 2023):** the curve must use **two different price series at once**. For plants under the rule in force from 25 Feb 2025 the trigger is the **quarter-hour** price. For plants under any earlier, hour-based version the trigger is the **arithmetic mean of the four quarter-hour prices** of the calendar hour, and then a run of consecutive such hours (6 h, 4 h, or the 2023–2025 staircase, which tightened from 3 h to **2 h on 1 Jan 2026 — inside the sample**). A quarter-hour can therefore be a switch-off signal for one cohort and no signal at all for another. Full mapping: `05_eeg_rule_table.md` and `data/reference/eeg_negative_price_rules.csv`.
    Open question: does MaStR link units to auction awards (Zuschlagsnummer) or support status? If not, estimate break-even prices by commissioning-year cohort and the statutory tariff tables.
 3. **Effective sample size is small.** Negative-price quarter-hours cluster into a few dozen events. Use event-day blocks for CV and bootstrap. Add 2023 – Sep 2025 hourly data as a second, larger dataset; Oct 2025 onwards (15-min) is the primary dataset.
 4. **Target noise.** TSO "actual generation" for wind is partly an extrapolation (Hochrechnung), not fully metered. Treat as a limitation; check robustness against SMARD vs ENTSO-E series.
@@ -53,7 +57,8 @@ Since 1 Oct 2025 the European day-ahead market (SDAC) clears in 15-minute steps.
   - Quantile LightGBM on e_t
   - Two-stage hurdle: P(curtailment event) × expected depth
   - Optional stretch: conformal calibration of intervals
-- **Baselines:** (1) raw TSO forecast; (2) LightGBM correction without price/incentive features; (3) rule-based model.
+- **Baselines:** (1) raw TSO forecast; (2) LightGBM correction without price/incentive features, at the *same* forecast time (the fair-comparison ablation); (3) rule-based model; (4) **proxy baseline, added 29 Oct 2026 — price + solar forecast + day type/holidays, no MaStR.** A public-data practitioner project reached an 11% cut in negative-hour onshore error with solar and day type alone (`02_evidence_base.md` §B3). RQ2 must beat this, not only the raw TSO forecast; otherwise the plant-incentive features have not earned their place.
+- **Secondary benchmark, not a baseline:** the published **intraday** forecast. It is made no earlier than 08:00 on the delivery day and refreshed repeatedly after that, yet still leaves ~83% of the DE negative-QH bias (and makes Amprion's worse). It is a demanding reference point, but its vintage is unknown and possibly near-delivery, so it is **leakage** and must never be a model input. See `04_rq1_killtest_note_v3.md` §3.
 - **Ablations:** no price; price only; incentive curve only; hourly vs 15-min; realised vs forecast price; per-TSO vs pooled; leave-one-control-area-out.
 - **Metrics:** MAE/RMSE on negative-price subset and overall; bias by price band; pinball loss, interval coverage; imbalance-cost proxy (volume × imbalance price, reBAP).
 - **Significance:** Diebold-Mariano tests; event-block bootstrap.
@@ -102,10 +107,11 @@ Probabilistic day-ahead forecast of grid-driven onshore wind curtailment (redisp
 
 ## 13. Open questions / to-verify list
 
-- [ ] Exact ENTSO-E 14.1.D publication time used by German TSOs, and whether their methodology mentions price/curtailment
-- [ ] §51 / §51a EEG 2023 trigger granularity (quarter-hour vs hour) — read the law text on gesetze-im-internet.de
-- [ ] Negative-price hour counts (573 vs 539 for 2025 — method-dependent)
+- [x] **Exact ENTSO-E 14.1.D publication time used by German TSOs** — resolved 29 Oct 2026. 18:00 D-1 is the publication deadline (SMARD Benutzerhandbuch 02/2025 §1.2.2, Art. 14(1)(d) Reg. (EU) 543/2013); TenneT freezes ~08:00 D-1, 50Hertz ~09:00 D-1. Neither methodology page mentions price or curtailment. **Still open for Amprion**, and whether the wind day-ahead series is ever revised after transmission.
+- [x] **§51 / §51a EEG trigger granularity (quarter-hour vs hour)** — resolved 29 Oct 2026 from the consolidated statutory texts. Quarter-hour for the rule in force from 25 Feb 2025; for all earlier, hour-based versions, a calendar hour counts when the arithmetic mean of its four quarter-hour prices is negative (§100(45) EEG 2023). Full table: `05_eeg_rule_table.md`.
+- [x] **Negative-price hour counts** — resolved 29 Oct 2026. The "573 vs 539" pair conflated counting rules and is withdrawn. Use the Netztransparenz §51a(3) tables, which count separately per rule version: 2025 = 557 h (§51 as at 24 Feb 2025), 518 h (as at 31 Dec 2022), 199 QHs (new §51(1)).
 - [ ] MaStR fields for support status / auction award / direct marketing
-- [ ] Count of windy negative quarter-hours since 1 Oct 2025
+- [x] **Count of windy negative quarter-hours since 1 Oct 2025** — resolved 29 Oct 2026: 2,059 negative QHs on 99 event-days; 1,347 QHs on 65 days with DE day-ahead wind forecast ≥ 10 GW. Both clear the pivot thresholds by a wide margin.
+- [ ] **Which intraday forecast vintage SMARD archives** — UNRESOLVED as of 29 Oct 2026; searched the SMARD manual, FAQ/announcement, chart-configuration JSON and API payloads. Added as question 4 to the TSO e-mail list.
 - [ ] Netzpaket "Redispatch-Vorbehalt" status (draft, not law as of 7 Oct 2026)
 - [ ] SRH thesis regulations: length, format, supervisor requirements, registration deadline

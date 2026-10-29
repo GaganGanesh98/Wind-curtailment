@@ -238,6 +238,16 @@ wind/solar forecasts for the delivery day under **Art. 14(2)(d) of Reg. (EU) 543
 > **mindestens eine Aktualisierung um 08:00 Uhr am Tag der tatsächlichen Lieferung** an die
 > ENTSO-E Transparenzplattform übermittelt wird."
 
+**Which update SMARD actually displays and archives is UNRESOLVED.** Searched on
+29 Oct 2026: the Benutzerhandbuch 02/2025 §1.3 (which describes what the TSOs *transmit*,
+not what SMARD shows); SMARD's intraday announcement of 16 May 2023, which says only that
+the data are updated as needed and at least once before 8 a.m. the next day; the chart
+configuration JSON, whose entries for 5127/5128 carry no vintage, timestamp or revision
+field; and the per-week API payloads, whose `meta_data` holds only a file-creation time.
+No TSO or Netztransparenz page consulted states it either. **Settle it by asking the TSOs
+directly — added as question 4 to the e-mail list below.** Until then, treat the vintage as
+unknown and no earlier than 08:00 on the delivery day.
+
 Three consequences, and the first two are the important ones:
 
 1. **There is no single intraday vintage.** The series is *regularly updated*, with 08:00 on
@@ -447,6 +457,10 @@ Result tables: `results/00_data_quality.csv`, `00_dst_check.csv`, `01_sample_siz
       forecast include expected redispatch or market-driven curtailment? (2) do the
       reference plants include direct-marketed plants that switch off at negative prices?
       (3) exact forecast freeze time (Amprion publishes none)?
+      **(4) which intraday forecast vintage reaches SMARD/ENTSO-E as the archived value
+      for a past quarter-hour — the 08:00 D-0 run, the last run before delivery, or
+      something else? Are earlier vintages retrievable anywhere?** (UNRESOLVED; see §3.
+      This decides whether the intraday series can ever be more than a diagnostic.)
 - [ ] Re-verify the §5 TSO forecast-time citations for v4 — v3 carried them over unchecked.
 - [ ] Add to the TSO email: is the published **day-ahead** wind forecast ever revised after
       its 18:00 D-1 transmission? The manual states "no subsequent updating" only for the

@@ -1,4 +1,7 @@
-data/
+# Raw and processed data are not committed (size, licence, reproducibility from source).
+# data/reference/ IS committed: small, hand-curated reference tables.
+/data/*
+!/data/reference/
 .venv/
 __pycache__/
 *.pyc
