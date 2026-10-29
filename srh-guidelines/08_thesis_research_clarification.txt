@@ -1,0 +1,38 @@
+[Text extract of "8.Thesis research clarification.rtf" from the claude.ai Project. Original formatting not preserved.]
+
+++++++++++++++++++++++++++
+PLEASE READ CAREFULLY:
+++++++++++++++++++++++++++
+
+Simple thesis requirement explanation:
+
+- Your thesis is a masterpiece that will make you the Master of Sciences so it cannot be taken lightly!
+- Your thesis MUST include something unique and novel, that you proposed, investigated and delivered on, that no-one else has done before you.
+- You MUST proof your case to the audience by showing that the most recent research did not solve the problem you are trying to solve!
+- Please remember that your focus must be on the study and development on the Analytical Tools, Machine Learning algorithms, and AI methods that we need to study, edit, monitor, invent and develop. Not on the data itself. The data is a just the means by which we can achieve these goals and can do tangible benchmarking.
+- In connection of the above statements, as a next mandatory step, in your proposal I would like to see a section titled: "Intended Contribution to Science", where I want you to clearly state the purely scientific outcomes you are going to try to solve and invent in your work. Please keep in mind that your work must be carrying value to the field of Big Data, AI and Machine Learning, and not about analysis and discoveries in the dataset you are using.
+	Examples:
+		1. You are trying to invent a new machine learning technique or improve an existing one, by using a novel kernel polynomial, etc. THIS IS A THESIS!
+		2. You are making analysis in a specific dataset about the weather and predict that it will get warmer 5 years from now. THIS IS NOT A THESIS!
+- A thesis work is a private work and does not need to be connected to any company! But in case it is, the company must be aware that the materials discussed can be published at the end of the work! So, if you choose a company to work with please clarify that point with your company.
+
+PLEASE AVOID THE FOLLOWING:
+     - taking some data and applying some Machine Learning (ML) to it then discuss accuracy claiming that no one else combined that data and ML together! This cannot be the only thing you do in your work!
+     - evaluation of well-known methods without creating a unique method that you test against one another.
+     - combine various techniques claiming improvements. This only shows that you do not have any original ideas and you are not ready to do the work the master thesis requires.
+     - hyper-parameter tuning: this is an operational detail that does not qualify for even a class project!
+     - do not use terms like: I am the first to... or no one ever has done that ... etc. It does not look serious and raises a lot of questions.
+None of these operational level procedures qualify for a thesis!
+
+- So in your Proposal and later at the end of your Thesis you MUST include the following in a few paragraphs under a section called: "My intended original contribution to science":
+	- You must specify what it is that you want to investigate or already investigated and discovered.
+	- You must clearly state your original contribution to science in your work as bullet points.
+- Before you start your research work, please send that information to your first supervisor of choice in your drafted proposal and only after you agree with them you can proceed!
+- The proposal must be at least 15-pages long. When ready please schedule a 30-minute online meeting with your supervisor so that you can defend your topic before you go any further to register it !!!
+- During the work you do on your thesis you MUST involve your supervisor in the process of your work. This will be entirely in your interest. Avoid a situation in which you tell me that you are done and submitted your work and we do not even know what you did. This is a recipe for a failure on your part !!!
+
+Note 1: your thesis presentation on the day of your defense must include numbers on each slide showing current slide and total number of slides like this: 1/24, 2/24, 3/24, etc.
+Note 2: at the end you must share the following files with yout committee: .doc, .ppt, code files.
+
+Good luck,
+Prof Dr Alexander I. Iliev

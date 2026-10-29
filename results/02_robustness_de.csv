@@ -1,0 +1,8 @@
+variant,qhs,days,mean_e_mw,ci_lo_mw,ci_hi_mw,ci_excludes_zero
+all negative QHs,2059,99,-1684.4,-2693.6,-806.5,True
+without 5-6 Apr 2026,1951,97,-1113.9,-1671.3,-558.1,True
+without 5 worst days (by mean e; v2 def),1915,94,-994.2,-1546.3,-466.6,True
+without 5 worst days (by total error),1781,94,-773.8,-1211.5,-316.2,True
+windy only (DE DA forecast >= 10 GW),1347,65,-2402.3,-3748.3,-1172.1,True
+"top-5-day share of total negative-QH error (days ranked by mean e; v2 def), %",,,45.1,,,
+"top-5-day share of total negative-QH error (days ranked by total error), %",,,60.3,,,

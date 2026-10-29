@@ -1,0 +1,6 @@
+area,qhs_compared,share_identical_exact_pct,share_identical_le_0.05MW_pct,share_identical_le_1MW_pct,share_identical_le_10MW_pct,share_identical_le_0p5pct_relative_pct
+DE,37636,0.003,0.008,0.101,0.996,5.463
+50Hertz,37732,0.019,0.027,0.278,2.444,3.257
+Amprion,37540,0.021,0.045,0.501,4.973,4.06
+TenneT DE,37636,0.082,0.082,0.282,1.778,5.362
+TransnetBW,37348,0.102,0.174,2.833,23.369,2.062
