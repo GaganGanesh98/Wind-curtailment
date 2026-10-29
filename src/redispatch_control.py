@@ -59,10 +59,15 @@ TSO_MAP = {
     "50hertz": "50Hertz", "50hertz transmission": "50Hertz",
     "amprion": "Amprion",
     "tennet": "TenneT", "tennet tso": "TenneT",
+    "tennet de": "TenneT", "tennet tso gmbh": "TenneT",
     "transnetbw": "TransnetBW", "transnet bw": "TransnetBW",
 }
 
 # Candidate header names, lowercased, for each field we need.
+# Only downward measures count. The export also carries upward ones
+# ("Wirkleistungseinspeisung erhoehen"), including a handful on renewables.
+REDUCE_RE = re.compile(r"reduzier", re.IGNORECASE)
+
 FIELD_CANDIDATES = {
     "start_date":  ["beginn_datum", "datum_beginn", "beginn datum", "start_datum"],
     "start_time":  ["beginn_uhrzeit", "uhrzeit_beginn", "beginn uhrzeit", "start_uhrzeit"],
@@ -190,11 +195,15 @@ def main() -> int:
     n0 = meas.height
 
     recs = []
-    n_solar = n_nonre = n_badtime = n_badtso = 0
+    unmapped_tso: set[str] = set()
+    n_solar = n_nonre = n_badtime = n_badtso = n_notreduce = 0
     for r in meas.iter_rows(named=True):
         carrier = (r["carrier"] or "")
         if "erneuerbar" not in carrier.lower():
             n_nonre += 1
+            continue
+        if not REDUCE_RE.search(r["direction"] or ""):
+            n_notreduce += 1
             continue
         plant = r["plant"] or ""
         if SOLAR_RE.search(plant):
@@ -205,6 +214,7 @@ def main() -> int:
             tso = TSO_MAP.get((r["instructing"] or "").strip().lower())
         if tso is None:
             n_badtso += 1
+            unmapped_tso.add((r["instructing"] or "").strip())
             continue
         start = to_dt(r["start_date"], r["start_time"], r["start_dt"])
         end = to_dt(r["end_date"], r["end_time"], r["end_dt"])
@@ -219,8 +229,9 @@ def main() -> int:
         recs.append((start, end, energy, tso))
 
     print(f"  kept {len(recs)} renewable reduction measures "
-          f"(dropped: non-renewable {n_nonre}, solar-named {n_solar}, "
-          f"unmapped TSO {n_badtso}, bad timestamps {n_badtime}; of {n0})")
+          f"(dropped: non-renewable {n_nonre}, upward/not-reduction {n_notreduce}, "
+          f"solar-named {n_solar}, unmapped TSO {n_badtso}, "
+          f"bad timestamps {n_badtime}; of {n0})")
     if n0:
         print(f"  solar-named share of renewable rows: "
               f"{100.0 * n_solar / max(1, n_solar + len(recs)):.2f}%")
@@ -238,6 +249,11 @@ def main() -> int:
             ts_ms = int(t.replace(tzinfo=UTC).timestamp() * 1000)
             rd[(ts_ms, tso)] = rd.get((ts_ms, tso), 0.0) + mw
             t += QH
+    if unmapped_tso:
+        raise SystemExit(
+            "Unmapped instructing-TSO values would silently drop measures: "
+            f"{sorted(unmapped_tso)}. Add them to TSO_MAP in "
+            "src/redispatch_control.py and re-run.")
     print(f"  redispatch spread over {len(rd)} (quarter-hour, TSO) cells")
 
     panel = pl.read_parquet(os.path.join(PROCESSED_DIR, "panel_qh.parquet"))

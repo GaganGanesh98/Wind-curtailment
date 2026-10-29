@@ -50,8 +50,8 @@ reach back. Reading the table in order of commissioning date:
 
 | Commissioned | Rule | What it means in practice |
 |---|---|---|
-| before 1 Jan 2016 | **R01** — exempt | §51 never applied. These plants have *no* statutory reason to stop. Many are also past their 20-year support period and sell merchant, which gives them a different reason to stop — at roughly 0 €/MWh. |
-| 2016 – 2020 | **R02/R03** — 6-hour rule | Wind below 3 MW and other plants below 500 kW were exempt entirely. Above that, six consecutive negative hours were needed. |
+| before 1 Jan 2016 | **R01** — exempt | §24(3) no. 1 EEG 2014 excluded them by name; §51 never applied. These plants have *no* statutory reason to stop. Many are also past their 20-year support period and sell merchant, which gives them a different reason to stop — at roughly 0 €/MWh. |
+| 2016 – 2020 | **R02/R03** — 6-hour rule | Six consecutive negative hours. Wind below 3 MW and other plants below 500 kW were exempt entirely, as were demonstration projects. The rule lived in **§24 EEG 2014** until 31 Dec 2016 and became §51 on 1 Jan 2017 with the same trigger. |
 | 2021 – 2022 | **R04** — 4-hour rule | Four consecutive hours. Exemption drops to below 500 kW. |
 | 2023 – 24 Feb 2025 | **R05–R08** — staircase | 4 h in 2023, 3 h in 2024–2025, **2 h in 2026**, 1 h from 2027. Exemption below 400 kW. |
 | from 25 Feb 2025 | **R09** — any negative quarter-hour | No duration threshold at all. Exemptions shrink to below 100 kW (until smart meter) and below 2 kW. |
@@ -63,10 +63,52 @@ Two side doors:
   nothing in the public data reveals who did.
 - **R14, biogas in tenders.** A separate regime under §51b, triggered at 2 ct/kWh or less.
 
+### The staircase: exact wording, and which year it is keyed to
+
+§51(1) EEG 2023 in the version in force **1 January 2023 – 24 February 2025**
+(buzer.de version page, accessed 29 Oct 2026). German statutory text is free of copyright
+under §5 UrhG, so it is reproduced in full:
+
+> (1) Wenn der Spotmarktpreis 1. im Jahr 2023 für die Dauer von mindestens vier
+> aufeinanderfolgenden Stunden, 2. in den Jahren 2024 und 2025 für die Dauer von mindestens
+> drei aufeinanderfolgenden Stunden, 3. im Jahr 2026 für die Dauer von mindestens zwei
+> aufeinanderfolgenden Stunden und 4. ab dem Jahr 2027 für die Dauer von mindestens einer
+> Stunde negativ ist, verringert sich der anzulegende Wert für den gesamten Zeitraum, in dem
+> der Spotmarktpreis ohne Unterbrechung negativ ist, auf null.
+
+**Keyed to the calendar year of the negative prices — not the commissioning year.** The
+sentence construction is *"Wenn der Spotmarktpreis [im Jahr X] … negativ ist"*: the year
+qualifies **when the price is negative**. The provision never mentions the installation at
+all. A plant commissioned in 2023 and one commissioned in 2024 face the **same** threshold
+in any given year.
+
+The apparent conflict with sources that describe the staircase "by commissioning year" is a
+**category difference, not a contradiction**. Two separate questions:
+
+| Question | Answered by | Keyed to |
+|---|---|---|
+| *Which version* of §51 applies to this plant? | §100(46) EEG 2023 | **Commissioning date** (or auction bid date), 1 Jan 2023 – 24 Feb 2025 |
+| *Which step* of the staircase applies right now? | §51(1) nos. 1–4 | **Calendar year in which prices are negative** |
+
+Secondary summaries that tabulate "commissioned 01.01.2023–24.02.2025 → staircase" are
+answering the first question. Within that cohort the step still moves by calendar year.
+
+*Caveat on sourcing:* the Rödl & Partner note (Feb 2025) cited as describing this by
+commissioning year could not be retrieved, so what it actually says is unverified here. The
+statutory wording above is primary and unambiguous on the second question; if a secondary
+source asserts a commissioning-year staircase, that is a secondary-source error rather than
+an ambiguity in the law.
+
 **During the kill-test window (1 Oct 2025 – 28 Oct 2026) the live triggers are:** R01
 (exempt), R02/R03 (6 h), R04 (4 h), R06 then R07 (3 h in 2025, **2 h from 1 Jan 2026**),
-and R09 (any quarter-hour). Note that the staircase cohort tightened from three hours to
-two hours *in the middle of the sample*, on 1 January 2026.
+and R09 (any quarter-hour).
+
+**The natural experiment.** Because the step is keyed to the calendar year, the whole
+2023 – Feb 2025 cohort moved from a three-hour to a two-hour threshold **simultaneously, at
+midnight on 1 January 2026** — inside the sample. That is a sharp, common, exogenous date
+affecting one identifiable cohort and no other, which is a cleaner design than a
+per-plant anniversary would have been. Everything else about those plants is unchanged
+across the boundary. Worth an explicit before/after comparison in RQ2.
 
 ## 4. Hours versus quarter-hours — the §100(45) trap
 
@@ -102,7 +144,8 @@ For each plant in the MaStR snapshot, the chain is:
    installations of the same technology can count as one plant, so a cluster of small
    turbines may be over the threshold even if each is under it.
 3. **Pick the price clock** — quarter-hour for R09, hourly mean for R02–R08.
-4. **Compute the break-even price:**
+4. **Compute the break-even price** (for hour-rule plants, evaluate the trigger against the
+   *calendar year* step then in force):
    - *Support ended (older than 20 years), merchant:* break-even ≈ **0 €/MWh**, since
      there is no premium to lose. Stop whenever the price is below zero.
    - *Market-premium plant, trigger NOT met* (run too short): the premium still flows, so
@@ -146,11 +189,15 @@ All accessed 29 October 2026.
 | §51 version history, all eight earlier versions | buzer.de/51_EEG.htm and its per-version comparison pages |
 | Pre-2016 exemption, as enacted | buzer.de/gesetz/12213/a201265.htm (Art. 1 EEAusG, G. v. 13.10.2016, BGBl. I S. 2258) |
 | 25 Feb 2025 amendment | Art. 4 EnWGEÜVÄndG, G. v. 21.02.2025, BGBl. 2025 I Nr. 51 |
-| §24 EEG, aggregation of installations | gesetze-im-internet.de/eeg_2014/__24.html |
+| §24 EEG 2023, aggregation of installations | gesetze-im-internet.de/eeg_2014/__24.html |
+| **§24 EEG 2014**, "Verringerung der Förderung bei negativen Preisen", in force 1 Aug 2014 – 31 Dec 2016 | haufe.de/id/norm/erneuerbare-energien-gesetz-2014-bis-31122016-24-verringerung-der-foerderung-bei-negativen-preisen-HI7054784_p24.html (commercial host of the statutory text; authoritative original: BGBl. I 2014 S. 1066) |
+| §51(1) EEG 2023 as in force 1 Jan 2023 – 24 Feb 2025 | buzer.de/gesetz/11230/al211220-0.htm |
 
-**Unresolved.** The negative-price rule's section number *before* the 1 January 2017
-renumbering is commonly cited as §24 EEG 2014. The rule's **content** for that period is
-confirmed (six consecutive hours; wind below 3 MW exempt), but buzer's §24 version history
-contains no such wording, so the §24 attribution could not be verified here. To settle it,
-read the original EEG 2014 text in BGBl. I 2014 S. 1066 on recht.bund.de. The rule table
-therefore cites the provision by its content and in-force dates, not by the pre-2017 number.
+**Previously unresolved, now closed (29 Oct 2026): the pre-2017 section number.** The rule
+was **§24 EEG 2014**, headed "Verringerung der Förderung bei negativen Preisen", in force
+1 Aug 2014 – 31 Dec 2016. §24(1) required six consecutive negative hours on the EPEX Spot
+SE hourly contracts for the DE/AT price zone; §24(3) exempted (1) installations commissioned
+before 1 Jan 2016, (2) wind below 3 MW or other installations below 500 kW, with §32(1)
+sentence 1 EEG 2014 for aggregation, and (3) demonstration projects. Note the aggregation
+cross-reference is to **§32**, not §24, under the 2014 numbering. The rule became §51 on
+1 January 2017 with an unchanged six-hour trigger.

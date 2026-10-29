@@ -2,8 +2,9 @@
 
 Student: Gagan Ganesh — MSc AI/ML (Big Data), SRH Hochschule Berlin, final semester
 Window: ~6 months, starting Nov 2026
-Status (29 Oct 2026): topic chosen in principle; **RQ1 kill test reproduced — provisional GO,
-pending the redispatch control (Check 2), which is blocked on Netztransparenz data access.**
+Status (29 Oct 2026): topic chosen in principle; **RQ1 kill test reproduced in full — GO.**
+All four checks pass, including the redispatch control (Check 2), which confirms that grid
+redispatch does not explain the negative-price over-forecast.
 See `04_rq1_killtest_note_v3.md`. §51 EEG rule table built: `05_eeg_rule_table.md` and
 `data/reference/eeg_negative_price_rules.csv`.
 Last updated: 29 Oct 2026

@@ -4,7 +4,7 @@ Version 3, 29 Oct 2026 (v2: 29 Oct 2026; v1: 28 Oct 2026). **v2 is not overwritt
 it remains at `docs/04_rq1_killtest_note.md`.
 
 Data: SMARD 15-min (Bundesnetzagentur, CC BY 4.0), 1 Oct 2025 00:00 – 28 Oct 2026 23:45
-Europe/Berlin. Netztransparenz redispatch: **not obtained — see §4.**
+Europe/Berlin. Netztransparenz redispatch measures, manual CSV export of 29 Oct 2026 (UTC).
 
 Code (rebuilt from scratch; the v2 scripts were lost): `src/smard_config.py`,
 `src/ingest_smard.py`, `src/build_panel.py`, `src/stats_boot.py`, `src/kill_test.py`,
@@ -21,12 +21,11 @@ Seed 42, 5,000 bootstrap draws resampling whole Berlin-local event-days.
 by more than an order of magnitude. The over-forecast is significant in DE, 50Hertz,
 Amprion and TransnetBW; **not** in TenneT.
 
-**One qualification v2 did not have.** v2's verdict line said the bias "survives the
-redispatch control". **v3 cannot confirm that**: the Netztransparenz redispatch export is
-not reachable without credentials, so Check 2 (test C) was not computed (§4). The GO rests
-on the bias and sample-size criteria you specified, which do not include the redispatch
-control — but the "redispatch does not explain it" claim is **unverified in v3** and
-should not be repeated to a supervisor as if it had been reproduced.
+**The redispatch control now holds too.** v2's claim that the bias "survives the redispatch
+control" is **confirmed** on independently re-downloaded Netztransparenz data (§4): the
+stratified excess error is −1,789 MW for DE, CI [−2,811, −908], and remains significant in
+50Hertz, Amprion and TransnetBW. Every v2 figure in that section reproduces within 4.4%.
+Both the bias and its main alternative explanation have therefore been checked.
 
 ---
 
@@ -41,8 +40,9 @@ should not be repeated to a supervisor as if it had been reproduced.
 | §2 robustness, ex-worst-5 | ✅ after resolving a definition ambiguity | ⚠️ see F2 |
 | §3 Check 1, MAE + ID bias | ✅ | DE ID bias −1,394.3 vs −1,394 |
 | §3 Check 1, "DA == ID" share | ⚠️ differs >10% | see F1 |
+| v2's SMARD manual citation (04/2026) | ✅ correct | F5 withdrawn — that edition does exist |
 | §3 intraday vintage | ➕ new in v3 | settled from the SMARD manual — no fixed vintage; leakage risk |
-| §4 Check 2 (redispatch) | ❌ **not computed** | blocked on data access |
+| §4 Check 2 (redispatch) | ✅ reproduced | all five areas within 4.4%; two parser bugs found and fixed |
 | §5 Check 3 (TSO forecast times) | ➖ carried over, **not re-verified** | documentary, see §5 |
 
 ---
@@ -92,8 +92,8 @@ Three things were checked rather than assumed:
    by checking that the hourly series equals the *sum* of its four quarter-hours
    (35,298.69 = 8,844.80 + 8,813.77 + 8,821.85 + 8,818.27). Everything here is converted to
    MW (× 4). v2 reported MW and reproduces exactly, so v2 applied the same conversion.
-   **Independently confirmed by SMARD's own manual** (Benutzerhandbuch 02/2025, §1.2.2 and
-   §1.3, archived at `data/raw/smard_benutzerhandbuch_02-2025.pdf`): publication on the
+   **Independently confirmed by SMARD's own manual** (Benutzerhandbuch 04/2026, §1.2.2 and
+   §1.3, archived at `data/raw/smard_benutzerhandbuch_04-2026.pdf`): publication on the
    ENTSO-E platform is "in der Einheit [MW] je Viertelstunde", and for SMARD "werden die von
    ENTSO-E bereitgestellten Daten **durch vier dividiert**". Multiplying by 4 inverts exactly
    that, recovering the ENTSO-E MW value.
@@ -230,8 +230,8 @@ without a stated tolerance should not be quoted.
 
 ### Which intraday vintage does SMARD publish? **Answered — and it is not a fixed vintage**
 
-Settled from the primary source: SMARD **Benutzerhandbuch 02/2025, §1.3**
-(archived at `data/raw/smard_benutzerhandbuch_02-2025.pdf`). The TSOs produce intraday
+Settled from the primary source: SMARD **Benutzerhandbuch 04/2026, §1.3** (printed p. 44)
+(archived at `data/raw/smard_benutzerhandbuch_04-2026.pdf`). The TSOs produce intraday
 wind/solar forecasts for the delivery day under **Art. 14(2)(d) of Reg. (EU) 543/2013**, and:
 
 > "Die Daten des untertäglichen Handels werden **regelmäßig aktualisiert**, wobei
@@ -239,7 +239,7 @@ wind/solar forecasts for the delivery day under **Art. 14(2)(d) of Reg. (EU) 543
 > ENTSO-E Transparenzplattform übermittelt wird."
 
 **Which update SMARD actually displays and archives is UNRESOLVED.** Searched on
-29 Oct 2026: the Benutzerhandbuch 02/2025 §1.3 (which describes what the TSOs *transmit*,
+29 Oct 2026: the Benutzerhandbuch 04/2026 §1.3 (which describes what the TSOs *transmit*,
 not what SMARD shows); SMARD's intraday announcement of 16 May 2023, which says only that
 the data are updated as needed and at least once before 8 a.m. the next day; the chart
 configuration JSON, whose entries for 5127/5128 carry no vintage, timestamp or revision
@@ -296,44 +296,86 @@ in favour of the thesis, and a candidate second baseline for RQ2.
 *(Amprion and TransnetBW rows use the 2,045 negative QHs where both forecasts exist; the
 other rows use all 2,059. This is why Amprion's DA bias reads −430.0 here and −431.3 in §2.)*
 
-## 4. Check 2 — does grid redispatch explain the bias? **NOT COMPUTED — BLOCKED**
+## 4. Check 2 — does grid redispatch explain the bias? **NO.** Reproduced.
 
-**This section of v2 could not be reproduced.** No number from v2's §4 is restated as
-verified here. The Netztransparenz redispatch export for 2025-10 – 2026-10 is not
-obtainable without credentials:
+Data: Netztransparenz redispatch measures, 1 Oct 2025 – 28 Oct 2026, exported manually on
+29 Oct 2026 (timezone UTC) and archived at
+`data/raw/netztransparenz/redispatch_2025-10-01_2026-10-28_UTC_dl2026-10-29.csv`.
+24,947 measures; after keeping renewable ("Erneuerbar") **downward** measures and excluding
+solar-named plants, **6,751 measures** remain. Each measure's energy is spread evenly over
+its quarter-hours (energy ÷ duration) and assigned to the instructing TSO
+(`ANWEISENDER_UENB`), giving 31,057 (quarter-hour, TSO) cells.
 
-- `https://ds.netztransparenz.de/api/v1/data/...` returns **HTTP 401**. Netztransparenz's
-  FAQ requires registering on netztransparenz.de for the **`WebAPIReader`** role and then
-  creating a **Client** in the WebAPI-Portal to obtain a **ClientID + ClientSecret**
-  (OAuth 2.0 client-credentials grant; machine-to-machine use is explicitly supported
-  *once registered*).
-- The "Download CSV" control on the public Redispatch page is an **ASP.NET WebForms
-  postback** — no GET URL exists for a script to call.
-- The Datencenter is a **Blazor single-page app**; downloading is a browser action.
-- The only anonymous file link on the page covers **2013–2020** only.
-- ENTSO-E also publishes redispatch, but that needs the API token this project has not yet
-  received.
+Renewable redispatch is concentrated in **TenneT (7.387 TWh)** and **50Hertz (1.184 TWh)**.
+Amprion (0.020 TWh) and TransnetBW (0.006 TWh) have almost none. This matches v2's 7.4 /
+1.3 / 0.02 / 0.006 TWh.
 
-Replaying the postback or driving the SPA was **not attempted** — both would be working
-around an access restriction.
+**Test C.** Compare negative-price QHs with positive-price QHs at the same redispatch level
+(5 bins: bin 0 is exactly zero, bins 1–4 are quartiles of the strictly positive values) and
+the same forecast-level decile, weight by negative-QH counts, and bootstrap over event-days.
 
-`src/redispatch_control.py` is written and ready. It implements exactly the v2 method:
-renewable ("Erneuerbar") reductions only, solar-named plants excluded, each measure's
-energy spread evenly over its quarter-hours (energy ÷ duration), assigned to the
-instructing TSO; then test C — per area, excess error = mean e in negative QHs minus mean e
-in positive-price QHs in the same stratum (5 redispatch-volume bins × forecast-level
-decile, bin 0 being exactly zero redispatch and bins 1–4 the quartiles of the positive
-values), weighted by negative-QH counts, with an event-day bootstrap CI; plus the raw
-negative-QH bias, the share of negative QHs with any RE redispatch, and the 50Hertz bias in
-zero-redispatch quarter-hours. It exits with code 2 and writes
-`results/04_test_c_BLOCKED.txt` until the data is present.
+| Area | Raw bias, neg QHs (MW) | Excess, test C (MW) | 95% CI | CI excludes 0 | Neg QHs with any RE redispatch | v2 excess | Δ |
+|---|---|---|---|---|---|---|---|
+| DE | −1,684.4 | **−1,789.0** | [−2,810.6, −907.8] | ✅ | 96.2% | −1,713 | +4.4% |
+| 50Hertz | −832.7 | **−739.6** | [−1,110.9, −411.8] | ✅ | 62.7% | −741 | −0.2% |
+| Amprion | −431.3 | **−511.2** | [−703.8, −337.7] | ✅ | 1.8% | −501 | +2.0% |
+| TenneT DE | −325.9 | **−396.6** | [−919.9, +83.8] | ❌ | 94.4% | −402 | −1.3% |
+| TransnetBW | −94.4 | **−93.7** | [−128.9, −59.0] | ✅ | 5.6% | −93 | +0.8% |
 
-**To unblock:** either a WebAPI ClientID + ClientSecret, or a manual CSV export from the
-Redispatch page (Von 01.10.2025, Bis 28.10.2026, timezone **UTC**) dropped into
-`data/raw/netztransparenz/`. Then `python src/redispatch_control.py`.
+Every v2 figure reproduces within 4.4%; **no difference exceeds 10%**. The coverage shares
+(96% / 63% / 2% / 94% / 6%) match v2 exactly.
 
-**Licence is still unverified** — no terms-of-use text appears on any readable
-Netztransparenz page. This must be settled before redispatch data goes into the thesis.
+**The bias survives the control.** In DE, 50Hertz, Amprion and TransnetBW the stratified
+excess error is at least as large as the raw bias and its CI excludes zero. Controlling for
+redispatch does not shrink the negative-price bias — in DE and Amprion it slightly
+*increases* it. TenneT remains the one area whose CI includes zero, exactly as in v2.
+
+**Zero-redispatch quarter-hours** — the cleanest cut, since no grid curtailment is present
+at all:
+
+| Area | Bias in neg QHs with zero RE redispatch (MW) | 95% CI | Neg QHs | v2 |
+|---|---|---|---|---|
+| 50Hertz | **−515.3** | [−796.5, −251.6] | 769 | −515 |
+| Amprion | **−420.7** | [−616.8, −243.2] | 2,022 | — |
+| TransnetBW | **−94.3** | [−133.7, −55.3] | 1,943 | — |
+| TenneT DE | −520.6 | [−1,269.4, +92.5] | 116 | — |
+| DE | −759.9 | [−1,661.0, +322.2] | 79 | — |
+
+50Hertz reproduces v2 to the MW. Amprion and TransnetBW are effectively redispatch-free and
+still significantly biased. The DE and TenneT rows rest on very few quarter-hours (79 and
+116) because DE counts a quarter-hour as zero-redispatch only when *all four* control areas
+are, so their wide intervals carry little information — read 50Hertz, Amprion and
+TransnetBW instead.
+
+**Conclusion: grid redispatch does not explain the negative-price over-forecast.** v2's
+finding is confirmed on independently re-downloaded data.
+
+### Two parser bugs found and fixed (worth recording)
+
+The first run of `src/redispatch_control.py` against this export produced TenneT = 0.0 TWh
+and 0% coverage. Two defects, both now fixed:
+
+1. **TSO name mismatch.** The export spells the instructing TSO `TenneT DE`; the mapping
+   expected `TenneT`. All 7,606 TenneT measures were silently dropped as unmapped. The
+   script now raises rather than continuing when any instructing-TSO value is unmapped, so
+   this cannot recur silently.
+2. **Direction not filtered.** `RICHTUNG` was never checked, so upward measures
+   ("Wirkleistungseinspeisung erhöhen") were treated as reductions. 16 renewable rows were
+   affected. Only `reduzieren` rows now count.
+
+The TenneT volume moving from 0.0 to 7.387 TWh against v2's 7.4 TWh is what identified the
+bug. **If a figure disagrees with v2 by an order of magnitude, suspect the pipeline before
+the data.**
+
+### Difference from v2 worth noting
+
+**Solar-named exclusion: 5.37% of renewable reduction rows here, against v2's 0.6%.**
+Flagged as F7. The regex used here (`solar|photovolt|\bpv\b`) is evidently broader than
+v2's. It removes 383 measures rather than roughly 43. This is the conservative direction —
+it can only remove genuine wind redispatch from the control, which if anything understates
+how much redispatch the stratification absorbs — but the plant-name filter remains the
+weakest link in this test and should be replaced by a proper carrier field if one can be
+obtained.
 
 ## 5. Check 3 — TSO forecast method (carried over from v2, **not re-verified in v3**)
 
@@ -381,13 +423,17 @@ revision.** Immaterial; the band mean moved from +184 to +186.1 MW.
 "96% of negative QHs have RE redispatch" figure) are **neither confirmed nor contradicted**
 by v3.
 
-**F5 — v2 cites a "SMARD user manual (04/2026)"; no such edition could be found.
-Cause: citation error in v2.** The latest edition locatable on smard.de is
-**Benutzerhandbuch 02/2025** (German; the English user guide is older still, 09/2021). The
-substance v2 attributed to it — day-ahead forecasts produced by the TSOs under Reg.
-543/2013 Art. 14(1)(d) and sent to ENTSO-E by 18:00 D-1 — **is correct and is confirmed
-verbatim in §1.2.2 of the 02/2025 edition**. Only the date of the citation is wrong. Fix
-the citation before it reaches the thesis.
+**F5 — WITHDRAWN (29 Oct 2026). v2's "SMARD user manual (04/2026)" citation was correct.**
+An earlier draft of this note flagged it as unverifiable because a search did not surface
+that edition. That was an error: asserting non-existence from a failed search. The 04/2026
+edition does exist, at
+`smard.de/resource/blob/220052/9d526adf4b948599da4a956dfae6dab9/smard-benutzerhandbuch-04-2026-data.pdf`,
+and is now archived at `data/raw/smard_benutzerhandbuch_04-2026.pdf` and **cited throughout
+this note as the primary edition** (day-ahead §1.2.2, printed p. 41; intraday §1.3, printed
+p. 44). Its wording on both the 18:00 D-1 day-ahead deadline and the "regelmäßig
+aktualisiert … mindestens eine Aktualisierung um 08:00 Uhr" intraday rule is **identical to
+the 02/2025 edition**, so every conclusion in §3 stands unchanged. No correction to v2 is
+needed here.
 
 **F6 — the "windy quarter-hours are more biased" reading is withdrawn.
 Cause: a scale artefact in an earlier v3 draft, not present in v2.** See §2: in MW the
@@ -471,9 +517,9 @@ Result tables: `results/00_data_quality.csv`, `00_dst_check.csv`, `01_sample_siz
 
 ## Known gaps
 
-- §4 is absent. Everything v2 concluded about redispatch is unreproduced.
-- Whether DSO-initiated Redispatch 2.0 measures are included remains unverified (and
-  untestable until §4 is unblocked).
+- Whether DSO-initiated Redispatch 2.0 measures are included in the export remains
+  unverified. Check the Netztransparenz "Redispatch 2.0 at the TSO-DSO interface" page.
+- The export's licence remains unverified (no terms text on any readable page).
 - The wind/solar split in the redispatch data is by plant name only; pooled entries
   ("UW …", DSO pools) may contain PV. `src/redispatch_control.py` logs the excluded share
   so this is auditable once the data arrives.
@@ -482,3 +528,6 @@ Result tables: `results/00_data_quality.csv`, `00_dst_check.csv`, `01_sample_siz
 - `DE` here excludes Luxembourg (~0.2% of DE-LU wind). The price is the DE-LU
   bidding-zone price. This mismatch is immaterial at these magnitudes but is stated for
   completeness.
+
+**F7 — solar-named exclusion share: 5.37% (v3) vs 0.6% (v2). Cause: regex breadth.**
+See §4. Conservative direction; the plant-name filter is the weakest link in test C.

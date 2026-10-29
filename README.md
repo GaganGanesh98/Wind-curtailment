@@ -31,11 +31,10 @@ msc-thesis-wind-curtailment/
 
 - **RQ1 kill test rebuilt (29 Oct 2026).** `src/` now holds the full pipeline; results in
   `results/`, figures in `figures/`, write-up in `docs/04_rq1_killtest_note_v3.md`
-  (v2 kept unchanged at `docs/04_rq1_killtest_note.md`). Verdict: **GO**.
-- **One step is blocked.** Check 2 (redispatch control) needs the Netztransparenz
-  redispatch export, which requires OAuth client credentials or a browser download.
-  `src/redispatch_control.py` is written and exits 2 until a CSV is placed in
-  `data/raw/netztransparenz/`. See §4 of the v3 note.
+  (v2 kept unchanged at `docs/04_rq1_killtest_note.md`). Verdict: **GO**, all four checks
+  reproduced including the redispatch control.
+- **§51 EEG rule table** in `docs/05_eeg_rule_table.md` and
+  `data/reference/eeg_negative_price_rules.csv`.
 
 ## Missing
 - `srh-guidelines/` lacks the original `.docx` files (Alen Reji's sample proposal and the

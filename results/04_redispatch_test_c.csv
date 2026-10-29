@@ -1,0 +1,6 @@
+area,negative_qhs,event_days,raw_bias_neg_qh_mw,raw_ci_lo_mw,raw_ci_hi_mw,excess_test_c_mw,excess_ci_lo_mw,excess_ci_hi_mw,excess_ci_excludes_zero,neg_qhs_matched,neg_qhs_unmatched_dropped,pct_neg_qh_with_any_re_redispatch,total_re_redispatch_twh,bias_neg_qh_zero_redispatch_mw,zero_rd_ci_lo_mw,zero_rd_ci_hi_mw,zero_rd_neg_qhs
+DE,2059,99,-1684.4,-2693.6,-806.5,-1789.0,-2810.6,-907.8,True,2059,0,96.2,8.496,-759.9,-1661.0,322.2,79
+50Hertz,2059,99,-832.7,-1207.6,-500.3,-739.6,-1110.9,-411.8,True,2059,0,62.7,1.184,-515.3,-796.5,-251.6,769
+Amprion,2059,99,-431.3,-624.4,-257.2,-511.2,-703.8,-337.7,True,2059,0,1.8,0.02,-420.7,-616.8,-243.2,2022
+TenneT DE,2059,99,-325.9,-838.3,137.6,-396.6,-919.9,83.8,False,2059,0,94.4,7.387,-520.6,-1269.4,92.5,116
+TransnetBW,2059,99,-94.4,-132.4,-57.6,-93.7,-128.9,-59.0,True,2017,42,5.6,0.006,-94.3,-133.7,-55.3,1943

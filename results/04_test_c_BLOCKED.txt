@@ -1,3 +1,0 @@
-Check 2 / test C not computed.
-Reason: Netztransparenz redispatch export requires OAuth client credentials (HTTP 401) or a browser download; no anonymous URL covers 2025-10 .. 2026-10.
-Drop a CSV export in data/raw/netztransparenz/ and re-run.
