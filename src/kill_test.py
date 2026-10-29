@@ -127,7 +127,7 @@ def main() -> int:
         print(f"  {r['metric']:52s} {r['value']:>7}  "
               f"threshold={r['pivot_threshold']!s:>4}  {r['passes']}")
     with open(f"{RESULTS_DIR}/01_sample_size.csv", "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(sample_rows[0].keys()))
+        w = csv.DictWriter(fh, lineterminator="\n", fieldnames=list(sample_rows[0].keys()))
         w.writeheader(); w.writerows(sample_rows)
 
     # ================= ANALYSIS 2 — bias by price band ==================
@@ -164,7 +164,7 @@ def main() -> int:
                       f"{r['days']:>5} {r['mean_e_mw']:>9} {r['ci_lo_mw']:>9} "
                       f"{r['ci_hi_mw']:>9} {r['e_over_forecast_pct']:>6}%")
     with open(f"{RESULTS_DIR}/02_bias_by_price_band.csv", "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(band_rows[0].keys()))
+        w = csv.DictWriter(fh, lineterminator="\n", fieldnames=list(band_rows[0].keys()))
         w.writeheader(); w.writerows(band_rows)
 
     # ---- overall negative-QH bias per area (needed by the note and test C) --
@@ -193,7 +193,7 @@ def main() -> int:
               f"DA bias={mean:9.1f} [{clo:9.1f},{chi:9.1f}] "
               f"ID bias={mi:9.1f}")
     with open(f"{RESULTS_DIR}/02_overall_negative_qh_bias.csv", "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(overall_rows[0].keys()))
+        w = csv.DictWriter(fh, lineterminator="\n", fieldnames=list(overall_rows[0].keys()))
         w.writeheader(); w.writerows(overall_rows)
 
     # ---- robustness (DE, negative QHs) -------------------------------------
@@ -224,7 +224,7 @@ def main() -> int:
     order = order_sum                                # used for the ranked CSV
 
     with open(f"{RESULTS_DIR}/02_worst_days_de.csv", "w", newline="") as fh:
-        w = csv.writer(fh)
+        w = csv.writer(fh, lineterminator="\n")
         w.writerow(["rank_by_total_error", "berlin_date", "negative_qhs",
                     "sum_e_mw_qh", "mean_e_mw",
                     "share_of_total_negative_qh_error", "rank_by_mean_e"])
@@ -270,7 +270,7 @@ def main() -> int:
     print(f"  {'top5 share (ranked by total err)':34s} "
           f"{100.0 * top5_share_sum:.1f}%   days={worst5_sum}")
     with open(f"{RESULTS_DIR}/02_robustness_de.csv", "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rob[0].keys()))
+        w = csv.DictWriter(fh, lineterminator="\n", fieldnames=list(rob[0].keys()))
         w.writeheader(); w.writerows(rob)
 
     print("-" * 72)

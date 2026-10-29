@@ -73,7 +73,7 @@ def main() -> int:
               f"{mae_da:>9.1f} {mae_id:>9.1f} {reduction:>8.1f}%")
 
     with open(f"{RESULTS_DIR}/03_da_vs_id.csv", "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
+        w = csv.DictWriter(fh, lineterminator="\n", fieldnames=list(rows[0].keys()))
         w.writeheader(); w.writerows(rows)
 
     # ---- how "identical" is defined changes the headline number, so sweep it -
@@ -103,7 +103,7 @@ def main() -> int:
         print(f"  {AREA_LABEL[area]:11s}"
               + "".join(f"{c:>10.2f}%" for c in cells) + f"{rel:>10.2f}%")
     with open(f"{RESULTS_DIR}/03_da_id_identity_tolerance.csv", "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(tol_rows[0].keys()))
+        w = csv.DictWriter(fh, lineterminator="\n", fieldnames=list(tol_rows[0].keys()))
         w.writeheader(); w.writerows(tol_rows)
 
     # ---- intraday bias in negative quarter-hours ---------------------------
@@ -138,7 +138,7 @@ def main() -> int:
               f"{m_id:>10.1f}   [{lo_id:>9.1f},{hi_id:>9.1f}]")
 
     with open(f"{RESULTS_DIR}/03_id_bias_negative_qh.csv", "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(bias_rows[0].keys()))
+        w = csv.DictWriter(fh, lineterminator="\n", fieldnames=list(bias_rows[0].keys()))
         w.writeheader(); w.writerows(bias_rows)
     print("-" * 72)
     print(f"wrote {RESULTS_DIR}/03_da_vs_id.csv, "

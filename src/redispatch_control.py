@@ -328,7 +328,7 @@ def main() -> int:
               f"[{lo_c:>9.1f},{hi_c:>9.1f}] {share_rd:>12.1f}%")
 
     with open(f"{RESULTS_DIR}/04_redispatch_test_c.csv", "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(out_rows[0].keys()))
+        w = csv.DictWriter(fh, lineterminator="\n", fieldnames=list(out_rows[0].keys()))
         w.writeheader(); w.writerows(out_rows)
     print("-" * 72)
     print(f"wrote {RESULTS_DIR}/04_redispatch_test_c.csv")

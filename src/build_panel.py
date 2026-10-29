@@ -232,11 +232,11 @@ def main() -> int:
     print(f"panel -> {out}  ({panel.height} rows, {len(panel.columns)} cols)")
 
     with open(os.path.join(RESULTS_DIR, "00_data_quality.csv"), "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(quality_rows[0].keys()))
+        w = csv.DictWriter(fh, lineterminator="\n", fieldnames=list(quality_rows[0].keys()))
         w.writeheader()
         w.writerows(quality_rows)
     with open(os.path.join(RESULTS_DIR, "00_dst_check.csv"), "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(dst_rows[0].keys()))
+        w = csv.DictWriter(fh, lineterminator="\n", fieldnames=list(dst_rows[0].keys()))
         w.writeheader()
         w.writerows(sorted(dst_rows, key=lambda r: r["berlin_date"]))
     print(f"quality -> {RESULTS_DIR}/00_data_quality.csv")
