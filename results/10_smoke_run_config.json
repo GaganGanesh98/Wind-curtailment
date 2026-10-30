@@ -1,0 +1,104 @@
+{
+  "config": {
+    "area": "DE",
+    "censoring_rate": 0.2,
+    "gamma": 0.0,
+    "r_shape": "logistic",
+    "seed": 42,
+    "mv_eur_mwh": 45.0,
+    "safe_price_floor": 5.0,
+    "r_depth_half_eur_mwh": 25.0,
+    "r_depth_scale_eur_mwh": 12.0,
+    "r_half_level": 0.5,
+    "subhour_episode_share": 0.25,
+    "observation_noise_mw": 0.0,
+    "with_weather_proxy": true,
+    "weather_noise_ms": 0.6,
+    "curve_v50_ms": 9.0,
+    "curve_k": 1.6
+  },
+  "cohorts": [
+    {
+      "cohort_id": "pre2016_out_of_support",
+      "rule_id": "R01",
+      "clock": "hour",
+      "run_length_h": null,
+      "subject_to_s51": false,
+      "in_support": false,
+      "aw_eur_mwh": null,
+      "capacity_share": 0.1,
+      "macro": "hour_clock"
+    },
+    {
+      "cohort_id": "wind2016_2020_6h",
+      "rule_id": "R02",
+      "clock": "hour",
+      "run_length_h": 6,
+      "subject_to_s51": true,
+      "in_support": true,
+      "aw_eur_mwh": 62.0,
+      "capacity_share": 0.3,
+      "macro": "hour_clock"
+    },
+    {
+      "cohort_id": "wind2021_2022_4h",
+      "rule_id": "R04",
+      "clock": "hour",
+      "run_length_h": 4,
+      "subject_to_s51": true,
+      "in_support": true,
+      "aw_eur_mwh": 59.0,
+      "capacity_share": 0.18,
+      "macro": "hour_clock"
+    },
+    {
+      "cohort_id": "wind2023_feb2025_staircase",
+      "rule_id": "R07",
+      "clock": "hour",
+      "run_length_h": "staircase",
+      "subject_to_s51": true,
+      "in_support": true,
+      "aw_eur_mwh": 71.0,
+      "capacity_share": 0.27,
+      "macro": "hour_clock"
+    },
+    {
+      "cohort_id": "post_feb2025_qh",
+      "rule_id": "R09",
+      "clock": "quarterhour",
+      "run_length_h": null,
+      "subject_to_s51": true,
+      "in_support": true,
+      "aw_eur_mwh": 74.0,
+      "capacity_share": 0.15,
+      "macro": "qh_clock"
+    }
+  ],
+  "diagnostics": {
+    "target_negative_qh": 6854,
+    "placed_negative_qh": 6859,
+    "realised_negative_rate": 0.2001342203548086,
+    "episodes_hourly": 409,
+    "episodes_subhour": 134,
+    "placement_attempts": 543,
+    "n_qh": 34272,
+    "n_days": 357,
+    "n_base_available": 34303,
+    "n_base_used": 34272,
+    "n_real_negative_qh_in_panel": 2059,
+    "exposed_rate": 0.2001342203548086,
+    "censored_rate": 0.2001342203548086,
+    "mean_c_on_censored": 0.20591997864023281,
+    "max_c": 1.0,
+    "exposed_rate_per_cohort": {
+      "pre2016_out_of_support": 0.2001342203548086,
+      "wind2016_2020_6h": 0.122578197945845,
+      "wind2021_2022_4h": 0.1753034547152194,
+      "wind2023_feb2025_staircase": 0.1918183940242764,
+      "post_feb2025_qh": 0.2001342203548086
+    },
+    "mean_a_true_mw": 16379.780769140989,
+    "mean_g_obs_mw": 15699.084268153492,
+    "curtailed_energy_share": 0.041557119144714605
+  }
+}

@@ -1,6 +1,16 @@
-# RQ1 kill test — pinned environment. Python 3.11+ (built and tested on 3.13.13).
+# Pinned environment. Python 3.11+ (built and tested on 3.13.13).
+# Versions are what actually installed in .venv, read back with
+# importlib.metadata — never guessed (hard rule 8).
+
+# RQ1 kill test
 polars==2.1.0
 pyarrow==26.0.0
 numpy==2.5.4
 matplotlib==3.11.2
 requests==2.34.2
+
+# Phase 2 — mechanism-aware censored learning (CPU only)
+torch==2.15.0
+lightgbm==4.7.0
+scipy==1.18.1
+pytest==9.2.0

@@ -1,0 +1,16 @@
+r_shape,n_bins,int_abs_r_error_m1,int_abs_r_error_b3,m1_better
+logistic,4,0.00429,0.25074,True
+logistic,8,0.00429,0.20562,True
+logistic,16,0.00429,0.1096,True
+logistic,32,0.00429,0.0237,True
+logistic,64,0.00429,0.01147,True
+step,4,0.01645,0.00315,False
+step,8,0.01645,0.00323,False
+step,16,0.01645,0.00323,False
+step,32,0.01645,0.00262,False
+step,64,0.01645,0.00263,False
+half,4,0.01609,0.00209,False
+half,8,0.01609,0.00239,False
+half,16,0.01609,0.00207,False
+half,32,0.01609,0.00166,False
+half,64,0.01609,0.00314,False

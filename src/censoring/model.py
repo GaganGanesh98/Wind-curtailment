@@ -1,0 +1,374 @@
+"""M1 -- the mechanism-aware model (spec section 4).
+
+    A_t      = F_t * exp(g(x^A_t))                 latent available power
+    r_k(z)   = sigmoid(a_k + softplus(b)*depth + softplus(d)*runlength)
+    c_t      = sum_k w_k,t * s_k,t * r_k(z_t)       switched-off share
+    G_t      = A_t * (1 - c_t)                      observation model
+
+Trained end to end by pinball loss on the **observed** G. The quantiles of A are
+non-crossing by construction (cumulative softplus increments), and because
+(1 - c_t) >= 0 the quantiles of G are exactly (1 - c_t) times the quantiles of A.
+
+Why the latent head is multiplicative
+-------------------------------------
+The RQ1 kill test found the day-ahead over-forecast behaves as a roughly constant
+proportional haircut -- -9.1% overall against -9.3% in windy quarter-hours, with
+almost fully overlapping confidence intervals -- not as a fixed MW offset. A
+multiplicative head encodes that directly. The additive alternative
+A = F + g(x) is kept as an ablation (spec section 2 / Phase 4), not as the default.
+
+Why the response head is monotone
+---------------------------------
+Assumption I3: r_k is non-decreasing in price depth. `softplus` on the depth and
+run-length coefficients makes that structural rather than something the fit has to
+discover, so the recovered curve cannot be non-monotone noise.
+
+Feature discipline (hard rule 16 / spec section 4)
+--------------------------------------------------
+g sees the TSO day-ahead forecast and task-allowed wind only. **No calendar, no
+solar, no price, no theta, no s.** Temperature and pressure are admissible only as
+air density inside a power-curve transform, never as free features. Hour-of-day is
+admissible only on evidence from the I1 placebo and the E1 ablation at gamma > 0.
+This is enforced here by `LATENT_ALLOWED_FEATURES` and tested in
+`tests/test_leakage.py`, not left to reviewer discipline: price entering g is the one
+failure that would let A absorb curtailment and quietly invalidate the whole result.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Mapping, Sequence
+
+import numpy as np
+import torch
+from torch import nn
+
+from src.censoring.cohorts import CohortSet
+
+SEED = 42
+
+# The closed covariate set of the latent head. T1 may additionally use ERA5-derived
+# columns; T2 may use only D-1 vintages. Anything not listed here is a leak.
+LATENT_ALLOWED_FEATURES: dict[str, set[str]] = {
+    # Task T1 -- ex-post recovery. ERA5 allowed.
+    "T1": {"forecast_mw", "weather_ms", "weather_ms_era5", "air_density"},
+    # Task T2 -- day-ahead forecast. True D-1 vintages only.
+    "T2": {"forecast_mw", "weather_ms", "weather_ms_icon_d1", "air_density"},
+    # The semi-synthetic benchmark: one synthetic weather proxy, no task split.
+    "E1": {"forecast_mw", "weather_ms"},
+}
+
+# Columns that must never reach any model, in any task (spec section 10, v1.4).
+FORBIDDEN_FEATURES = {
+    "price_eur_mwh", "price", "hour_mean_price", "depth", "theta", "s", "exposure",
+    "id_wind_mw", "id_onshore_mw", "id_offshore_mw", "e_id_mw",   # intraday forecast
+    "act_wind_mw", "act_onshore_mw", "act_offshore_mw",            # same-QH actuals
+    "redispatch_mw", "redispatch_volume",                          # ex post
+    "market_value_published", "marktwert_published",               # released after month end
+}
+
+TAUS = np.round(np.arange(0.05, 0.96, 0.05), 2)
+
+
+def check_latent_features(names: Sequence[str], task: str = "E1") -> None:
+    """Raise if the latent head is being handed a feature it must not see.
+
+    Fails loudly rather than dropping the column (hard rule 12): a silently dropped
+    feature looks like a passing test.
+    """
+    if task not in LATENT_ALLOWED_FEATURES:
+        raise ValueError(f"Unknown task {task!r}; known: {sorted(LATENT_ALLOWED_FEATURES)}")
+    allowed = LATENT_ALLOWED_FEATURES[task]
+    forbidden = [n for n in names if n in FORBIDDEN_FEATURES]
+    if forbidden:
+        raise ValueError(
+            f"Forbidden feature(s) {forbidden} offered to the latent head. "
+            "These are leakage (spec section 10): price/theta/s would let A absorb "
+            "curtailment; intraday, redispatch and same-quarter-hour actuals are not "
+            "known at the forecast time."
+        )
+    outside = [n for n in names if n not in allowed]
+    if outside:
+        raise ValueError(
+            f"Feature(s) {outside} are outside the closed covariate set for task "
+            f"{task}: {sorted(allowed)} (hard rule 16)."
+        )
+
+
+# ------------------------------------------------------------------- building blocks
+
+
+class MonotoneQuantileHead(nn.Module):
+    """Non-crossing quantiles via cumulative softplus increments.
+
+    The network emits one free value (the lowest quantile) and n-1 raw increments;
+    softplus makes each increment positive, so the cumulative sum is increasing in
+    tau by construction. No post-hoc sorting, which would break the gradient.
+    """
+
+    def __init__(self, in_dim: int, hidden: int, n_quantiles: int,
+                 init_log_spread: float = 0.5):
+        super().__init__()
+        self.body = nn.Sequential(
+            nn.Linear(in_dim, hidden), nn.Tanh(),
+            nn.Linear(hidden, hidden), nn.Tanh(),
+        )
+        self.head = nn.Linear(hidden, n_quantiles)
+        # Initialise so that A starts at roughly F, with a modest spread. Without
+        # this the default bias of 0 makes every increment softplus(0) = 0.693, so
+        # the top quantile starts at exp(0.693 * (n-1)) * F -- about 270,000 * F at
+        # 19 quantiles. Nothing recovers from that in a few hundred full-batch steps,
+        # and the symptom is subtle: every learned method, the oracle included, scores
+        # far worse than the raw forecast.
+        with torch.no_grad():
+            nn.init.normal_(self.head.weight, std=0.01)
+            self.head.bias.zero_()
+            self.head.bias[0] = -init_log_spread / 2.0
+            step = init_log_spread / max(1, n_quantiles - 1)
+            self.head.bias[1:] = float(np.log(np.expm1(step)))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        raw = self.head(self.body(x))
+        first = raw[:, :1]
+        increments = nn.functional.softplus(raw[:, 1:])
+        return torch.cat([first, first + torch.cumsum(increments, dim=1)], dim=1)
+
+
+class ResponseHead(nn.Module):
+    """r_k(z) = sigmoid(a_k + softplus(b)*depth + softplus(d)*runlength).
+
+    `group_index` maps each legal cohort to a parameter group. In K-cohort mode that
+    is the identity, so every cohort has its own intercept. In two-cohort mode it maps
+    to the macro-cohort, which **pools the response parameters while leaving exposure
+    and depth per legal cohort** (rule 18). The slope parameters are shared in both
+    modes: a shared shape with per-group offsets, as spec section 4 specifies.
+    """
+
+    def __init__(self, group_index: np.ndarray):
+        super().__init__()
+        self.register_buffer("group_index", torch.as_tensor(group_index, dtype=torch.long))
+        n_groups = int(group_index.max()) + 1
+        self.intercept = nn.Parameter(torch.full((n_groups,), -1.0))
+        # softplus(x) = s  =>  x = log(exp(s) - 1). Start the depth slope near
+        # 0.03 per EUR/MWh (so a 25 EUR/MWh depth moves the logit by ~0.75) and the
+        # run-length slope near 0.01 per hour. softplus(-1) = 0.31 would have
+        # saturated the sigmoid at any realistic depth before the fit began.
+        self.depth_raw = nn.Parameter(torch.tensor(float(np.log(np.expm1(0.03)))))
+        self.runlen_raw = nn.Parameter(torch.tensor(float(np.log(np.expm1(0.01)))))
+
+    def forward(self, depth: torch.Tensor, runlength: torch.Tensor) -> torch.Tensor:
+        """depth, runlength: (K, T). Returns r of shape (K, T)."""
+        a = self.intercept[self.group_index][:, None]
+        b = nn.functional.softplus(self.depth_raw)
+        d = nn.functional.softplus(self.runlen_raw)
+        return torch.sigmoid(a + b * depth + d * runlength)
+
+    def curve(self, depth_grid: np.ndarray, runlength: float = 0.0) -> np.ndarray:
+        """r per group on a depth grid, for plotting and for the r-hat metric."""
+        with torch.no_grad():
+            g = torch.as_tensor(depth_grid, dtype=torch.float32)[None, :]
+            n_groups = self.intercept.shape[0]
+            a = self.intercept[:, None]
+            b = nn.functional.softplus(self.depth_raw)
+            d = nn.functional.softplus(self.runlen_raw)
+            r = torch.sigmoid(a + b * g.expand(n_groups, -1) + d * runlength)
+        return r.numpy()
+
+
+class MechanismAwareM1(nn.Module):
+    """The full observation model. `forward` returns quantiles of G, not of A."""
+
+    def __init__(self, in_dim: int, group_index: np.ndarray, hidden: int = 32,
+                 n_quantiles: int = len(TAUS)):
+        super().__init__()
+        self.latent = MonotoneQuantileHead(in_dim, hidden, n_quantiles)
+        self.response = ResponseHead(group_index)
+
+    def latent_quantiles(self, x: torch.Tensor, forecast: torch.Tensor) -> torch.Tensor:
+        """A quantiles: F * exp(g(x)). (T, n_quantiles)."""
+        return forecast[:, None] * torch.exp(self.latent(x))
+
+    def curtailed(self, shares: torch.Tensor, s: torch.Tensor, depth: torch.Tensor,
+                  runlength: torch.Tensor) -> torch.Tensor:
+        r = self.response(depth, runlength)
+        c = (shares[:, None] * s * r).sum(dim=0)
+        return c.clamp(0.0, 1.0)
+
+    def forward(self, x, forecast, shares, s, depth, runlength):
+        a_q = self.latent_quantiles(x, forecast)
+        c = self.curtailed(shares, s, depth, runlength)
+        return a_q * (1.0 - c)[:, None], a_q, c
+
+
+# ------------------------------------------------------------------------- training
+
+
+def pinball_loss(y: torch.Tensor, q_pred: torch.Tensor, taus: torch.Tensor) -> torch.Tensor:
+    """Mean pinball loss over quantiles. y: (T,), q_pred: (T, n_taus)."""
+    err = y[:, None] - q_pred
+    return torch.maximum(taus[None, :] * err, (taus[None, :] - 1.0) * err).mean()
+
+
+@dataclass
+class TrainConfig:
+    hidden: int = 32
+    lr: float = 0.01
+    max_epochs: int = 1000
+    patience: int = 60
+    val_fraction: float = 0.2
+    seed: int = SEED
+    verbose: bool = False
+
+
+def eventday_split(days: np.ndarray, val_fraction: float, seed: int = SEED):
+    """Train/validation split by whole Berlin-local event-day, never by quarter-hour.
+
+    Days are drawn at random rather than taken as a final block, because the synthetic
+    timeline is a reordering of the real one and a trailing block would be a seasonal
+    slice. On real data (Phase 3) the split is a rolling origin with a 7-day embargo
+    instead -- this function is for E1 only.
+    """
+    uniq = np.unique(days)
+    rng = np.random.default_rng(seed)
+    val_days = set(rng.choice(uniq, size=max(1, int(round(val_fraction * len(uniq)))),
+                              replace=False).tolist())
+    is_val = np.array([d in val_days for d in days], dtype=bool)
+    return ~is_val, is_val
+
+
+def standardise(x: np.ndarray, mask: np.ndarray) -> tuple[np.ndarray, float, float]:
+    mu = float(x[mask].mean())
+    sd = float(x[mask].std()) or 1.0
+    return (x - mu) / sd, mu, sd
+
+
+def build_latent_features(
+    data, task: str = "E1", use_weather: bool = True
+) -> tuple[np.ndarray, list[str]]:
+    """Assemble x^A and check it against the allow-list before anything is trained."""
+    names = ["forecast_mw"]
+    cols = [data.forecast_mw]
+    if use_weather and data.weather_ms is not None:
+        names.append("weather_ms")
+        cols.append(data.weather_ms)
+    check_latent_features(names, task=task)
+    return np.column_stack(cols).astype(np.float64), names
+
+
+def cohort_runlength_hours(data) -> np.ndarray:
+    """Run length in hours per cohort and quarter-hour, on the cohort's own clock.
+
+    An hour-clock cohort sees the length of the run of negative *hours*; a
+    quarter-hour-clock cohort sees the run of negative *quarter-hours*, expressed in
+    hours so the two are on one scale and share a coefficient.
+    """
+    from src.censoring.cohorts import QH_CLOCK, build_clock_features
+
+    clock = build_clock_features(data.ts_utc_ns, data.price_eur_mwh)
+    rows = []
+    for c in data.cohorts:
+        if c.clock == QH_CLOCK:
+            rows.append(clock.qh_run_length / 4.0)
+        else:
+            rows.append(clock.hour_run_length.astype(float))
+    return np.stack(rows)
+
+
+def fit_m1(
+    data,
+    train_cfg: TrainConfig | None = None,
+    task: str = "E1",
+    use_weather: bool = True,
+    two_cohort: bool = False,
+) -> dict:
+    """Fit M1 on the observed G. Returns the model and its predictions."""
+    cfg = train_cfg or TrainConfig()
+    torch.manual_seed(cfg.seed)
+    np.random.seed(cfg.seed)
+
+    x_raw, feature_names = build_latent_features(data, task=task, use_weather=use_weather)
+    runlen = cohort_runlength_hours(data)
+
+    train_mask, val_mask = eventday_split(data.berlin_date, cfg.val_fraction, cfg.seed)
+
+    x = np.empty_like(x_raw)
+    for j in range(x_raw.shape[1]):
+        x[:, j], _, _ = standardise(x_raw[:, j], train_mask)
+
+    group_index = (
+        data.cohorts.macro_index() if two_cohort else np.arange(len(data.cohorts))
+    )
+
+    t = lambda a: torch.as_tensor(a, dtype=torch.float32)  # noqa: E731
+    x_t, f_t = t(x), t(data.forecast_mw)
+    g_t = t(data.g_obs_mw)
+    shares_t, s_t, depth_t, rl_t = (
+        t(data.cohorts.shares), t(data.s), t(data.depth), t(runlen)
+    )
+    taus_t = t(TAUS)
+    tr, va = torch.as_tensor(train_mask), torch.as_tensor(val_mask)
+
+    model = MechanismAwareM1(x.shape[1], group_index, hidden=cfg.hidden)
+    opt = torch.optim.Adam(model.parameters(), lr=cfg.lr)
+
+    best_val, best_state, bad = float("inf"), None, 0
+    for epoch in range(cfg.max_epochs):
+        model.train()
+        opt.zero_grad()
+        g_q, _, _ = model(x_t, f_t, shares_t, s_t, depth_t, rl_t)
+        loss = pinball_loss(g_t[tr], g_q[tr], taus_t)
+        loss.backward()
+        opt.step()
+
+        model.eval()
+        with torch.no_grad():
+            g_q, _, _ = model(x_t, f_t, shares_t, s_t, depth_t, rl_t)
+            v = float(pinball_loss(g_t[va], g_q[va], taus_t))
+        if v < best_val - 1e-7:
+            best_val, bad = v, 0
+            best_state = {k: p.detach().clone() for k, p in model.state_dict().items()}
+        else:
+            bad += 1
+            if bad >= cfg.patience:
+                break
+        if cfg.verbose and epoch % 50 == 0:
+            print(f"  epoch {epoch:4d}  train {float(loss):.3f}  val {v:.3f}")
+
+    if best_state is not None:
+        model.load_state_dict(best_state)
+
+    model.eval()
+    with torch.no_grad():
+        g_q, a_q, c = model(x_t, f_t, shares_t, s_t, depth_t, rl_t)
+
+    median = int(np.argmin(np.abs(TAUS - 0.5)))
+    return {
+        "name": "M1",
+        "model": model,
+        "feature_names": feature_names,
+        "a_quantiles": a_q.numpy(),
+        "g_quantiles": g_q.numpy(),
+        "a_hat": a_q.numpy()[:, median],
+        "g_hat": g_q.numpy()[:, median],
+        "c_hat": c.numpy(),
+        "epochs_run": epoch + 1,
+        "best_val_pinball": best_val,
+        "two_cohort": two_cohort,
+        "group_index": group_index,
+    }
+
+
+def m1_response_curve(fit: dict, data, depth_grid: np.ndarray) -> np.ndarray:
+    """Capacity-weighted pooled r-hat on a depth grid.
+
+    r* is shared across cohorts in the generator, so the quantity comparable with it
+    -- and with B3's single pooled curve -- is the capacity-weighted mean of the
+    per-cohort curves.
+    """
+    per_group = fit["model"].response.curve(depth_grid)
+    group_index = fit["group_index"]
+    shares = data.cohorts.shares
+    out = np.zeros_like(depth_grid, dtype=float)
+    for i, w in enumerate(shares):
+        out += w * per_group[group_index[i]]
+    return out / shares.sum()

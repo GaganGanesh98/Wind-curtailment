@@ -1,0 +1,41 @@
+{
+  "step": {
+    "criterion_a_r_curve": false,
+    "int_abs_r_error_m1": 0.01497397840954363,
+    "int_abs_r_error_b3": 0.003125451839141556,
+    "criterion_b_mae_beats_all": false,
+    "beats": {
+      "B1": false,
+      "B2": false,
+      "B3": false,
+      "B4": false
+    },
+    "pass": false
+  },
+  "logistic": {
+    "criterion_a_r_curve": true,
+    "int_abs_r_error_m1": 0.0019399195464843103,
+    "int_abs_r_error_b3": 0.209132521167758,
+    "criterion_b_mae_beats_all": false,
+    "beats": {
+      "B1": false,
+      "B2": false,
+      "B3": false,
+      "B4": false
+    },
+    "pass": false
+  },
+  "half": {
+    "criterion_a_r_curve": false,
+    "int_abs_r_error_m1": 0.01830282141640783,
+    "int_abs_r_error_b3": 0.003794539903235234,
+    "criterion_b_mae_beats_all": false,
+    "beats": {
+      "B1": false,
+      "B2": false,
+      "B3": false,
+      "B4": false
+    },
+    "pass": false
+  }
+}
