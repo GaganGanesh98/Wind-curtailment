@@ -21,6 +21,7 @@ import numpy as np
 from src.censoring import baselines as bl
 from src.censoring.metrics import (
     integrated_response_error,
+    paired_abs_bias,
     paired_difference,
     score_method,
 )
@@ -35,7 +36,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 RESULTS_DIR = REPO_ROOT / "results"
 FIGURES_DIR = REPO_ROOT / "figures"
 
-DEPTH_GRID = np.linspace(0.0, 80.0, 161)
+# Depth grid for the r-hat metric, fixed across every cell so cells are comparable.
+# 0-150 EUR/MWh covers 98.4% of exposed cohort-quarter-hours (the old 0-80 grid
+# covered 95.9%); beyond it both curves are saturated and the integral adds nothing.
+DEPTH_GRID = np.linspace(0.0, 150.0, 301)
+METHODS = ["M1", "B0", "B1", "B2", "B3", "B4", "B5", "Proxy", "Oracle"]
+GATE_RIVALS = ["B1", "B2", "B3", "B4"]
 
 
 def run_cell(cfg: SyntheticConfig, train_cfg: TrainConfig | None = None,
@@ -77,7 +83,7 @@ def run_cell(cfg: SyntheticConfig, train_cfg: TrainConfig | None = None,
 
     rows = [
         score_method(fits[name], data, DEPTH_GRID, r_hat.get(name), r_true, TAUS)
-        for name in ["M1", "B0", "B1", "B2", "B3", "B4", "Oracle"]
+        for name in METHODS
     ]
     for row in rows:
         row.update(
@@ -86,49 +92,93 @@ def run_cell(cfg: SyntheticConfig, train_cfg: TrainConfig | None = None,
             fit_seconds=round(timings[row["method"]], 2),
         )
 
-    # Paired differences against M1, on the censored quarter-hours.
+    # Paired comparisons against M1 on the censored quarter-hours: absolute error
+    # for the MAE tests, signed error for the bias tests.
     censored = data.censored
     err = {n: np.abs(f["a_hat"] - data.a_true_mw) for n, f in fits.items()}
+    signed = {n: f["a_hat"] - data.a_true_mw for n, f in fits.items()}
     paired = {
         n: paired_difference(err["M1"], err[n], censored, data.berlin_date)
-        for n in ["B0", "B1", "B2", "B3", "B4", "Oracle"]
+        for n in METHODS if n != "M1"
+    }
+    paired_bias = {
+        n: paired_abs_bias(signed["M1"], signed[n], censored, data.berlin_date)
+        for n in METHODS if n != "M1"
     }
 
     return {
         "config": cfg, "data": data, "fits": fits, "rows": rows,
-        "timings": timings, "paired": paired,
+        "timings": timings, "paired": paired, "paired_bias": paired_bias,
         "r_true": r_true, "r_hat": r_hat,
     }
 
 
 def gate_check(result: dict) -> dict:
-    """The week-6 criterion of spec section 7, evaluated on this cell.
+    """The week-6 criterion of spec section 7 as revised in v1.6, on ONE cell.
 
-    Pass needs both, on the paired difference with a 95% event-day block-bootstrap CI
-    excluding zero:
-      (a) integrated |r-hat - r*| lower than B3's implied response;
-      (b) MAE of A-hat on censored quarter-hours lower than **each** of B1-B4.
+    The full criterion has three parts and spans several cells:
 
-    At a single seed this is a preview, not the gate: the real criterion pools the
-    five seeds. A single-seed pass does not establish the gate, and a single-seed
-    fail does not settle it either.
+      (a) gamma = 0, all three r* shapes: integrated |r-hat - r*| below B3's.
+      (b) gamma in {0.5, 1}: |bias of A-hat| AND the curtailed-energy error both
+          below each of B1-B4.
+      (c) gamma = 0: M1's MAE not significantly WORSE than B2 (the no-harm clause).
+
+    This function evaluates whichever parts apply to the cell it is given, and says
+    which it could not judge. All tests are paired with a 95% event-day block
+    bootstrap; the real criterion pools seeds 42-46, so a single seed is a preview
+    and settles nothing on its own.
+
+    On (b): the curtailed-energy error equals |bias| * n_censored * 0.25 exactly, so
+    the two conditions rank methods identically and (b) is in substance one test.
+    Both are reported because the gate asks for both.
     """
     by_method = {r["method"]: r for r in result["rows"]}
-    r_m1 = by_method["M1"]["int_abs_r_error"]
-    r_b3 = by_method["B3"]["int_abs_r_error"]
-    crit_a = bool(np.isfinite(r_m1) and np.isfinite(r_b3) and r_m1 < r_b3)
+    gamma = result["config"].gamma
+    out: dict = {"gamma": gamma, "r_shape": result["config"].r_shape}
 
-    beats = {n: result["paired"][n]["a_better"] for n in ["B1", "B2", "B3", "B4"]}
-    crit_b = all(beats.values())
+    # (a) response-curve recovery, judged at gamma = 0.
+    if gamma == 0.0:
+        r_m1 = by_method["M1"]["int_abs_r_error"]
+        r_b3 = by_method["B3"]["int_abs_r_error"]
+        out["a_applies"] = True
+        out["criterion_a"] = bool(np.isfinite(r_m1) and np.isfinite(r_b3) and r_m1 < r_b3)
+        out["int_abs_r_error_m1"] = r_m1
+        out["int_abs_r_error_b3"] = r_b3
+    else:
+        out["a_applies"] = False
+        out["criterion_a"] = None
 
-    return {
-        "criterion_a_r_curve": crit_a,
-        "int_abs_r_error_m1": r_m1,
-        "int_abs_r_error_b3": r_b3,
-        "criterion_b_mae_beats_all": crit_b,
-        "beats": beats,
-        "pass": bool(crit_a and crit_b),
-    }
+    # (b) bias and curtailed energy, judged at gamma > 0.
+    if gamma > 0.0:
+        beats_bias = {n: result["paired_bias"][n]["a_better"] for n in GATE_RIVALS}
+        energy = {n: by_method[n]["energy_abs_error_mwh"] for n in GATE_RIVALS}
+        m1_energy = by_method["M1"]["energy_abs_error_mwh"]
+        beats_energy = {n: bool(m1_energy < energy[n]) for n in GATE_RIVALS}
+        out["b_applies"] = True
+        out["criterion_b"] = bool(all(beats_bias.values()) and all(beats_energy.values()))
+        out["beats_bias"] = beats_bias
+        out["beats_energy"] = beats_energy
+        out["m1_energy_mwh"] = m1_energy
+    else:
+        out["b_applies"] = False
+        out["criterion_b"] = None
+
+    # (c) no-harm against deletion, judged at gamma = 0.
+    if gamma == 0.0:
+        p = result["paired"]["B2"]
+        worse = bool(np.isfinite(p["diff"]) and p["diff"] > 0 and p["significant"])
+        out["c_applies"] = True
+        out["criterion_c"] = not worse
+        out["m1_minus_b2_mae"] = p["diff"]
+        out["m1_minus_b2_ci"] = [p["lo"], p["hi"]]
+    else:
+        out["c_applies"] = False
+        out["criterion_c"] = None
+
+    judged = [out[k] for k in ("criterion_a", "criterion_b", "criterion_c")
+              if out[k] is not None]
+    out["pass_judged_parts"] = bool(judged) and all(judged)
+    return out
 
 
 def plot_response(result: dict, path: Path) -> None:
@@ -174,81 +224,21 @@ def write_rows(rows: list[dict], path: Path) -> None:
 
 
 def print_table(rows: list[dict]) -> None:
-    head = (f"{'method':<8}{'MAE_cens_MW':>12}{'95% CI':>22}{'rel':>8}"
-            f"{'bias_MW':>10}{'MAE_all':>10}{'cov80':>7}{'int|r-r*|':>11}{'s':>7}")
+    head = (f"{'method':<8}{'bias_MW':>9}{'95% CI':>20}{'energy_err':>12}{'rel':>7}"
+            f"{'MAE_cens':>10}{'MAE_rel':>8}{'cov80':>7}{'int|r-r*|':>11}{'s':>7}")
     print(head)
     print("-" * len(head))
     for r in rows:
-        ci = f"[{r['censored_mae_lo']:,.0f}, {r['censored_mae_hi']:,.0f}]"
+        ci = f"[{r['bias_lo']:,.0f}, {r['bias_hi']:,.0f}]"
         ire = (f"{r['int_abs_r_error']:.4f}"
                if np.isfinite(r["int_abs_r_error"]) else "-")
         cov = f"{r['coverage80_a']:.2f}" if np.isfinite(r["coverage80_a"]) else "-"
-        print(f"{r['method']:<8}{r['censored_mae_mw']:>12,.0f}{ci:>22}"
-              f"{r['censored_mae_rel']:>8.3f}{r['censored_bias_mw']:>10,.0f}"
-              f"{r['all_mae_mw']:>10,.0f}{cov:>7}{ire:>11}{r['fit_seconds']:>7.1f}")
-
-
-def run_gamma_diagnostic(train_cfg: TrainConfig, area: str) -> list[dict]:
-    """Does the week-6 criterion (b) failure move with gamma?
-
-    Criterion (b) is pre-registered at gamma = 0. That is the one setting in which
-    the censored sample is representative of the whole, so deleting it (B2) or
-    calibrating around it (B3) costs almost nothing and both land on the oracle.
-    This sweep records whether the baselines degrade as the confounding grows while
-    M1 holds -- which is the difference the structure is supposed to make.
-    """
-    rows = []
-    for gamma in (0.0, 0.5, 1.0):
-        cfg = SyntheticConfig(area=area, censoring_rate=0.20, gamma=gamma,
-                              r_shape="logistic", seed=42)
-        res = run_cell(cfg, train_cfg, verbose=False)
-        d = res["data"]
-        for r in res["rows"]:
-            p = res["paired"].get(r["method"], {})
-            rows.append({
-                **r,
-                "mean_forecast_censored_mw": float(d.forecast_mw[d.censored].mean()),
-                "mean_forecast_all_mw": float(d.forecast_mw.mean()),
-                "paired_diff_vs_m1_mw": p.get("diff", float("nan")),
-                "paired_lo": p.get("lo", float("nan")),
-                "paired_hi": p.get("hi", float("nan")),
-                "m1_significantly_better": p.get("a_better", ""),
-            })
-    return rows
-
-
-def run_b3_bin_sensitivity(train_cfg: TrainConfig, area: str) -> list[dict]:
-    """How much of criterion (a) is the bin count rather than the method?
-
-    B3's implied response is a binned ratio, and the bin count is a free choice I
-    made, not something Hirth fixes. If M1's advantage on the response curve
-    evaporates as B3 is given more bins, then criterion (a) measures my binning, not
-    the two-stage approach. This records it instead of leaving it implicit.
-    """
-    rows = []
-    for shape in ("logistic", "step", "half"):
-        cfg = SyntheticConfig(area=area, censoring_rate=0.20, gamma=0.0,
-                              r_shape=shape, seed=42)
-        data = generate(cfg)
-        r_true = true_response_curve(cfg, DEPTH_GRID)
-        m1 = fit_m1(data, train_cfg)
-        e_m1 = integrated_response_error(
-            m1_response_curve(m1, data, DEPTH_GRID), r_true, DEPTH_GRID
-        )
-        for n_bins in (4, 8, 16, 32, 64):
-            f = bl.fit_b3(data, train_cfg, n_bins=n_bins)
-            rows.append({
-                "r_shape": shape,
-                "n_bins": n_bins,
-                "int_abs_r_error_m1": round(e_m1, 5),
-                "int_abs_r_error_b3": round(
-                    integrated_response_error(
-                        bl.b3_response_curve(f, DEPTH_GRID), r_true, DEPTH_GRID
-                    ), 5),
-            })
-    for r in rows:
-        r["m1_better"] = r["int_abs_r_error_m1"] < r["int_abs_r_error_b3"]
-    return rows
+        rel = (f"{r['energy_rel_error']:.3f}"
+               if np.isfinite(r["energy_rel_error"]) else "-")
+        print(f"{r['method']:<8}{r['bias_mw']:>9,.0f}{ci:>20}"
+              f"{r['energy_abs_error_mwh']:>12,.0f}{rel:>7}"
+              f"{r['censored_mae_mw']:>10,.0f}{r['censored_mae_rel']:>8.3f}"
+              f"{cov:>7}{ire:>11}{r['fit_seconds']:>7.1f}")
 
 
 def main() -> None:
@@ -273,19 +263,26 @@ def main() -> None:
         res = run_cell(cfg, train_cfg)
         print()
         print_table(res["rows"])
-        print("\nPaired difference vs M1 on censored QHs "
-              "(negative = M1 better, event-day bootstrap):")
-        for name, p in res["paired"].items():
-            flag = "significant" if p["significant"] else "not significant"
-            print(f"  M1 - {name:<7} {p['diff']:>9,.0f} MW  "
-                  f"[{p['lo']:>8,.0f}, {p['hi']:>8,.0f}]  {flag}")
+        print("\nPaired vs M1 on censored QHs (negative = M1 better, event-day "
+              "bootstrap). |bias| is the headline, MAE is secondary:")
+        for name in METHODS:
+            if name == "M1":
+                continue
+            pb, pm = res["paired_bias"][name], res["paired"][name]
+            print(f"  M1 - {name:<7} |bias| {pb['diff']:>8,.1f} "
+                  f"[{pb['lo']:>8,.1f}, {pb['hi']:>8,.1f}] "
+                  f"{'SIG' if pb['significant'] else 'ns '}   "
+                  f"MAE {pm['diff']:>8,.1f} "
+                  f"[{pm['lo']:>8,.1f}, {pm['hi']:>8,.1f}] "
+                  f"{'SIG' if pm['significant'] else 'ns '}")
 
         gate = gate_check(res)
-        print(f"\nGate preview at this cell: "
-              f"{'PLAUSIBLE' if gate['pass'] else 'NOT MET'}")
-        print(f"  (a) int|r-r*|  M1 {gate['int_abs_r_error_m1']:.4f} "
-              f"vs B3 {gate['int_abs_r_error_b3']:.4f} -> {gate['criterion_a_r_curve']}")
-        print(f"  (b) beats B1-B4 on censored MAE -> {gate['beats']}")
+        print(f"\nGate parts judged at this cell (gamma {gate['gamma']}):")
+        print(f"  (a) int|r-r*| M1 {gate['int_abs_r_error_m1']:.4f} vs "
+              f"B3 {gate['int_abs_r_error_b3']:.4f} -> {gate['criterion_a']}")
+        print(f"  (b) not judged here (needs gamma > 0)")
+        print(f"  (c) no-harm vs B2: M1-B2 MAE {gate['m1_minus_b2_mae']:,.1f} MW "
+              f"-> {gate['criterion_c']}")
 
         write_rows(res["rows"], RESULTS_DIR / "10_smoke_run.csv")
         res["data"].save_config(RESULTS_DIR / "10_smoke_run_config.json")
@@ -294,27 +291,39 @@ def main() -> None:
               f"figures/10_response_smoke.png")
 
     if args.gate_preview:
-        print(f"\nGATE PREVIEW — censoring 10%, gamma 0, seed 42, all r* shapes\n")
+        print("\nGATE PREVIEW (spec v1.6) — 10% censoring, seed 42, "
+              "3 r* shapes x gamma {0, 0.5, 1}\n")
         all_rows, summary = [], {}
         for shape in ("step", "logistic", "half"):
-            cfg = SyntheticConfig(area=args.area, censoring_rate=0.10, gamma=0.0,
-                                  r_shape=shape, seed=42)
-            print(f"--- r* = {shape}")
-            res = run_cell(cfg, train_cfg)
-            print_table(res["rows"])
-            gate = gate_check(res)
-            summary[shape] = gate
-            print(f"  -> {'PLAUSIBLE' if gate['pass'] else 'NOT MET'}  "
-                  f"(a) {gate['criterion_a_r_curve']}  (b) {gate['beats']}\n")
-            all_rows.extend(res["rows"])
-            plot_response(res, FIGURES_DIR / f"10_response_gate_{shape}.png")
+            for gamma in (0.0, 0.5, 1.0):
+                cfg = SyntheticConfig(area=args.area, censoring_rate=0.10,
+                                      gamma=gamma, r_shape=shape, seed=42)
+                print(f"--- r* = {shape}, gamma = {gamma}")
+                res = run_cell(cfg, train_cfg, verbose=False)
+                print_table(res["rows"])
+                g = gate_check(res)
+                summary[f"{shape}_gamma{gamma}"] = g
+                parts = []
+                if g["a_applies"]:
+                    parts.append(f"(a) {g['criterion_a']}")
+                if g["b_applies"]:
+                    parts.append(f"(b) {g['criterion_b']} "
+                                 f"bias {g['beats_bias']} energy {g['beats_energy']}")
+                if g["c_applies"]:
+                    parts.append(f"(c) {g['criterion_c']}")
+                print("  -> " + "  ".join(parts) + "\n")
+                all_rows.extend(res["rows"])
+                if gamma == 0.0:
+                    plot_response(res, FIGURES_DIR / f"10_response_gate_{shape}.png")
 
         write_rows(all_rows, RESULTS_DIR / "10_gate_preview.csv")
         (RESULTS_DIR / "10_gate_preview_summary.json").write_text(
             json.dumps(summary, indent=2, default=str) + "\n", encoding="utf-8"
         )
-        every = all(g["pass"] for g in summary.values())
-        print(f"Week-6 criterion plausible at one seed for all three shapes: {every}")
+        a_all = all(v["criterion_a"] for v in summary.values() if v["a_applies"])
+        b_all = all(v["criterion_b"] for v in summary.values() if v["b_applies"])
+        c_all = all(v["criterion_c"] for v in summary.values() if v["c_applies"])
+        print(f"At one seed:  (a) {a_all}   (b) {b_all}   (c) {c_all}")
         print("Wrote results/10_gate_preview.csv, results/10_gate_preview_summary.json")
 
     if args.diagnostics:

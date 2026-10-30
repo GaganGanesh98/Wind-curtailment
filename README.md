@@ -5,7 +5,7 @@ German data.
 
 Gagan Ganesh, MSc AI/ML (Big Data), SRH Hochschule Berlin. Nov 2026 – Apr 2027.
 
-**Source of truth:** `docs/06_pivot_mechanism_aware_censoring.md` (spec v1.5). Where any
+**Source of truth:** `docs/06_pivot_mechanism_aware_censoring.md` (spec v1.6). Where any
 other document disagrees with the spec, the spec wins.
 
 ## Status

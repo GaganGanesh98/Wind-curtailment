@@ -1,8 +1,38 @@
 # 06 — Pivot: from forecast correction to mechanism-aware censored learning
 
-Version 1.5, 30 Oct 2026 (v1.4: commit 4b9dc8c; v1.3: commit 2538e56; v1.2: commit 980cd30;
-v1.1 and v1: not committed).
+Version 1.6, 30 Oct 2026 (v1.5: commit 8e3b708; v1.4: commit 4b9dc8c; v1.3: commit
+2538e56; v1.2: commit 980cd30; v1.1 and v1: not committed).
 Working spec, not proposal prose.
+
+**Changes in v1.6** (30 Oct 2026, after the one-seed E1 smoke run).
+
+> **Minute — gate revised 30 Oct 2026 after one-seed smoke run.** Reason: at γ = 0 the
+> censoring is random with respect to F, so deletion is unbiased by construction and
+> criterion (b) was unpassable as written. Decided by the student and recorded before
+> the revised gate was evaluated on any new data. The original v1.3 wording is kept in
+> §7 so the change is auditable.
+
+- **§7: the week-6 gate is rewritten** into three parts (a)–(c), separating what γ = 0
+  can test (recovery of the response curve, and no harm) from what only γ > 0 can test
+  (unbiased recovery of latent power). The original wording is retained for audit.
+- **§4: the response head is now a monotone piecewise-linear function** of depth below
+  θ, with non-negative increments on fixed knots. The sigmoid becomes an ablation.
+  Reason: the sigmoid cannot represent the step or the 50 %-compliance r*, so criterion
+  (a) failed for two of three shapes at *every* B3 bin count — a limit of the
+  functional form, not of the method. §4 already offered this alternative.
+- **§7: the headline E1 metrics are now the bias of Â on censored quarter-hours and the
+  curtailed-energy error**, with MAE retained as secondary. MAE cannot distinguish an
+  unbiased noisy estimate from a systematically wrong one, and the systematic direction
+  is the quantity of interest.
+- **§5: B3 bins on Hirth's own Fig. 12 profit-margin bands** — edges **UNRESOLVED**, so
+  equal-count quantile bins remain the flagged interim; the 4–64 bin sweep is kept as a
+  sensitivity result.
+- **§5: B5 and the price-free proxy baseline are implemented.** B5's estimate of A is
+  its **no-incentive counterfactual**, not its direct prediction.
+- **Training budget corrected.** Early stopping at patience 60 fired on the oracle at
+  ~195 epochs while M1 trained 400–560, which made M1 appear to beat the oracle. At
+  patience 250 the ordering is restored and M1's margins over B1–B4 grow. Early
+  stopping is a safety net, not a budget cap, and is identical across methods.
 
 **Changes in v1.5** (30 Oct 2026, after reading Wang & Wang 2026, Bruninx et al. 2026 and
 Hirth 2026 in full):
@@ -192,7 +222,7 @@ specifically is **UNRESOLVED**. Licence terms: to verify.
 ## 4. Method (the proposed model)
 
 - **Latent power head:** A_t = F_t · exp(g_θ(x_t^A)), with g a small MLP or spline model on non-price covariates. Multiplicative form follows the kill-test finding that the negative-QH error behaves as a ~9% proportional haircut. Price features are **excluded** from g, otherwise A can absorb curtailment.
-- **Response head:** r_k(z) = σ(a_k + softplus(b_k) · depth + softplus(d_k) · runlength), or a monotone piecewise-linear function with non-negative increments. Shared shape plus per-cohort offsets.
+- **Response head (v1.6):** a **monotone piecewise-linear** function of depth below θ — r_k(d, L) = clamp(base_k + Σ_j inc_j·ramp_j(d) + β·L, 0, 1), with base_k = σ(a_k), every inc_j ≥ 0 and β ≥ 0, on fixed knots (0, 1, 2.5, 5, 7.5, 10, 15, 20, 30, 40, 55, 75, 100, 150, 300 €/MWh). Monotone in depth and in run length by construction (I3). Shared increments plus per-cohort offsets. The knots are fixed once and are **not** chosen per r* shape. Beyond the last knot the response is flat in depth: extrapolating past the deepest prices ever observed would be inventing behaviour. The earlier sigmoid form σ(a_k + softplus(b)·depth + softplus(d)·runlength) is retained as an **ablation** — it can represent neither a step nor a constant partial compliance, which is why it was replaced (v1.6 minute).
 - **Probabilistic output:** predict quantiles of A (non-crossing via cumulative softplus increments). Because (1 − c_t) ≥ 0, quantiles of G are exactly (1 − c_t) × quantiles of A. Train with pinball loss on G over τ ∈ {0.05, 0.1, …, 0.95}.
 - **Training:** PyTorch on CPU, Adam, early stopping on event-day-blocked validation, seed 42. Uncertainty in r via event-day bootstrap refits (reuse `src/stats_boot.py` logic).
 - **Outputs:** A quantiles, curtailed MW, r_k curves with bands.
@@ -220,10 +250,37 @@ estimation choice. The contribution is the structure, so it holds for either var
 | B3 | Hirth's pipeline: fit A on QHs with price > 5 €/MWh only; curtailment = residual; implied response = binned ratio of residual to exposed potential by profit margin (Hirth 2026, §6.4) | two-stage safe-period calibration |
 | B4 | Wang & Wang's objective: pinball loss on non-exposed QHs; survival loss −log(1 − F̂(G)) treating G as a lower bound of A in **every** exposed QH | closest prior method: censored learning with a fixed, assumed censoring indicator |
 | B5 | Quantile LightGBM on G with price and cohort-exposure features | strong black-box price-aware model |
+| Proxy | Price-free: solar day-ahead forecast + day type, no price, no MaStR | the practitioner bar (`02_evidence_base.md` §B3) |
 | Oracle | Trained on true A | synthetic benchmark only |
 
 B5 is the one that keeps the comparison honest: it gets the same information as the
 proposed model, without the structure.
+
+**B5's estimate of A is the no-incentive counterfactual (v1.6).** Because B5 has the
+price and exposure features it can and does reproduce the censoring, so its direct
+prediction is a forecast of **G**. Scoring that against A_true would score it on a task
+it was not given — it lands about 3,400 MW low on censored quarter-hours for exactly
+that reason. Its A estimate is therefore the same quarter-hour re-predicted with the
+incentive switched off: price at the safe level, every exposure, depth and run length
+zero. That is what a practitioner holding this model would do, and it tests whether the
+black box learned the mechanism well enough to extrapolate off the incentive — which is
+what H4 claims it cannot.
+
+**B3 bin edges — UNRESOLVED (v1.6).** Hirth bins the pooled response on profit-margin
+bands (Fig. 12). Those edges are not recorded in this repo and the paper is not archived
+in `data/raw/`, so they cannot be used yet, and they must not be guessed: invented edges
+would make B3 a straw man and the comparison worthless. The interim is equal-count
+quantile bins, flagged on every B3 result as `bin_source = equal_count_quantile`. How
+much the choice is worth is recorded in `results/10_diag_b3_bins.csv`: on the logistic
+shape int|r̂ − r*| for B3 moves from 0.2507 at 4 bins to 0.0115 at 64. Settle by reading
+the edges off Hirth (2026) Fig. 12 or its underlying table.
+
+**The price-free proxy is only half-built in E1 (v1.6).** The solar day-ahead series is
+a Phase 3 ingest (SMARD `data_id` 125) and is not in the panel, so E1 runs the day-type
+half alone and the baseline is weaker there than the published 11 % result it stands
+for. Day type uses the **real** calendar date of each base quarter-hour, not the
+synthetic timeline, which is a relabelling. German public holidays are not applied: the
+calendar is federal-state specific and is not in the repo.
 
 ## 6. Research questions and hypotheses
 
@@ -240,7 +297,41 @@ proposed model, without the structure.
 ## 7. Experiments
 
 - **E1 — semi-synthetic benchmark (do first; needs no MaStR, no ERA5).** Base data: uncensored QHs (price > 5 €/MWh). Treat their actual G as true A. Inject synthetic censoring: choose QHs with probability rising in F_t (confounding strength γ ∈ {0, 0.5, 1}), assign synthetic negative prices and run lengths, compute s_k with the real rule logic and synthetic cohort shares, apply known r*_k (step, logistic, 50%-compliance). Grid: censoring rate {5, 10, 20, 30, 40}% × γ × r* shape × 5 seeds. Metrics: MAE of Â on censored QHs, integrated absolute error of r̂ vs r*, 80/90% coverage, MAE on G, **CRPS and PIT histograms for A** (true A is known here, so calibration of P(A|x) can be checked directly). Add a weather-proxy arm: synthetic censoring with and without the weather covariate, to measure how much it helps identification.
-- **Week-6 checkpoint — go/no-go on E1 (v1.3, due 31 Dec 2026).** Pass if, at censoring rates ≥ 10% with γ = 0, for each r* shape: (a) the integrated absolute error of r̂ vs r* is lower than that of B3's implied response, and (b) the MAE of Â on censored QHs is lower than each of B1–B4; both judged on the paired difference, with a 95% event-day block-bootstrap CI (pooled over the 5 seeds) that excludes zero. γ > 0 results are reported but are not part of the gate. On a fail: refit with the two-cohort / single-response structure and re-test by 15 Jan 2027; if that also fails, the structure is not identified on this design — stop and agree the next step with the supervisor before any further real-data work.
+- **Week-6 checkpoint — go/no-go on E1 (v1.6, due 31 Dec 2026).** Censoring rates ≥ 10%,
+  seeds 42–46. Every test is **paired**, with a 95% event-day block-bootstrap CI pooled
+  over the five seeds that excludes zero. Pass needs all three parts:
+
+  - **(a) Response recovery, at γ = 0, for each of the three r\* shapes.** The integrated
+    absolute error of r̂ against r\* is lower than B3's implied response.
+  - **(b) Latent-power recovery, at γ ∈ {0.5, 1}.** Both the **absolute bias of Â** on
+    censored quarter-hours and the **curtailed-energy error** are lower than each of
+    B1–B4.
+  - **(c) No harm, at γ = 0.** M1's MAE on censored quarter-hours is **not significantly
+    worse** than B2's.
+
+  On a fail: refit with the two-cohort / single-response structure and re-test by
+  15 Jan 2027; if that also fails, the structure is not identified on this design — stop
+  and agree the next step with the supervisor before any further real-data work.
+
+  Two things worth knowing when reading the result. First, the curtailed-energy error
+  equals |bias| × n_censored × 0.25 exactly, because the observed G cancels, so the two
+  conditions in (b) rank methods identically and (b) is in substance one test reported
+  two ways; the *relative* energy error is the part that adds information. Second, the
+  oracle is the floor, not a rival: if M1 ever scores better than the oracle, suspect
+  the optimisation budget before believing it (that is what happened on 30 Oct 2026).
+
+  **Superseded wording, kept for audit (v1.3, replaced 30 Oct 2026).** "Pass if, at
+  censoring rates ≥ 10% with γ = 0, for each r\* shape: (a) the integrated absolute error
+  of r̂ vs r\* is lower than that of B3's implied response, and (b) the MAE of Â on
+  censored QHs is lower than each of B1–B4 … γ > 0 results are reported but are not part
+  of the gate." **Why it was replaced:** at γ = 0 the censoring is random with respect to
+  F, so the retained sample is representative, deletion is unbiased by construction, and
+  B2/B3/B4 land on the oracle — the one-seed smoke run of 30 Oct 2026 measured M1 at
+  1,211 MW against B2 at 1,217 MW and the oracle at 1,216 MW. No method can beat the
+  oracle, so criterion (b) was unpassable as written, and it excluded the γ > 0 regime
+  where the structure does separate from the baselines. The revision was decided before
+  the revised gate was evaluated on any new data.
+
 - **E2 — real data (task T2 unless stated).** 15-minute panel, Oct 2025 – Oct 2026, four control areas plus DE. Rolling origin by month, 7-day embargo, event-day blocks. Metrics on negative QHs and overall: MAE, pinball, coverage, bias by price band; Diebold-Mariano with event-day block bootstrap. 50Hertz and Amprion are primary (cleanest signal in v3).
 - **E3 — regulatory transfer.** **Constraint found 29 Oct 2026:** only **199 negative QHs on 7 event-days** fall before 1 Jan 2026 in the 15-minute panel, so "train 2025, test 2026" is not feasible on that panel alone. Options: (a) add the hourly 2023 – Sep 2025 dataset (already planned in v1 §5.3), train before the 1 Jan 2026 staircase change and test after; (b) leave-one-cohort-out within 2026. Decide in month 2.
 - **E4 — plausibility (domain result, secondary; task T1, ERA5 allowed).** Compare r̂ with the statutory "should switch off" curve and with Hirth's (2026) Fig. 12 pooled wind response by profit margin, aggregating quarter-hour r̂ to hours ([VERIFY] whether his "wind" includes offshore); report the compliance gap per cohort. Hirth's Table A11 (2026: 32.8% curtailed in negative runs ≥ 6 h vs 6.0% in 1–3 h) is a second check on the run-length term.
@@ -298,11 +389,18 @@ All entries are **[VERIFY]** — check each at the publisher before citing, foll
 
 ## 11. Timeline (registered window: 16 or 26 weeks — [VERIFY] with the examination office; the registration form lists 26 weeks for full-time 4-semester study; registration after proposal approval)
 
+**Week-6 checkpoint (v1.6).** The gate is the three-part criterion in §7, due
+31 Dec 2026, judged on seeds 42–46 at censoring rates ≥ 10%. It was revised on
+30 Oct 2026 after the one-seed smoke run; the minute and the superseded wording are in
+the v1.6 changelog and in §7. The full grid is 5 rates × 3 γ × 3 r\* shapes × 5 seeds =
+225 cells, roughly 150 s per cell on the project machine (CPU, 4 threads), so about
+9 hours — it is a background run, not an interactive one.
+
 | When | Work | Deliverable |
 |---|---|---|
 | Nov wk 1–2 | Proposal (≥15 pages, own writing, incl. "Intended Contribution to Science"); literature table; 30-min topic defence with supervisor | approved proposal, registration |
 | Nov wk 3–4 | E1 generator, proposed model v0, baselines B0–B4 | first synthetic results |
-| Dec | E1 full grid; MaStR ingest and cohort shares; B5 | RQ2/RQ3 results; week-6 checkpoint (§7 criterion, 31 Dec) |
+| Dec | E1 full grid; MaStR ingest and cohort shares; B5 | RQ2/RQ3 results; week-6 checkpoint (§7 criterion as revised in v1.6, 31 Dec) |
 | Jan | E2 real data; hourly 2023–Sep 2025 ingest; E3 design decision | RQ4 results |
 | Feb | E3, E4, ablations; paper draft (8–12 pages) | paper draft |
 | Mar | Thesis writing (≥20,000 words) | full draft |

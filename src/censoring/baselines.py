@@ -32,6 +32,7 @@ import torch
 from torch import nn
 
 from src.censoring.model import (
+    FORBIDDEN_FEATURES,
     TAUS,
     MonotoneQuantileHead,
     TrainConfig,
@@ -81,13 +82,27 @@ def _fit_plain(
     task: str = "E1",
     use_weather: bool = True,
     survival_mask: np.ndarray | None = None,
+    extra_features: dict[str, np.ndarray] | None = None,
 ) -> dict:
-    """Shared trainer. `survival_mask` switches on the Wang & Wang objective."""
+    """Shared trainer. `survival_mask` switches on the Wang & Wang objective.
+
+    `extra_features` bypasses the latent-head allow-list ON PURPOSE, and only for
+    baselines. A baseline is allowed to use a feature M1 is forbidden (that is what
+    makes it a baseline), but nothing it is handed may be leakage, so the names are
+    still checked against FORBIDDEN_FEATURES.
+    """
     cfg = cfg or TrainConfig()
     torch.manual_seed(cfg.seed)
     np.random.seed(cfg.seed)
 
     x_raw, feature_names = build_latent_features(data, task=task, use_weather=use_weather)
+    if extra_features:
+        bad = [n for n in extra_features if n in FORBIDDEN_FEATURES]
+        if bad:
+            raise ValueError(f"Baseline feature(s) {bad} are leakage, not a baseline choice")
+        x_raw = np.column_stack([x_raw] + [np.asarray(v, dtype=float)
+                                           for v in extra_features.values()])
+        feature_names = feature_names + list(extra_features)
     train_mask, val_mask = eventday_split(data.berlin_date, cfg.val_fraction, cfg.seed)
     if train_subset is not None:
         train_mask = train_mask & train_subset
@@ -192,7 +207,22 @@ def fit_b2(data, cfg: TrainConfig | None = None, **kw) -> dict:
     return _fit_plain(data, data.g_obs_mw, "B2", train_subset=keep, cfg=cfg, **kw)
 
 
-def fit_b3(data, cfg: TrainConfig | None = None, n_bins: int = 8, **kw) -> dict:
+# Hirth (2026) Fig. 12 bins the pooled wind response on profit-margin bands. The
+# band edges are NOT recorded anywhere in this repo and the paper is not stored in
+# data/raw/, so they cannot be used yet.
+#
+# UNRESOLVED: read the exact edges off Hirth (2026, arXiv 2609.10053) Fig. 12 or its
+# underlying table and put them here as a tuple in EUR/MWh of profit margin. Until
+# then B3 uses equal-count quantile bins, which is a choice of mine and not Hirth's
+# -- results/10_diag_b3_bins.csv records how much that choice is worth
+# (int|r-r*| moves from 0.2507 at 4 bins to 0.0115 at 64 on the logistic shape).
+# Do NOT guess these: inventing band edges would make B3 a straw man and the
+# comparison worthless (hard rules 9 and 14).
+HIRTH_FIG12_MARGIN_EDGES_EUR_MWH: tuple[float, ...] | None = None
+
+
+def fit_b3(data, cfg: TrainConfig | None = None, n_bins: int = 8,
+           bin_edges: tuple[float, ...] | None = None, **kw) -> dict:
     """Hirth (2026): safe-window calibration, residual curtailment, binned response.
 
     Stage 1 -- fit the potential model on quarter-hours above +5 EUR/MWh only.
@@ -219,18 +249,29 @@ def fit_b3(data, cfg: TrainConfig | None = None, n_bins: int = 8, **kw) -> dict:
         margin = np.where(exposed_share > 0, weighted_depth / exposed_share, 0.0)
 
     use = exposed_potential > 0
+    edges = bin_edges if bin_edges is not None else HIRTH_FIG12_MARGIN_EDGES_EUR_MWH
     fit["implied_response"] = _binned_response(
-        margin[use], residual[use], exposed_potential[use], n_bins
+        margin[use], residual[use], exposed_potential[use], n_bins, edges=edges
     )
+    fit["bin_source"] = "hirth_fig12" if edges is not None else "equal_count_quantile"
     fit["residual_curtailment_mw"] = residual
     return fit
 
 
-def _binned_response(margin, residual, exposed_potential, n_bins: int) -> dict:
-    """Ratio of residual curtailment to exposed potential, in equal-count margin bins."""
+def _binned_response(margin, residual, exposed_potential, n_bins: int,
+                     edges: tuple[float, ...] | None = None) -> dict:
+    """Ratio of residual curtailment to exposed potential, binned on profit margin.
+
+    `edges` takes Hirth's own band edges when they are available; otherwise the bins
+    are equal-count quantiles, which is an interim choice and is flagged as such on
+    the returned fit.
+    """
     if margin.size == 0:
         return {"bin_centre": np.array([]), "r": np.array([]), "n": np.array([])}
-    edges = np.unique(np.quantile(margin, np.linspace(0, 1, n_bins + 1)))
+    if edges is not None:
+        edges = np.asarray(edges, dtype=float)
+    else:
+        edges = np.unique(np.quantile(margin, np.linspace(0, 1, n_bins + 1)))
     if edges.size < 2:
         edges = np.array([margin.min(), margin.max() + 1e-6])
     idx = np.clip(np.digitize(margin, edges[1:-1], right=False), 0, edges.size - 2)
@@ -276,11 +317,136 @@ def fit_oracle(data, cfg: TrainConfig | None = None, **kw) -> dict:
     return _fit_plain(data, data.a_true_mw, "Oracle", cfg=cfg, **kw)
 
 
+# ------------------------------------------------- B5 and the price-free proxy
+
+
+def _day_type(real_dates: np.ndarray) -> np.ndarray:
+    """0 = working day, 1 = Saturday, 2 = Sunday. Built on the REAL calendar date.
+
+    German public holidays are not applied: the holiday calendar is federal-state
+    specific and is not in the repo. That is a known understatement of the day-type
+    effect, flagged rather than guessed (hard rule 9).
+    """
+    import datetime as _dt
+
+    wd = np.array([_dt.date.fromisoformat(str(d)).weekday() for d in real_dates])
+    return np.where(wd == 5, 1, np.where(wd == 6, 2, 0))
+
+
+def fit_b5(data, cfg: TrainConfig | None = None, **kw) -> dict:
+    """Quantile LightGBM on G with price and cohort-exposure features.
+
+    The honest comparison. B5 gets exactly the information M1 gets -- the price, the
+    depth below each cohort's threshold, each cohort's exposure, the run lengths --
+    but as *features*, with no observation model tying them to a switched-off share.
+    If M1 cannot beat B5, the structure is not earning its place and the contribution
+    rests on identification and on r-hat alone.
+
+    LightGBM fits one model per quantile, so the quantiles can cross; they are sorted
+    afterwards. That is a real weakness of the baseline and is left in, because
+    sorting is what a practitioner would do.
+    """
+    import lightgbm as lgb
+
+    cfg = cfg or TrainConfig()
+    exposed_share = (data.cohorts.shares[:, None] * data.s).sum(axis=0)
+    weighted_depth = (data.cohorts.shares[:, None] * data.s * data.depth).sum(axis=0)
+    from src.censoring.model import cohort_runlength_hours
+
+    runlen = cohort_runlength_hours(data)
+
+    cols = [data.forecast_mw, data.price_eur_mwh, exposed_share, weighted_depth]
+    names = ["forecast_mw", "price_eur_mwh", "exposed_share", "weighted_depth"]
+    for i, c in enumerate(data.cohorts):
+        cols += [data.s[i], data.depth[i], runlen[i]]
+        names += [f"s_{c.cohort_id}", f"depth_{c.cohort_id}", f"runlen_{c.cohort_id}"]
+    if data.weather_ms is not None:
+        cols.append(data.weather_ms)
+        names.append("weather_ms")
+    x = np.column_stack(cols)
+
+    train_mask, val_mask = eventday_split(data.berlin_date, cfg.val_fraction, cfg.seed)
+    y = data.g_obs_mw
+
+    # The no-incentive counterfactual: same weather and forecast, price at the safe
+    # level, every exposure, depth and run length set to zero.
+    x_safe = x.copy()
+    for col, value in enumerate(names):
+        if value == "price_eur_mwh":
+            x_safe[:, col] = float(data.config.safe_price_floor) + 35.0
+        elif value.startswith(("s_", "depth_", "runlen_")) or value in (
+            "exposed_share", "weighted_depth"
+        ):
+            x_safe[:, col] = 0.0
+
+    preds = np.zeros((x.shape[0], len(TAUS)))
+    counterfactual = np.zeros_like(preds)
+    for j, tau in enumerate(TAUS):
+        m = lgb.LGBMRegressor(
+            objective="quantile", alpha=float(tau), n_estimators=400,
+            learning_rate=0.05, num_leaves=31, min_child_samples=40,
+            subsample=0.9, subsample_freq=1, colsample_bytree=0.9,
+            random_state=cfg.seed, n_jobs=1, verbose=-1,
+        )
+        # n_jobs=1 is not a performance choice. torch and scikit-learn each ship
+        # their own libomp.dylib, and on macOS LightGBM segfaults (exit 139) with
+        # n_jobs > 1 once torch has been imported. Single-threaded is the safe
+        # configuration; it costs seconds, and a segfault costs the run.
+        m.fit(x[train_mask], y[train_mask],
+              eval_X=x[val_mask], eval_y=y[val_mask],
+              callbacks=[lgb.early_stopping(50, verbose=False)])
+        preds[:, j] = m.predict(x)
+        counterfactual[:, j] = m.predict(x_safe)
+    preds = np.sort(preds, axis=1)              # LightGBM quantiles can cross
+    counterfactual = np.sort(counterfactual, axis=1)
+
+    median = int(np.argmin(np.abs(TAUS - 0.5)))
+    return {
+        "name": "B5",
+        # B5 predicts the OBSERVED G, and with the price and exposure features it can
+        # and does reproduce the censoring -- scoring its direct prediction against
+        # A_true would be scoring it on a task it was not asked to do, and it lands
+        # about 3,400 MW low on censored quarter-hours for exactly that reason.
+        # Its estimate of available power is therefore the counterfactual: the same
+        # quarter-hour with the incentive switched off (price at the safe level, every
+        # exposure and depth zero). That is what a practitioner with this model would
+        # actually do, and it tests whether the black box learned the mechanism well
+        # enough to extrapolate off the incentive -- which is what H4 claims it cannot.
+        "a_quantiles": counterfactual, "a_hat": counterfactual[:, median],
+        "g_quantiles": preds, "g_hat": preds[:, median],
+        "feature_names": names, "epochs_run": 0,
+    }
+
+
+def fit_proxy(data, cfg: TrainConfig | None = None, **kw) -> dict:
+    """Price-free proxy baseline: day type (+ solar day-ahead, when it exists).
+
+    `docs/02_evidence_base.md` section B3: a public-data practitioner project cut
+    negative-hour onshore error by 11% using the expected solar and the day type
+    alone, with no price and no plant register. Any claim for the mechanism-aware
+    model has to clear that, not only the raw TSO forecast.
+
+    Two caveats, both material for how the E1 number should be read:
+      1. **The solar day-ahead series is not in the panel yet** (SMARD data_id 125,
+         a Phase 3 ingest), so this is the day-type half of the proxy only. It is
+         therefore weaker here than the published result it is meant to represent.
+      2. Day type is built on the **real** calendar date each base quarter-hour came
+         from, not on the synthetic timeline, which is a relabelling.
+    """
+    day_type = _day_type(data.real_berlin_date).astype(float)
+    return _fit_plain(
+        data, data.g_obs_mw, "Proxy", cfg=cfg,
+        extra_features={"day_type": day_type}, **kw
+    )
+
+
 ALL_BASELINES = {
     "B0": fit_b0,
     "B1": fit_b1,
     "B2": fit_b2,
     "B3": fit_b3,
     "B4": fit_b4,
+    "B5": fit_b5,
+    "Proxy": fit_proxy,
     "Oracle": fit_oracle,
 }

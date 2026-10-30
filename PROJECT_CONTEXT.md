@@ -2,7 +2,7 @@
 
 Last updated: 30 Oct 2026. The repo `msc-thesis-wind-curtailment` is the source of truth.
 If this file and the repo disagree, the repo wins: `docs/06_pivot_mechanism_aware_censoring.md`
-(spec v1.5) is the current plan.
+(spec v1.6) is the current plan.
 
 ## Who and what
 
@@ -131,6 +131,29 @@ which plant groups are exposed.
 - TSO day-ahead forecasts are frozen before the auction (TenneT ~08:00, 50Hertz ~09:00 D−1), so they are price-blind.
 - Tail: 5 of 99 days carry 45–60% of the error, so evaluate by event-day blocks.
 
+## Phase 2 / E1 — first results and the gate revision (30 Oct 2026)
+
+- **Code built:** `src/censoring/` (cohorts, generator, M1, B0–B5, proxy, oracle,
+  metrics, runner) and `tests/` (79 tests). The full grid, M2 and the real-data phase
+  are not started.
+- **M1 recovers the response curve.** On the logistic r\* at 20% censoring, γ = 0,
+  int|r̂ − r\*| = 0.0061 against B3's 0.1939, and M1's bias on censored quarter-hours
+  is −21 MW against the oracle's −36 MW.
+- **The week-6 gate was revised to spec v1.6** after the one-seed smoke run. Minute:
+  *gate revised 30 Oct 2026 after one-seed smoke run; reason: at γ = 0 censoring is
+  random with respect to F, so deletion is unbiased by construction and criterion (b)
+  was unpassable as written.* The new three-part gate is in spec §7, with the
+  superseded v1.3 wording kept beside it for audit.
+- **Two implementation lessons worth not repeating.** A quantile head built from
+  cumulative `softplus` increments must have its bias initialised, or the top quantile
+  starts at exp(0.69 × n) times the forecast and every method including the oracle
+  scores worse than the raw forecast. And early stopping must be slack enough to be a
+  safety net rather than a budget cap: at patience 60 the oracle stopped at ~195 epochs
+  while M1 trained 400–560, which made M1 appear to beat the oracle.
+- **Still open before the full grid:** Hirth's Fig. 12 bin edges (UNRESOLVED — do not
+  guess them); the solar day-ahead series for the price-free proxy (Phase 3,
+  `data_id` 125); M2.
+
 ## Data and pipeline facts
 
 - **SMARD:** quarter-hour values are MWh per QH; multiply by 4 to get MW. `DE` is the exact sum of the four control areas. Filter IDs are read from the archived chart-configuration JSON.
@@ -160,7 +183,7 @@ which plant groups are exposed.
 
 ## Repo map
 
-- `docs/06_pivot_mechanism_aware_censoring.md` — the current plan (spec v1.5)
+- `docs/06_pivot_mechanism_aware_censoring.md` — the current plan (spec v1.6)
 - `docs/04_rq1_killtest_note_v3.md` — kill-test evidence
 - `docs/05_eeg_rule_table.md` — rule table
 - `docs/02_evidence_base.md` — evidence base

@@ -136,8 +136,12 @@ def test_response_head_has_no_access_to_the_latent_features():
     """The separation runs both ways: r sees depth and run length, nothing else."""
     data = _data()
     fit = fit_m1(data, TrainConfig(max_epochs=10))
-    params = dict(fit["model"].response.named_parameters())
-    assert set(params) == {"intercept", "depth_raw", "runlen_raw"}
+    params = set(dict(fit["model"].response.named_parameters()))
+    # Primary head (piecewise) since spec v1.6; the sigmoid ablation has depth_raw.
+    assert params in (
+        {"intercept", "increment_raw", "runlen_raw"},
+        {"intercept", "depth_raw", "runlen_raw"},
+    ), params
 
 
 def test_theta_provenance_is_recorded_so_it_can_be_checked_per_task():
@@ -158,3 +162,18 @@ def test_theta_provenance_is_recorded_so_it_can_be_checked_per_task():
         "theta was built from award values that are not the declared Phase 2 "
         "placeholders -- say where they came from before using them"
     )
+
+
+def test_baseline_extra_features_still_reject_leakage():
+    """A baseline may use a feature M1 cannot -- but never a leaking one.
+
+    The price-free proxy baseline legitimately uses day type, which rule 16 forbids
+    the latent head. That escape hatch must not become a hole: anything on the
+    forbidden list is still refused.
+    """
+    from src.censoring.baselines import _fit_plain
+
+    data = _data()
+    with pytest.raises(ValueError, match="are leakage, not a baseline choice"):
+        _fit_plain(data, data.g_obs_mw, "bad", cfg=TrainConfig(max_epochs=2),
+                   extra_features={"price_eur_mwh": data.price_eur_mwh})

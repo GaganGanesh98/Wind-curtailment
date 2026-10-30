@@ -134,8 +134,91 @@ class MonotoneQuantileHead(nn.Module):
         return torch.cat([first, first + torch.cumsum(increments, dim=1)], dim=1)
 
 
-class ResponseHead(nn.Module):
-    """r_k(z) = sigmoid(a_k + softplus(b)*depth + softplus(d)*runlength).
+# Knots for the piecewise-linear response head, in EUR/MWh of depth below theta.
+# Dense where the observations are -- the median exposed depth is about 1.4 EUR/MWh
+# and the 90th percentile about 34 -- and sparse out to 300, which covers 99% of
+# exposed cohort-quarter-hours. Fixed once, here, and never chosen per r* shape.
+RESPONSE_KNOTS = (0.0, 1.0, 2.5, 5.0, 7.5, 10.0, 15.0, 20.0, 30.0, 40.0,
+                  55.0, 75.0, 100.0, 150.0, 300.0)
+
+
+class PiecewiseLinearResponseHead(nn.Module):
+    """PRIMARY response head: monotone piecewise-linear in depth below theta.
+
+        r_k(d, L) = clamp( base_k + sum_j inc_j * ramp_j(d) + beta * L , 0, 1 )
+
+    with base_k = sigmoid(intercept_k) in (0, 1), every inc_j = softplus(.) >= 0,
+    beta = softplus(.) >= 0, and ramp_j(d) the fraction of segment j below d. Every
+    term is non-negative, so r is non-decreasing in depth and in run length by
+    construction (assumption I3), exactly as the sigmoid head was -- but without
+    imposing a sigmoid *shape*.
+
+    Why this is now primary (spec v1.6)
+    -----------------------------------
+    The sigmoid head could not represent two of the three r* shapes in the E1 design.
+    A step response needs r to jump to 1 immediately; a 50%-compliance response needs
+    r flat at 0.5 at every depth. A sigmoid in depth can do neither, so the week-6
+    criterion (a) failed for both shapes at *every* B3 bin count -- a failure of the
+    functional form, not of the method. This head represents all three:
+
+        step      base_k -> 1, all increments -> 0
+        half      base_k -> 0.5, all increments -> 0
+        logistic  increments trace the curve
+
+    Spec section 4 offered it as the alternative from the start ("or a monotone
+    piecewise-linear function with non-negative increments"). The sigmoid is retained
+    as `SigmoidResponseHead` for the ablation, so the choice stays testable rather
+    than asserted.
+
+    Beyond the last knot r is flat in depth. That is a real limitation, kept
+    deliberately: extrapolating a response beyond the deepest prices ever observed
+    would be inventing behaviour, and 99% of exposed cohort-quarter-hours sit inside
+    the knot range.
+    """
+
+    def __init__(self, group_index: np.ndarray, knots: Sequence[float] = RESPONSE_KNOTS):
+        super().__init__()
+        self.register_buffer("group_index", torch.as_tensor(group_index, dtype=torch.long))
+        knots_t = torch.as_tensor(knots, dtype=torch.float32)
+        self.register_buffer("knots", knots_t)
+        self.register_buffer("widths", (knots_t[1:] - knots_t[:-1]).clamp(min=1e-6))
+        n_groups = int(group_index.max()) + 1
+        # Start near r = 0.27 at depth 0 with small increments, so the fit begins in
+        # the interior of [0, 1] rather than saturated at either end.
+        self.intercept = nn.Parameter(torch.full((n_groups,), -1.0))
+        self.increment_raw = nn.Parameter(
+            torch.full((len(knots) - 1,), float(np.log(np.expm1(0.02))))
+        )
+        self.runlen_raw = nn.Parameter(torch.tensor(float(np.log(np.expm1(0.005)))))
+
+    def _ramps(self, depth: torch.Tensor) -> torch.Tensor:
+        """Fraction of each segment lying below `depth`. Shape (..., n_segments)."""
+        lo = self.knots[:-1]
+        return ((depth.unsqueeze(-1) - lo) / self.widths).clamp(0.0, 1.0)
+
+    def forward(self, depth: torch.Tensor, runlength: torch.Tensor) -> torch.Tensor:
+        base = torch.sigmoid(self.intercept[self.group_index])[:, None]
+        inc = nn.functional.softplus(self.increment_raw)
+        shape = (self._ramps(depth) * inc).sum(dim=-1)
+        beta = nn.functional.softplus(self.runlen_raw)
+        return (base + shape + beta * runlength).clamp(0.0, 1.0)
+
+    def curve(self, depth_grid: np.ndarray, runlength: float = 0.0) -> np.ndarray:
+        with torch.no_grad():
+            g = torch.as_tensor(depth_grid, dtype=torch.float32)
+            inc = nn.functional.softplus(self.increment_raw)
+            shape = (self._ramps(g) * inc).sum(dim=-1)[None, :]
+            base = torch.sigmoid(self.intercept)[:, None]
+            beta = nn.functional.softplus(self.runlen_raw)
+            r = (base + shape + beta * runlength).clamp(0.0, 1.0)
+        return r.numpy()
+
+
+class SigmoidResponseHead(nn.Module):
+    """ABLATION head: r_k(z) = sigmoid(a_k + softplus(b)*depth + softplus(d)*runlength).
+
+    Was the primary head until spec v1.6. Kept so the "does the functional form
+    matter?" ablation can be run rather than argued.
 
     `group_index` maps each legal cohort to a parameter group. In K-cohort mode that
     is the identity, so every cohort has its own intercept. In two-cohort mode it maps
@@ -175,14 +258,25 @@ class ResponseHead(nn.Module):
         return r.numpy()
 
 
+RESPONSE_HEADS = {
+    "piecewise": PiecewiseLinearResponseHead,   # primary (spec v1.6)
+    "sigmoid": SigmoidResponseHead,             # ablation
+}
+
+
 class MechanismAwareM1(nn.Module):
     """The full observation model. `forward` returns quantiles of G, not of A."""
 
     def __init__(self, in_dim: int, group_index: np.ndarray, hidden: int = 32,
-                 n_quantiles: int = len(TAUS)):
+                 n_quantiles: int = len(TAUS), response_head: str = "piecewise"):
         super().__init__()
+        if response_head not in RESPONSE_HEADS:
+            raise ValueError(
+                f"response_head {response_head!r} not in {sorted(RESPONSE_HEADS)}"
+            )
         self.latent = MonotoneQuantileHead(in_dim, hidden, n_quantiles)
-        self.response = ResponseHead(group_index)
+        self.response = RESPONSE_HEADS[response_head](group_index)
+        self.response_head_name = response_head
 
     def latent_quantiles(self, x: torch.Tensor, forecast: torch.Tensor) -> torch.Tensor:
         """A quantiles: F * exp(g(x)). (T, n_quantiles)."""
@@ -213,8 +307,14 @@ def pinball_loss(y: torch.Tensor, q_pred: torch.Tensor, taus: torch.Tensor) -> t
 class TrainConfig:
     hidden: int = 32
     lr: float = 0.01
-    max_epochs: int = 1000
-    patience: int = 60
+    # Budget, corrected 30 Oct 2026. At patience 60 early stopping fired on the
+    # oracle at ~195 epochs while M1 trained 400-560, and the oracle scored *worse*
+    # than M1 -- an artefact of unequal optimisation budget, not of information.
+    # With patience 250 the ordering is restored (oracle best, M1 second, difference
+    # not significant) and M1's wins over B1-B4 grow rather than shrink. Early
+    # stopping is now a safety net, not a budget cap, and is identical across methods.
+    max_epochs: int = 2000
+    patience: int = 250
     val_fraction: float = 0.2
     seed: int = SEED
     verbose: bool = False
@@ -280,6 +380,7 @@ def fit_m1(
     task: str = "E1",
     use_weather: bool = True,
     two_cohort: bool = False,
+    response_head: str = "piecewise",
 ) -> dict:
     """Fit M1 on the observed G. Returns the model and its predictions."""
     cfg = train_cfg or TrainConfig()
@@ -308,7 +409,8 @@ def fit_m1(
     taus_t = t(TAUS)
     tr, va = torch.as_tensor(train_mask), torch.as_tensor(val_mask)
 
-    model = MechanismAwareM1(x.shape[1], group_index, hidden=cfg.hidden)
+    model = MechanismAwareM1(x.shape[1], group_index, hidden=cfg.hidden,
+                             response_head=response_head)
     opt = torch.optim.Adam(model.parameters(), lr=cfg.lr)
 
     best_val, best_state, bad = float("inf"), None, 0
@@ -343,7 +445,8 @@ def fit_m1(
 
     median = int(np.argmin(np.abs(TAUS - 0.5)))
     return {
-        "name": "M1",
+        "name": "M1" if response_head == "piecewise" else f"M1-{response_head}",
+        "response_head": response_head,
         "model": model,
         "feature_names": feature_names,
         "a_quantiles": a_q.numpy(),
