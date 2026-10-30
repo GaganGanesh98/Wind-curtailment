@@ -2,7 +2,7 @@
 
 Last updated: 30 Oct 2026. The repo `msc-thesis-wind-curtailment` is the source of truth.
 If this file and the repo disagree, the repo wins: `docs/06_pivot_mechanism_aware_censoring.md`
-(spec v1.3, commit 2538e56) is the current plan.
+(spec v1.4) is the current plan.
 
 ## Who and what
 
@@ -160,7 +160,7 @@ which plant groups are exposed.
 
 ## Repo map
 
-- `docs/06_pivot_mechanism_aware_censoring.md` — the current plan (spec v1.3)
+- `docs/06_pivot_mechanism_aware_censoring.md` — the current plan (spec v1.4)
 - `docs/04_rq1_killtest_note_v3.md` — kill-test evidence
 - `docs/05_eeg_rule_table.md` — rule table
 - `docs/02_evidence_base.md` — evidence base

@@ -1,7 +1,14 @@
 # 06 — Pivot: from forecast correction to mechanism-aware censored learning
 
-Version 1.3, 30 Oct 2026 (v1.2: 30 Oct 2026, commit 980cd30; v1.1 and v1: not committed).
+Version 1.4, 30 Oct 2026 (v1.3: 30 Oct 2026, commit 2538e56; v1.2: commit 980cd30;
+v1.1 and v1: not committed).
 Working spec, not proposal prose.
+
+**Changes in v1.4** (30 Oct 2026):
+- §10: one consolidated leakage list — intraday forecast, redispatch, same-quarter-hour
+  actuals, and the **published monthly Netztransparenz market value**. The last of these
+  reaches the model through θ, not through a feature column, so the allow-list test must
+  also check **θ's provenance per task**, not only the feature set.
 
 **Changes in v1.3** (30 Oct 2026, review of v1.2):
 - §3: AW_k range → θ runs at three fixed settings (main = round volume-weighted average with
@@ -262,6 +269,14 @@ All entries are **[VERIFY]** — check each at the publisher before citing, foll
 - Week-6 checkpoint fails (§7) → two-cohort / single-response refit by 15 Jan 2027; if that fails too, supervisor decision before further real-data work. (v1.3)
 - Wang & Wang turns out to cover the price-driven case → keep the fleet-level, signal-driven and regulatory-transfer angle; tighten the claim.
 - **Leakage from weather (v1.1):** ERA5 or the stitched ICON archive used in T2 would leak post-D−1 information. Enforce this with per-task allow-lists and tests.
+- **Leakage, consolidated list (v1.4).** Never a T2 model input: the **intraday forecast**
+  (no published vintage), **redispatch** (ex post; an evaluation stratifier only), **same-QH
+  actuals**, **ERA5 and the stitched Historical Forecast archive**, and the **published
+  monthly Netztransparenz market value** (released after the month ends; T2 recomputes
+  MV_m month-to-date from SMARD data up to D−1, per §3). The first four are feature
+  columns and are caught by the per-task allow-list. The fifth is **not a feature** — it
+  enters through θ — so the test must assert the provenance of θ's inputs per task as
+  well, or the allow-list will pass while the model leaks.
 - **D−1 ICON vintages not available back to Oct 2025 for the DWD models** → T2 runs with F_t only; weather is used in T1 and the synthetic benchmark. Start archiving daily ICON-D2 runs now as a prospective set.
 - **EEG draft (watch item, v1.1).** A BMWE Referentenentwurf of 17 Jul 2026 for an EEG amendment is **not law**. The BEE statement of 22 Jul 2026 says it adds §10b(7), a mandatory price-dependent curtailment threshold in direct-marketing contracts, and changes §51, with details not given in the statement. If enacted inside the sample window, it would push compliance towards 1 and act as a natural experiment for E3; if after, it is a scope note. Re-check monthly. Do not cite "EEG 2027" until a law text exists.
 - Real-data gain over B5 is small → the method contribution still stands on E1 plus identification; report it honestly (the minimum passable thesis).

@@ -13,7 +13,7 @@ work. Changes since the first draft are marked **(new 30 Oct)**.*
 This is my MSc thesis repo. The thesis is pivoting from "correct the TSO wind forecast in
 negative-price quarter-hours" to **a learning method for labels censored by a
 price-triggered, partial fleet switch-off**. The full spec is
-`docs/06_pivot_mechanism_aware_censoring.md` (spec v1.3) — **read it completely before doing
+`docs/06_pivot_mechanism_aware_censoring.md` (spec v1.4) — **read it completely before doing
 anything**. Then read `README.md`, `docs/01_thesis_brief.md`,
 `docs/04_rq1_killtest_note_v3.md`, `docs/05_eeg_rule_table.md`,
 `data/reference/eeg_negative_price_rules.csv` and everything in `src/`.
@@ -55,6 +55,10 @@ anything**. Then read `README.md`, `docs/01_thesis_brief.md`,
    publishes no vintage, the TSOs refresh it repeatedly, and 08:00 on the delivery day is a
    stated *minimum* not a freeze time (Benutzerhandbuch 04/2026 §1.3). Treat it as a
    diagnostic and a reference point only, never a feature.
+   **(new 30 Oct, spec v1.4)** The **published monthly Netztransparenz market value** is on
+   this list too — it is released after the month ends. It is not a feature column: it
+   reaches the model through θ (rule 17), so the allow-list test will pass while the model
+   leaks. Assert the **provenance of θ's inputs per task** as well as the feature set.
 6. Price features, θ and s must not enter the latent-power head g (spec §4). Test this too.
 6a. Two tasks (spec §3a), each with its **own feature allow-list**. T2 (day-ahead
     forecast) must never see ERA5 or the Open-Meteo *Historical Forecast* (stitched)
@@ -158,7 +162,7 @@ anything**. Then read `README.md`, `docs/01_thesis_brief.md`,
 Create `src/censoring/` with:
 
 - `cohorts.py` — per quarter-hour and wind cohort, compute the switch-off threshold
-  θ_k,t and exposure s_k,t = 1[p_t < θ_k,t] (spec §3, v1.2).
+  θ_k,t and exposure s_k,t = 1[p_t < θ_k,t] (spec §3, v1.4).
   - θ = 0 when the cohort's §51 trigger is active: quarter-hour clock for the post-25 Feb
     2025 rule; hourly mean of the four QH prices plus consecutive-run length for older
     rules, including the 2023–2025 staircase (3 h → 2 h on 1 Jan 2026).
