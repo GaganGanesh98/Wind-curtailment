@@ -52,7 +52,7 @@ Queries used so far:
 | Figure | Status | Origin and derivation |
 |---|---|---|
 | Direct-marketed wind switches off at about **−65 €/MWh** | **Confirmed to origin** | Purkus, Gawel, Deissenroth, Nienhaus & Wassermann (2015), *Energy, Sustainability and Society* 5:12, doi 10.1186/s13705-015-0040-1, states that wind plants in direct marketing curtail at negative prices of approximately −65 €/MWh and cites this to reference [42]. Reference [42] is **Götz, Henkel, Lenck & Lenz (2014), "Negative Strompreise: Ursachen und Wirkungen", Energy Brainpool for Agora Energiewende, Berlin** — so Purkus is not the origin. The English edition of that study states that because much wind output is sold directly, production is shut in the negative price range starting around negative 65 euros/MWh. **Cite Götz et al. (2014) as the origin.** It reflects **2014** market premiums and the 2014 direct-marketing population; it is not a current number and must not be presented as one. The study's own scope was the 97 negative-price hours between December 2012 and December 2013. |
-| **"Kern et al. (2024)"** | **Withdrawn — no such paper** | This citation was produced in conversation on 29 Oct 2026 from a web-search summary, and the link attached to it duplicated Hirth's. It was never written into this document. No paper of that name could be found. Do not cite it. |
+| **"Kern et al. (2024)"** | **Corrected 30 Oct 2026 — exists as grey literature** | Earlier marked "no such paper" after a failed search, which broke the rule against asserting non-existence. Hirth (2026, arXiv 2609.10053, references) lists **Kern, T., Wasmeier, L., Bantelmann, P., Wendlinger, C. (2024). Negative electricity prices: How many renewable energy systems will run through? FfE, Munich, 21 October 2024**, cited as FfE (2024): from the plant register, 75% of solar and 67% of wind capacity hold a fixed tariff or an unrestricted premium. Consultant report, not peer-reviewed; not yet confirmed at ffe.de. Cite only if needed, as FfE (2024), after checking the source. |
 | Hirth 2025 volumes | Confirmed | 2.11 TWh wind, 1.03 TWh solar, Table A8 of arXiv 2609.10053. |
 
 ## B3. Grey literature and practitioner work (added 29 Oct 2026)
@@ -64,6 +64,14 @@ phenomenon, and because it sets the bar the thesis has to clear.
 |---|---|---|
 | Ricardo analysis via pv magazine, 8 May 2026 | DE-LU, April 2026, hourly: wind below the day-ahead forecast in **102 of 123** negative-price hours | The RQ1 *phenomenon* is already in the trade press. RQ1 is confirmatory, not the contribution. |
 | GitHub `michaelserikov/de-weather-to-power` (late 2026) | Hourly, Dec 2024 – Sep 2026, **1,041 negative-price hours**; TSO onshore over-forecast **≈1.5 GW**; adding expected solar and day type cuts the negative-hour onshore error by **11%** | A concrete, reproducible baseline. Any RQ2 claim must beat a price-free proxy model of this kind, not only the raw TSO forecast. Its stated limitations — no price forecast, no plant register — are the gap this thesis occupies. |
+
+## B4. Papers read in full, 30 Oct 2026
+
+| Paper | Verified record | What it does | Role in this thesis |
+|---|---|---|---|
+| Wang & Wang (2026), SSRN 7025858; shorter version 7195331 | Yang Wang, Haiyun Wang; 7195331 posted 28 Jul 2026; 7025858 date [VERIFY]; un-refereed preprints, identical data and tables | Turbine-level censored SCADA learning under **known** set-points; point / lower-bound / interval classes; pinball + survival loss; synthetic censoring 20–80%; release-event validation | Closest prior method; **B4**. Censoring indicator observed there, latent here |
+| Bruninx, van Binsbergen, Verstraeten, Nowé & Helsen (2026), arXiv 2602.13010v2 (13 Jul 2026) | VUB / NTNU; preprint, published version [VERIFY] | Probabilistic day-ahead forecasting, Belgian offshore; removes balancing set-points (2.3%) and, as a proxy for economic curtailment, hours below the 5th percentile of their ERA5 wind-speed bin (3.1–3.6%) | **B2 family** (heuristic deletion). Fig. 7 / Table VII: ERA5 input beats every single D−1 NWP — evidence for the T1/T2 leakage split |
+| Hirth (2026), arXiv 2609.10053, version of 8 Sep 2026 | Single author, Hertie School / Neon | Cohort-by-hour curtailment thresholds from 20 years of rules (84 cohorts); ERA5 potential calibrated on hours > 5 €/MWh; residual curtailment; **one pooled response curve by profit margin** (Fig. 12); bids × mean correction factor 1.226 | **B3**; source of the threshold construction (cite); external benchmark for E4. Correction to §B: Hirth *does* fit a response function, pooled and two-stage |
 
 ## C. Candidates considered and why they were dropped
 

@@ -13,7 +13,7 @@ work. Changes since the first draft are marked **(new 30 Oct)**.*
 This is my MSc thesis repo. The thesis is pivoting from "correct the TSO wind forecast in
 negative-price quarter-hours" to **a learning method for labels censored by a
 price-triggered, partial fleet switch-off**. The full spec is
-`docs/06_pivot_mechanism_aware_censoring.md` (spec v1.4) — **read it completely before doing
+`docs/06_pivot_mechanism_aware_censoring.md` (spec v1.5) — **read it completely before doing
 anything**. Then read `README.md`, `docs/01_thesis_brief.md`,
 `docs/04_rq1_killtest_note_v3.md`, `docs/05_eeg_rule_table.md`,
 `data/reference/eeg_negative_price_rules.csv` and everything in `src/`.
@@ -106,7 +106,9 @@ anything**. Then read `README.md`, `docs/01_thesis_brief.md`,
 17. **Recompute the T2 market value yourself.** Derive MV_m from SMARD data available by
     D−1 per EEG Anlage 1 Nr. 3.3.2 (month-to-date; on day 1 of a month, the previous
     month's value). The published Netztransparenz Marktwerte are **validation only** and
-    must never be a T2 input — they are released after the month ends.
+    must never be a T2 input — they are released after the month ends. **(v1.5)** If the
+    current EEG Anlage 1 puts cohorts commissioned and awarded from 2023 on the *annual*
+    value, recompute that one year-to-date by D−1 as well; spec §3 [VERIFY].
 18. **First check on real data: count the event-days on which the cohort exposure vectors
     s_k actually differ.** This is pre-registered: if the count is **< 10**, collapse to
     two cohorts (quarter-hour clock vs hourly clock) and say so in the results note.
@@ -120,15 +122,17 @@ anything**. Then read `README.md`, `docs/01_thesis_brief.md`,
     present", not the commissioning year. Report AW_k per cohort as a range — the rounded
     minimum and maximum award, widened by the correction-factor uncertainty. θ runs at
     three fixed settings: the **main run** uses the round's volume-weighted average award
-    with correction factor 1; two **sensitivity runs** use the low and high ends of the
-    range. Report r̂ under all three — a large spread is itself a finding about
+    multiplied by the mean site-correction factor **1.226** (Hirth 2026 Table A1, from
+    Fachagentur Wind und Solar 2025 — [VERIFY] at source; factor 1 understated AW by about
+    a fifth); two **sensitivity runs** use the low and high ends of the correction-factor
+    distribution and the bid range. Report r̂ under all three — a large spread is itself a finding about
     identification. Plants past the end of their EEG support period get θ = 0.
     **STOP** and report if the Zuschlagsnummer column is missing from the MaStR snapshot,
     or is filled for less than 50% of the **capacity** of wind units above 750 kW
-    commissioned on or after 1 Jan 2019, excluding pilot plants — the group that must have
+    commissioned 2019–2022 or of at least 1 MW from 2023, excluding pilot plants — the group that must have
     one. Older, small and transition plants legitimately lack it, so a fill rate over all
-    units means nothing. (750 kW is the EEG 2017 tender exemption; [VERIFY] the threshold
-    in EEG 2021/2023 before coding it.) Do not substitute commissioning year for it.
+    units means nothing. (750 kW is the EEG 2017 tender exemption; EEG 2023 sets it at 1 MW for wind,
+    per UBA.) Do not substitute commissioning year for it.
 
 ## Phase 1 — docs and structure
 
@@ -151,8 +155,10 @@ anything**. Then read `README.md`, `docs/01_thesis_brief.md`,
   Source and Year from spec §9 and `docs/02_evidence_base.md`, mark each row `[VERIFY]`,
   and leave Comments empty for me.
   **(new 30 Oct)** Koch et al. 2019 (Fraunhofer IEE) is already **confirmed** — mark it so,
-  not `[VERIFY]`. "Kern et al. (2024)" does not exist and must not reappear; see
-  `docs/02_evidence_base.md` §B2. The origin of the −65 €/MWh switch-off estimate is
+  not `[VERIFY]`. "Kern et al. (2024)" **does exist** as an FfE consultant report
+  (Kern, Wasmeier, Bantelmann & Wendlinger, FfE Munich, 21 Oct 2024), cited by Hirth (2026)
+  as FfE (2024); grey literature, [VERIFY] at ffe.de before any use — see
+  `docs/02_evidence_base.md` §B2 (corrected 30 Oct). The origin of the −65 €/MWh switch-off estimate is
   **Götz, Henkel, Lenck & Lenz (2014)**, not Purkus et al. (2015), which only cites it.
 
 **STOP** — show me the diff summary.
@@ -204,7 +210,11 @@ Create `src/censoring/` with:
     version before 25 Feb 2025 and in none after.
   - **§51a is compensation after the fact** (the support period is extended by the number of
     zeroed quarter-hours). It does **not** change the within-quarter-hour incentive, so it
-    must not enter θ. Note it as a second-order effect only.
+    must not enter θ. Note it as a second-order effect only. **(v1.5)** Hirth (2026, App.
+    A1) prices §51a as a discounted deferral (about −0.59σ for wind at 15 years, 6%). That
+    holds only if the extension depends on the plant's own output. [VERIFY] the §51a(1)
+    wording; if it counts zeroed quarter-hours regardless of output, θ = 0 stands and no
+    sensitivity arm is added.
   - **The §100(47) opt-in is invisible in public data.** A plant not otherwise subject to a
     reduction may volunteer for §51/§51a in exchange for +0.6 ct/kWh on its AW, and nothing
     public records who did. Treat it as a named modelling uncertainty and add a sensitivity
@@ -236,9 +246,12 @@ Create `src/censoring/` with:
   QHs, almost fully overlapping intervals), not as a fixed MW offset. That is direct
   empirical support for the multiplicative head; record it as the motivation, and keep an
   additive-head ablation to test it.
-- `baselines.py` — B1–B5 and the oracle, spec §5. B4: censored quantile regression that
-  treats observed G as a lower bound of A in incentive QHs (implement the check-function
-  version; document the exact formulation in the docstring).
+- `baselines.py` — B1–B5 and the oracle, spec §5. **(v1.5)** B3 = Hirth's
+  pipeline exactly (spec §5): A fitted on QHs > 5 €/MWh, curtailment = residual, implied
+  response = binned residual share by profit margin. B4 = Wang & Wang's objective: pinball
+  loss on non-exposed QHs plus survival loss −log(1 − F̂(G)) treating G as a lower bound in
+  every exposed QH, with F̂ from piecewise-linear interpolation of the predicted quantiles.
+  Document both formulations in the docstrings with the citations.
   **(new 30 Oct)** Add a **price-free proxy baseline**: solar day-ahead forecast + day type
   (working day / Saturday / Sunday / holiday), no price and no MaStR. A public-data
   practitioner project reached an 11% cut in negative-hour onshore error with these two
@@ -288,9 +301,9 @@ Start with a smoke run (one cell of the grid, one seed) and report runtime befor
   unresolved in `docs/05_eeg_rule_table.md` §6. Per rule 19, the cohort flag is the
   presence of a Zuschlagsnummer, not the commissioning year; **STOP** if that column is
   missing or filled for under 50% of the capacity of wind units above 750 kW commissioned
-  from 1 Jan 2019 (rule 19 — never a fill rate over all units). Where it is present,
+  2019–2022 or of at least 1 MW from 2023 (rule 19 — never a fill rate over all units). Where it is present,
   report AW_k as a min–max range widened by the correction-factor uncertainty, run θ at
-  the round average (main) and at both ends (sensitivity), and set θ = 0 for plants past
+  the round average × 1.226 (main) and at both ends (sensitivity), and set θ = 0 for plants past
   the end of their support period.
 - Market values (`src/ingest_market_values.py`): monthly wind onshore/offshore market
   values (Marktwerte) from Netztransparenz into `data/raw/netztransparenz/`. Award values

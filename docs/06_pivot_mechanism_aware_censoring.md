@@ -1,8 +1,20 @@
 # 06 — Pivot: from forecast correction to mechanism-aware censored learning
 
-Version 1.4, 30 Oct 2026 (v1.3: 30 Oct 2026, commit 2538e56; v1.2: commit 980cd30;
+Version 1.5, 30 Oct 2026 (v1.4: commit 4b9dc8c; v1.3: commit 2538e56; v1.2: commit 980cd30;
 v1.1 and v1: not committed).
 Working spec, not proposal prose.
+
+**Changes in v1.5** (30 Oct 2026, after reading Wang & Wang 2026, Bruninx et al. 2026 and
+Hirth 2026 in full):
+- §3: Wang & Wang verified and positioned; Hirth's description corrected (he *does* fit a
+  pooled response curve). The cohort-by-hour threshold construction is credited to Hirth.
+- §3: main-run AW uses the mean site-correction factor 1.226, not 1. Fill-rate group gains
+  the EEG 2023 1 MW tender threshold. MV reference period (monthly vs annual) flagged.
+- §3 I1: placebo split into 0–5 and > 5 €/MWh; intraday-driven curtailment named.
+- §5: B3 = Hirth's two-stage pipeline exactly; B4 = Wang & Wang's survival objective.
+- §6: H2 gains a falsifiable prediction for B4. §7 E4: Hirth Fig. 12 as external benchmark.
+- §8: contribution bullets 3 and 4 narrowed (Wang & Wang already ran synthetic censoring).
+- §9: new references logged.
 
 **Changes in v1.4** (30 Oct 2026):
 - §10: one consolidated leakage list — intraday forecast, redispatch, same-quarter-hour
@@ -119,8 +131,9 @@ Per quarter-hour t and control area:
 - θ_k,t — **switch-off price threshold** of cohort k at t: the price below which producing loses money. (v1.1)
   - θ = 0 when the cohort's §51 trigger is active (quarter-hour clock for post-25 Feb 2025 plants; hourly mean of the four QH prices plus run length for older rules), and for plants out of support.
   - Otherwise θ = −MP_k,t, the market premium: MP = max(0, AW_k − MV_m), with AW_k the cohort's award value (anzulegender Wert) and MV_m the monthly market value for wind. This covers cohorts §51 never touches (pre-2016 plants, rule R01), which still switch off below −MP.
-  - **AW_k is a range, not a point (v1.2).** The cohort flag is the presence of a Zuschlagsnummer in MaStR, not the commissioning year. AW_k is reported as the rounded minimum and maximum award for the cohort, widened by the correction-factor (Korrekturfaktor) uncertainty. θ is run at three fixed settings: the **main run** uses the round's volume-weighted average award with correction factor 1, and two **sensitivity runs** use the low and high ends of the range; r̂ is reported under all three (v1.3). The Zuschlagsnummer fill rate is measured by capacity on wind units > 750 kW commissioned on or after 1 Jan 2019 (excluding pilot plants), the group that must carry one; below 50% the join is treated as broken (v1.3). Plants past the end of their support period have θ = 0 regardless.
+  - **AW_k is a range, not a point (v1.2).** The cohort flag is the presence of a Zuschlagsnummer in MaStR, not the commissioning year. AW_k is reported as the rounded minimum and maximum award for the cohort, widened by the correction-factor (Korrekturfaktor) uncertainty. θ is run at three fixed settings: the **main run** uses the round's volume-weighted average award multiplied by the **mean site-correction factor 1.226** (Hirth 2026, Table A1, derived from the Fachagentur Wind und Solar (2025) distribution of awarded turbines — [VERIFY] at that source), and two **sensitivity runs** use the low and high ends of the correction-factor distribution and the round's bid range; r̂ is reported under all three (v1.3; factor corrected from 1 in v1.5, which understated AW by about a fifth). The Zuschlagsnummer fill rate is measured by capacity on wind units > 750 kW commissioned 2019–2022 and ≥ 1 MW from 2023 (the EEG 2023 tender threshold), excluding pilot plants, the group that must carry one; below 50% the join is treated as broken (v1.3). Plants past the end of their support period have θ = 0 regardless.
   - **MV_m is task-dependent (v1.2).** For T1 (ex-post) the published monthly Netztransparenz market value is correct. For T2 it is **leakage** — it is released after the month ends — so T2 recomputes MV_m from SMARD data available by D−1, month-to-date per EEG Anlage 1 Nr. 3.3.2, falling back to the previous month's value on day 1 of a month. The published series is then used only to validate the recomputation.
+  - **Reference period — [VERIFY] (v1.5).** EEG Anlage 1 Nr. 2 applies the *monthly* market value to plants commissioned or awarded before 1 Jan 2023; cohorts commissioned and awarded from 2023 may settle on the *annual* value (JW). If so, θ for those cohorts needs a year-to-date recomputation in T2. Hirth (2026, Table A1) lists the post-2023 onshore cohorts as monthly, which conflicts with that text; check the current Anlage 1 (amended 25 Feb 2025) before coding. Hirth also anchors his monthly reconstruction on the official annual value — that anchoring is leakage in T2.
   - θ is a **step function of the rules**, computed deterministically; nothing about it is learned. Its only uncertainty is the AW_k range above.
 - s_k,t = 1[p_t < θ_k,t] — exposure indicator (deterministic given prices, rules, AW and MV)
 - r_k(z_t) ∈ [0,1] — fraction of exposed cohort-k capacity that actually switches off, as a function of price depth and run length z_t (**unknown, learned**)
@@ -140,11 +153,12 @@ rule changes.
 **Why this is not covered by standard methods**
 - Tobit / censored quantile regression / survival models: treat G as a lower bound of A (right-censoring) with a fixed, known threshold, and throw away the information in how much was switched off. Here the censoring is a *fraction*, triggered by an exogenous signal, and the trigger rule differs between cohorts.
 - Deleting negative-price periods (Jørgensen et al., arXiv 2501.14805): discards exactly the regime of interest and leaves the model blind in it.
-- Safe-period calibration plus residual (Hirth, arXiv 2609.10053): ex post, with no learned response function, and it cannot separate model error from curtailment.
+- **Censored SCADA learning with known commands (Wang & Wang 2026, SSRN 7025858; shorter version 7195331; preprints).** Turbine-level, three Chinese farms: each sample is classified from command and status logs as a point, lower-bound or interval observation, and trained with pinball loss plus a survival loss −log(1 − F(L)). The censoring indicator and the bound are *observed*. Here neither is: price exposure does not mean curtailment, and the switched-off fraction is latent. They learn no response function. This is B4. (v1.5)
+- **Two-stage residual and pooled response (Hirth, arXiv 2609.10053, version of 8 Sep 2026).** Potential model calibrated on hours > 5 €/MWh with ERA5; curtailment = residual, attributed wholly to exposed capacity; then **one pooled response curve** of the residual share against profit margin (price minus cohort threshold), Fig. 12. Hirth states himself that curtailment is not observed by cohort and that potential-model error enters curtailment one-for-one. Ex post, hourly, no forecast. This is B3. The cohort-by-hour threshold construction (including episode length) is his and is cited as such; this thesis claims only the step of placing it inside a jointly estimated observation model. (v1.5 — v1.4 wrongly said Hirth fits no response function.)
 - Generic missing-not-at-random imputation: ignores the known structure (s, w), so it is weakly identified.
 
 **Identification assumptions (each needs a test in the thesis)**
-- I1 — no curtailment without incentive: if all s_k,t = 0 then c_t = 0. Test: placebo residuals on positive-price QHs. The current panel shows +0.9% to +2.8% relative bias at positive prices, so A must model the TSO forecast's own bias.
+- I1 — no curtailment without incentive: if all s_k,t = 0 then c_t = 0. Test: placebo residuals on positive-price QHs. The current panel shows +0.9% to +2.8% relative bias at positive prices, so A must model the TSO forecast's own bias. **Split the placebo (v1.5):** report it separately for 0–5 €/MWh and > 5 €/MWh, because Hirth (2026, Table 3) finds 4.2% wind curtailment already in the 0–5 band. Intraday-driven curtailment (positive day-ahead, negative intraday price; Hirth Table A9) also violates I1 and is unobservable at D−1: in T2 it is irreducible noise and is reported as such; in T1 it can be stratified if a public intraday price series exists ([VERIFY] Netztransparenz ID-AEP).
 - I2 — overlap: censored QHs have weather/forecast conditions that also occur uncensored. **Checked 29 Oct 2026 (DE):** positive-price QHs exist at every DA forecast level — 7,479 QHs at 20–30 GW, 3,284 at 30–40 GW, but only **948 QHs on 36 days above 40 GW**, where 253 negative QHs sit. Report results separately above 40 GW.
 - I3 — monotonicity: r_k is non-decreasing in price depth (constraint built into the model).
 - I4 — separability of cohorts: the two price clocks (quarter-hour vs hourly mean plus run length) create QHs where one cohort is exposed and another is not. This regulatory mismatch is the identifying variation. If K cohorts are not separable, collapse to two cohorts (QH-clock vs hourly-clock). **Pre-registered test (v1.2):** before any modelling on real data, count the Berlin-local event-days on which the cohort exposure vectors s_k actually differ. Fewer than **10** such days and the K-cohort model is abandoned for the two-cohort one, with the count reported either way. **The collapse pools the response, not the exposure (v1.3):** s_k,t is still computed per legal cohort (rule-table row) and aggregated into each macro-cohort's exposed capacity share; only r is shared within a macro-cohort. The staircase cohort sits at 2 h throughout 2026, but the hourly-clock cohorts still differ by run-length threshold (6 h, 4 h, 2 h), and that variation is kept.
@@ -203,8 +217,8 @@ estimation choice. The contribution is the structure, so it holds for either var
 | B0 | TSO day-ahead forecast as-is | status quo |
 | B1 | Model trained on observed G, all QHs, no price features | naive: learns curtailment as noise |
 | B2 | Same, negative-price QHs deleted from training | Jørgensen et al. deletion |
-| B3 | Fit A on safe QHs only; curtailment = residual | Hirth-style safe-period calibration |
-| B4 | Censored quantile regression ("pinball loss with censoring", Powell-type): G is a lower bound of A in exposed QHs | classical censoring / survival-style method with a fixed rule |
+| B3 | Hirth's pipeline: fit A on QHs with price > 5 €/MWh only; curtailment = residual; implied response = binned ratio of residual to exposed potential by profit margin (Hirth 2026, §6.4) | two-stage safe-period calibration |
+| B4 | Wang & Wang's objective: pinball loss on non-exposed QHs; survival loss −log(1 − F̂(G)) treating G as a lower bound of A in **every** exposed QH | closest prior method: censored learning with a fixed, assumed censoring indicator |
 | B5 | Quantile LightGBM on G with price and cohort-exposure features | strong black-box price-aware model |
 | Oracle | Trained on true A | synthetic benchmark only |
 
@@ -218,7 +232,7 @@ proposed model, without the structure.
 - **RQ3:** How do deletion, safe-period calibration and fixed-rule censoring degrade as the censoring rate and the weather–price confounding increase, compared with the proposed model?
 - **RQ4:** On real German data, does the structured model beat black-box price-aware learning (B5) in negative QHs, and does it transfer better across regulatory change?
 
-- **H2:** On the semi-synthetic benchmark, the proposed model's error on A in censored QHs is significantly lower than B1–B4 at censoring rates ≥ 10%, and its r̂ curve error is lower than B3's implied response.
+- **H2:** On the semi-synthetic benchmark, the proposed model's error on A in censored QHs is significantly lower than B1–B4 at censoring rates ≥ 10%, and its r̂ curve error is lower than B3's implied response. **B4 prediction (v1.5):** because B4 treats exposed-but-uncurtailed QHs as mere lower bounds and its survival term only pushes upward, B4 should *overestimate* A when compliance is low or partial; the gap to the proposed model should be largest under the 50%-compliance r*.
 - **H3:** On real data, the proposed model is at least as accurate as B5 in negative QHs (Diebold-Mariano, event-day block bootstrap) and better calibrated (interval coverage).
 - **H4:** When trained before a rule change and tested after, the proposed model degrades less than B5, because the rule change enters through s_k,t rather than having to be relearned.
 - Falsification: the H2/H3 tests are not significant, or the I1 placebo fails.
@@ -229,15 +243,15 @@ proposed model, without the structure.
 - **Week-6 checkpoint — go/no-go on E1 (v1.3, due 31 Dec 2026).** Pass if, at censoring rates ≥ 10% with γ = 0, for each r* shape: (a) the integrated absolute error of r̂ vs r* is lower than that of B3's implied response, and (b) the MAE of Â on censored QHs is lower than each of B1–B4; both judged on the paired difference, with a 95% event-day block-bootstrap CI (pooled over the 5 seeds) that excludes zero. γ > 0 results are reported but are not part of the gate. On a fail: refit with the two-cohort / single-response structure and re-test by 15 Jan 2027; if that also fails, the structure is not identified on this design — stop and agree the next step with the supervisor before any further real-data work.
 - **E2 — real data (task T2 unless stated).** 15-minute panel, Oct 2025 – Oct 2026, four control areas plus DE. Rolling origin by month, 7-day embargo, event-day blocks. Metrics on negative QHs and overall: MAE, pinball, coverage, bias by price band; Diebold-Mariano with event-day block bootstrap. 50Hertz and Amprion are primary (cleanest signal in v3).
 - **E3 — regulatory transfer.** **Constraint found 29 Oct 2026:** only **199 negative QHs on 7 event-days** fall before 1 Jan 2026 in the 15-minute panel, so "train 2025, test 2026" is not feasible on that panel alone. Options: (a) add the hourly 2023 – Sep 2025 dataset (already planned in v1 §5.3), train before the 1 Jan 2026 staircase change and test after; (b) leave-one-cohort-out within 2026. Decide in month 2.
-- **E4 — plausibility (domain result, secondary; task T1, ERA5 allowed).** Compare r̂ with the statutory "should switch off" curve and with Hirth's "about half switch off" finding; report the compliance gap per cohort.
+- **E4 — plausibility (domain result, secondary; task T1, ERA5 allowed).** Compare r̂ with the statutory "should switch off" curve and with Hirth's (2026) Fig. 12 pooled wind response by profit margin, aggregating quarter-hour r̂ to hours ([VERIFY] whether his "wind" includes offshore); report the compliance gap per cohort. Hirth's Table A11 (2026: 32.8% curtailed in negative runs ≥ 6 h vs 6.0% in 1–3 h) is a second check on the run-length term.
 - **E5 — stretch.** Same code on solar curtailment (SMARD solar series), to show the method is not wind-specific; or the pre-auction price-forecast variant from v1.
 
 ## 8. Intended contribution to science — draft bullets (rewrite in your own words)
 
 - A formal model of signal-driven partial censoring, where an observed external signal triggers a partial, heterogeneous response and a regulatory rule partly specifies the exposure.
 - A jointly trained, monotone-constrained model that separates latent available power from fleet response, with stated identification conditions and tests for them.
-- A semi-synthetic benchmark with known ground truth for learning from curtailment-censored generation data.
-- Evidence on how deletion, safe-period calibration and fixed-threshold censoring degrade as censoring becomes more frequent, a trend that matters as negative-price periods grow.
+- A semi-synthetic benchmark for **partial, signal-triggered, weather–price-confounded** censoring at fleet level (synthetic censoring with known truth as such is not new: Wang & Wang 2026 inject commands at 20–80%).
+- Evidence on how safe-period calibration (Hirth) and fixed-indicator censoring (Wang & Wang) degrade when censoring is partial and latent, and as weather–price confounding γ grows (Wang & Wang already show command-as-label and deletion degrading with the censoring rate).
 
 Iliev rule: do not write "first" or "no one has done this". Say what recent work does and
 does not cover, with citations.
@@ -248,7 +262,7 @@ All entries are **[VERIFY]** — check each at the publisher before citing, foll
 `02_evidence_base.md` practice. Log each in the literature table format from
 `srh-guidelines/06_instructions_to_students_for_their_thesis.txt` (D).
 
-- **Closest prior work — read first:** Wang & Wang (2026), SSRN 7025858 and 7195331. Reported to treat curtailed SCADA as censored observations of latent turbine available power, for grid set-point curtailment at three Chinese farms. Source: the 29 Oct research report, abstracts only, **not yet verified**. Differentiate on: price signal rather than known command, fleet level, learned heterogeneous response, regulatory-clock identification.
+- **Closest prior work — read first:** Wang & Wang (2026), SSRN 7025858 and 7195331. Reported to treat curtailed SCADA as censored observations of latent turbine available power, for grid set-point curtailment at three Chinese farms. **Verified 30 Oct 2026** from the full PDFs and SSRN records: authors Yang Wang and Haiyun Wang; 7195331 posted 28 Jul 2026 (35 pp.); 7025858 posting date [VERIFY] on SSRN. Both are un-refereed preprints of one study (identical data and tables): cite 7025858 as primary. See §3 for the positioning. Differentiate on: price signal rather than known command, fleet level, learned heterogeneous response, regulatory-clock identification.
 - Tobin (1958), Econometrica — the censored regression model.
 - Koenker & Bassett (1978), Econometrica — regression quantiles.
 - Powell (1986), Journal of Econometrics — censored regression quantiles.
@@ -260,6 +274,7 @@ All entries are **[VERIFY]** — check each at the publisher before citing, foll
 - Hersbach et al. (2020), QJRMS — ERA5 reanalysis.
 - Open-Meteo Historical Forecast and Previous Runs APIs (data source; cite per their licence page).
 - Already in the evidence base: Hirth (2026), Jørgensen et al. (2025), Koch et al. (2019), Shamim et al. (2026).
+- **Added v1.5 (all [VERIFY]):** Bruninx, van Binsbergen, Verstraeten, Nowé & Helsen (2026), arXiv 2602.13010v2 — deletion via ERA5 wind-bin percentile filter (B2 family); also shows ERA5 input beating every single D−1 NWP, evidence for the T1/T2 split. Dahl & Croonenbroeck (2014), *Energy* 73; Messner et al. (2014), *Wind Energy* 17 — censored wind-power forecasting (B4 lineage). From Hirth's list: Purkus et al. (2015); Frondel et al. (2022), *Energy Economics* 109; Van Steenberghe & Ovaere (2025), Ghent WP 25/1124; López Prol & Zilberman (2023), *Energy Economics* 126; Staffell & Pfenninger (2016), *Energy* 114; Fachagentur Wind und Solar (2025), Gütefaktoren; Hirth (2026) companion paper on the potential series (DOI forthcoming).
 
 ## 10. Risks and fall-backs
 

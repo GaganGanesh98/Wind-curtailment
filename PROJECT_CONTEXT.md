@@ -2,7 +2,7 @@
 
 Last updated: 30 Oct 2026. The repo `msc-thesis-wind-curtailment` is the source of truth.
 If this file and the repo disagree, the repo wins: `docs/06_pivot_mechanism_aware_censoring.md`
-(spec v1.4) is the current plan.
+(spec v1.5) is the current plan.
 
 ## Who and what
 
@@ -143,16 +143,16 @@ which plant groups are exposed.
 
 ## Literature anchors (verify before citing)
 
-- **Closest prior work — read first:** Wang & Wang (2026), SSRN 7025858 and 7195331. Censored SCADA under grid commands, Chinese farms. Unverified.
-- **Domain:** Hirth (2026); Jørgensen, Møller, Nystrup & Madsen (2025); Koch et al. (2019, Fraunhofer IEE, grid curtailment); Shamim et al. (2026, redispatch forecasting); Götz et al. (2014, Agora — origin of the "−65 €/MWh" figure).
+- **Closest prior work — read first:** Wang & Wang (2026), SSRN 7025858 (primary) and 7195331, preprints of one study. Censored SCADA under known grid commands, three Chinese farms. **Verified 30 Oct** — the censoring indicator is observed there and latent here; their objective is B4.
+- **Domain:** Hirth (2026); Jørgensen, Møller, Nystrup & Madsen (2025); Koch et al. (2019, Fraunhofer IEE, grid curtailment); Shamim et al. (2026, redispatch forecasting); Götz et al. (2014, Agora — origin of the "−65 €/MWh" figure; Purkus et al. 2015 and Hirth 2026 cite it secondhand).
 - **Method side:** Tobin (1958); Koenker & Bassett (1978); Powell (1986); Portnoy (2003); Dempster, Laird & Rubin (1977); Little & Rubin (missing data); Lee et al. (2018, DeepHit); Gneiting & Raftery (2007); Hersbach et al. (2020, ERA5).
-- **Withdrawn:** "Kern et al. (2024)" does not exist — never cite it.
+- **Corrected 30 Oct:** "Kern et al. (2024)" exists — an FfE consultant report (Kern, Wasmeier, Bantelmann & Wendlinger, 21 Oct 2024), cited by Hirth (2026) as FfE (2024). Grey literature; verify at ffe.de before any use. The earlier "does not exist" entry broke our own rule.
 - **Do not cite "EEG 2027":** only a ministry draft exists (17 Jul 2026), not law. It proposes a mandatory price threshold for curtailment in direct-marketing contracts (§10b(7)) and changes to §51. Watch item.
 
 ## Open items
 
 - Choose and confirm the first and second supervisors; write the proposal and do the 30-minute defence; register.
-- Verify Wang & Wang; run Google Scholar and IEEE Xplore novelty checks.
+- Wang & Wang verified 30 Oct; still to run: Google Scholar and IEEE Xplore novelty checks.
 - MaStR link to support status and award values; monthly market values; ERA5 access (Copernicus key).
 - Earliest DWD ICON date in the Open-Meteo Previous Runs API; the Open-Meteo licence.
 - Questions for the TSOs: Amprion freeze time; intraday vintage; whether the day-ahead wind series is ever revised.
@@ -160,7 +160,7 @@ which plant groups are exposed.
 
 ## Repo map
 
-- `docs/06_pivot_mechanism_aware_censoring.md` — the current plan (spec v1.4)
+- `docs/06_pivot_mechanism_aware_censoring.md` — the current plan (spec v1.5)
 - `docs/04_rq1_killtest_note_v3.md` — kill-test evidence
 - `docs/05_eeg_rule_table.md` — rule table
 - `docs/02_evidence_base.md` — evidence base
