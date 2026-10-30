@@ -266,7 +266,7 @@ All entries are **[VERIFY]** — check each at the publisher before citing, foll
 - **EEG draft (watch item, v1.1).** A BMWE Referentenentwurf of 17 Jul 2026 for an EEG amendment is **not law**. The BEE statement of 22 Jul 2026 says it adds §10b(7), a mandatory price-dependent curtailment threshold in direct-marketing contracts, and changes §51, with details not given in the statement. If enacted inside the sample window, it would push compliance towards 1 and act as a natural experiment for E3; if after, it is a scope note. Re-check monthly. Do not cite "EEG 2027" until a law text exists.
 - Real-data gain over B5 is small → the method contribution still stands on E1 plus identification; report it honestly (the minimum passable thesis).
 
-## 11. Timeline (16-week registered window; registration after proposal approval)
+## 11. Timeline (registered window: 16 or 26 weeks — [VERIFY] with the examination office; the registration form lists 26 weeks for full-time 4-semester study; registration after proposal approval)
 
 | When | Work | Deliverable |
 |---|---|---|
