@@ -1,7 +1,18 @@
 # 06 — Pivot: from forecast correction to mechanism-aware censored learning
 
-Version 1.2, 30 Oct 2026 (v1.1: 30 Oct 2026; v1: 29 Oct 2026; neither committed).
+Version 1.3, 30 Oct 2026 (v1.2: 30 Oct 2026, commit 980cd30; v1.1 and v1: not committed).
 Working spec, not proposal prose.
+
+**Changes in v1.3** (30 Oct 2026, review of v1.2):
+- §3: AW_k range → θ runs at three fixed settings (main = round volume-weighted average with
+  correction factor 1; sensitivity = low and high ends). The Zuschlagsnummer fill-rate
+  test is measured by capacity on wind units > 750 kW commissioned from 2019, not over all
+  units.
+- §3 I4: the two-cohort fallback **pools the response r, not the exposure s**; the
+  run-length thresholds (6 h, 4 h, 2 h) remain identifying variation.
+- §7 and §11: the week-6 checkpoint gets a pass/fail criterion (E1, due 31 Dec 2026).
+- §10: the MaStR fall-back no longer imputes AW from commissioning year (contradicted
+  rule 19); new risk line for a failed checkpoint.
 
 **Changes in v1.2** (design decisions fixed before implementation, 30 Oct 2026). These
 four are settled and are not to be reopened during implementation; they appear as hard
@@ -101,7 +112,7 @@ Per quarter-hour t and control area:
 - θ_k,t — **switch-off price threshold** of cohort k at t: the price below which producing loses money. (v1.1)
   - θ = 0 when the cohort's §51 trigger is active (quarter-hour clock for post-25 Feb 2025 plants; hourly mean of the four QH prices plus run length for older rules), and for plants out of support.
   - Otherwise θ = −MP_k,t, the market premium: MP = max(0, AW_k − MV_m), with AW_k the cohort's award value (anzulegender Wert) and MV_m the monthly market value for wind. This covers cohorts §51 never touches (pre-2016 plants, rule R01), which still switch off below −MP.
-  - **AW_k is a range, not a point (v1.2).** The cohort flag is the presence of a Zuschlagsnummer in MaStR, not the commissioning year. AW_k is reported as the rounded minimum and maximum award for the cohort, widened by the correction-factor (Korrekturfaktor) uncertainty, and that range is carried through to θ and into the results as a band. Plants past the end of their support period have θ = 0 regardless.
+  - **AW_k is a range, not a point (v1.2).** The cohort flag is the presence of a Zuschlagsnummer in MaStR, not the commissioning year. AW_k is reported as the rounded minimum and maximum award for the cohort, widened by the correction-factor (Korrekturfaktor) uncertainty. θ is run at three fixed settings: the **main run** uses the round's volume-weighted average award with correction factor 1, and two **sensitivity runs** use the low and high ends of the range; r̂ is reported under all three (v1.3). The Zuschlagsnummer fill rate is measured by capacity on wind units > 750 kW commissioned on or after 1 Jan 2019 (excluding pilot plants), the group that must carry one; below 50% the join is treated as broken (v1.3). Plants past the end of their support period have θ = 0 regardless.
   - **MV_m is task-dependent (v1.2).** For T1 (ex-post) the published monthly Netztransparenz market value is correct. For T2 it is **leakage** — it is released after the month ends — so T2 recomputes MV_m from SMARD data available by D−1, month-to-date per EEG Anlage 1 Nr. 3.3.2, falling back to the previous month's value on day 1 of a month. The published series is then used only to validate the recomputation.
   - θ is a **step function of the rules**, computed deterministically; nothing about it is learned. Its only uncertainty is the AW_k range above.
 - s_k,t = 1[p_t < θ_k,t] — exposure indicator (deterministic given prices, rules, AW and MV)
@@ -129,7 +140,7 @@ rule changes.
 - I1 — no curtailment without incentive: if all s_k,t = 0 then c_t = 0. Test: placebo residuals on positive-price QHs. The current panel shows +0.9% to +2.8% relative bias at positive prices, so A must model the TSO forecast's own bias.
 - I2 — overlap: censored QHs have weather/forecast conditions that also occur uncensored. **Checked 29 Oct 2026 (DE):** positive-price QHs exist at every DA forecast level — 7,479 QHs at 20–30 GW, 3,284 at 30–40 GW, but only **948 QHs on 36 days above 40 GW**, where 253 negative QHs sit. Report results separately above 40 GW.
 - I3 — monotonicity: r_k is non-decreasing in price depth (constraint built into the model).
-- I4 — separability of cohorts: the two price clocks (quarter-hour vs hourly mean plus run length) create QHs where one cohort is exposed and another is not. This regulatory mismatch is the identifying variation. If K cohorts are not separable, collapse to two cohorts (QH-clock vs hourly-clock). **Pre-registered test (v1.2):** before any modelling on real data, count the Berlin-local event-days on which the cohort exposure vectors s_k actually differ. Fewer than **10** such days and the K-cohort model is abandoned for the two-cohort one, with the count reported either way. Note that the staircase cohort sits at 2 h throughout 2026, so the in-sample variation comes from the clock split and the run-length threshold, not from the staircase step.
+- I4 — separability of cohorts: the two price clocks (quarter-hour vs hourly mean plus run length) create QHs where one cohort is exposed and another is not. This regulatory mismatch is the identifying variation. If K cohorts are not separable, collapse to two cohorts (QH-clock vs hourly-clock). **Pre-registered test (v1.2):** before any modelling on real data, count the Berlin-local event-days on which the cohort exposure vectors s_k actually differ. Fewer than **10** such days and the K-cohort model is abandoned for the two-cohort one, with the count reported either way. **The collapse pools the response, not the exposure (v1.3):** s_k,t is still computed per legal cohort (rule-table row) and aggregated into each macro-cohort's exposed capacity share; only r is shared within a macro-cohort. The staircase cohort sits at 2 h throughout 2026, but the hourly-clock cohorts still differ by run-length threshold (6 h, 4 h, 2 h), and that variation is kept.
 
 ## 3a. Two tasks and the weather proxy (v1.1)
 
@@ -208,6 +219,7 @@ proposed model, without the structure.
 ## 7. Experiments
 
 - **E1 — semi-synthetic benchmark (do first; needs no MaStR, no ERA5).** Base data: uncensored QHs (price > 5 €/MWh). Treat their actual G as true A. Inject synthetic censoring: choose QHs with probability rising in F_t (confounding strength γ ∈ {0, 0.5, 1}), assign synthetic negative prices and run lengths, compute s_k with the real rule logic and synthetic cohort shares, apply known r*_k (step, logistic, 50%-compliance). Grid: censoring rate {5, 10, 20, 30, 40}% × γ × r* shape × 5 seeds. Metrics: MAE of Â on censored QHs, integrated absolute error of r̂ vs r*, 80/90% coverage, MAE on G, **CRPS and PIT histograms for A** (true A is known here, so calibration of P(A|x) can be checked directly). Add a weather-proxy arm: synthetic censoring with and without the weather covariate, to measure how much it helps identification.
+- **Week-6 checkpoint — go/no-go on E1 (v1.3, due 31 Dec 2026).** Pass if, at censoring rates ≥ 10% with γ = 0, for each r* shape: (a) the integrated absolute error of r̂ vs r* is lower than that of B3's implied response, and (b) the MAE of Â on censored QHs is lower than each of B1–B4; both judged on the paired difference, with a 95% event-day block-bootstrap CI (pooled over the 5 seeds) that excludes zero. γ > 0 results are reported but are not part of the gate. On a fail: refit with the two-cohort / single-response structure and re-test by 15 Jan 2027; if that also fails, the structure is not identified on this design — stop and agree the next step with the supervisor before any further real-data work.
 - **E2 — real data (task T2 unless stated).** 15-minute panel, Oct 2025 – Oct 2026, four control areas plus DE. Rolling origin by month, 7-day embargo, event-day blocks. Metrics on negative QHs and overall: MAE, pinball, coverage, bias by price band; Diebold-Mariano with event-day block bootstrap. 50Hertz and Amprion are primary (cleanest signal in v3).
 - **E3 — regulatory transfer.** **Constraint found 29 Oct 2026:** only **199 negative QHs on 7 event-days** fall before 1 Jan 2026 in the 15-minute panel, so "train 2025, test 2026" is not feasible on that panel alone. Options: (a) add the hourly 2023 – Sep 2025 dataset (already planned in v1 §5.3), train before the 1 Jan 2026 staircase change and test after; (b) leave-one-cohort-out within 2026. Decide in month 2.
 - **E4 — plausibility (domain result, secondary; task T1, ERA5 allowed).** Compare r̂ with the statutory "should switch off" curve and with Hirth's "about half switch off" finding; report the compliance gap per cohort.
@@ -245,8 +257,9 @@ All entries are **[VERIFY]** — check each at the publisher before citing, foll
 ## 10. Risks and fall-backs
 
 - I2 overlap weak above 40 GW → report that region separately; add hourly history.
-- Cohorts not separable → two-cohort model (QH clock vs hourly clock).
-- MaStR linkage to support status weak → cohort shares by commissioning year and size from the rule table; E1 and E2 do not depend on fine cohorts.
+- Cohorts not separable → two-cohort model (QH clock vs hourly clock), pooling r but not s (§3 I4).
+- MaStR award-number join weak → §51 cohort shares still come from commissioning date and size (that is what the rule table keys on), but AW is **never** imputed from commissioning year (rule 19): STOP and decide. E1 does not depend on MaStR. (v1.3)
+- Week-6 checkpoint fails (§7) → two-cohort / single-response refit by 15 Jan 2027; if that fails too, supervisor decision before further real-data work. (v1.3)
 - Wang & Wang turns out to cover the price-driven case → keep the fleet-level, signal-driven and regulatory-transfer angle; tighten the claim.
 - **Leakage from weather (v1.1):** ERA5 or the stitched ICON archive used in T2 would leak post-D−1 information. Enforce this with per-task allow-lists and tests.
 - **D−1 ICON vintages not available back to Oct 2025 for the DWD models** → T2 runs with F_t only; weather is used in T1 and the synthetic benchmark. Start archiving daily ICON-D2 runs now as a prospective set.
@@ -259,7 +272,7 @@ All entries are **[VERIFY]** — check each at the publisher before citing, foll
 |---|---|---|
 | Nov wk 1–2 | Proposal (≥15 pages, own writing, incl. "Intended Contribution to Science"); literature table; 30-min topic defence with supervisor | approved proposal, registration |
 | Nov wk 3–4 | E1 generator, proposed model v0, baselines B0–B4 | first synthetic results |
-| Dec | E1 full grid; MaStR ingest and cohort shares; B5 | RQ2/RQ3 results; week-6 checkpoint |
+| Dec | E1 full grid; MaStR ingest and cohort shares; B5 | RQ2/RQ3 results; week-6 checkpoint (§7 criterion, 31 Dec) |
 | Jan | E2 real data; hourly 2023–Sep 2025 ingest; E3 design decision | RQ4 results |
 | Feb | E3, E4, ablations; paper draft (8–12 pages) | paper draft |
 | Mar | Thesis writing (≥20,000 words) | full draft |

@@ -13,7 +13,7 @@ work. Changes since the first draft are marked **(new 30 Oct)**.*
 This is my MSc thesis repo. The thesis is pivoting from "correct the TSO wind forecast in
 negative-price quarter-hours" to **a learning method for labels censored by a
 price-triggered, partial fleet switch-off**. The full spec is
-`docs/06_pivot_mechanism_aware_censoring.md` (spec v1.2) — **read it completely before doing
+`docs/06_pivot_mechanism_aware_censoring.md` (spec v1.3) — **read it completely before doing
 anything**. Then read `README.md`, `docs/01_thesis_brief.md`,
 `docs/04_rq1_killtest_note_v3.md`, `docs/05_eeg_rule_table.md`,
 `data/reference/eeg_negative_price_rules.csv` and everything in `src/`.
@@ -105,15 +105,26 @@ anything**. Then read `README.md`, `docs/01_thesis_brief.md`,
     must never be a T2 input — they are released after the month ends.
 18. **First check on real data: count the event-days on which the cohort exposure vectors
     s_k actually differ.** This is pre-registered: if the count is **< 10**, collapse to
-    two cohorts (quarter-hour clock vs hourly clock) and say so in the results note. The
-    staircase cohort sits at 2 h throughout 2026, so within-sample variation comes from
-    the clock split and the run-length threshold, not from the staircase step itself.
+    two cohorts (quarter-hour clock vs hourly clock) and say so in the results note.
+    **Collapse the response, not the exposure:** s_k,t is still computed per legal cohort
+    (each row of the rule table) and aggregated into each macro-cohort's exposed capacity
+    share; only the response parameters r are pooled within a macro-cohort. The staircase
+    cohort sits at 2 h throughout 2026, but the hourly-clock cohorts still differ by
+    run-length threshold (6 h, 4 h and 2 h, per `data/reference/eeg_negative_price_rules.csv`),
+    and the exposure aggregation must keep that variation.
 19. **Award values are a range, not a point.** The cohort flag is "a Zuschlagsnummer is
     present", not the commissioning year. Report AW_k per cohort as a range — the rounded
-    minimum and maximum award, widened by the correction-factor uncertainty — and carry
-    that range through to θ. Plants past the end of their EEG support period get θ = 0.
-    **STOP** and report if the Zuschlagsnummer column is missing from the MaStR snapshot
-    or is less than 50% filled; do not substitute commissioning year for it.
+    minimum and maximum award, widened by the correction-factor uncertainty. θ runs at
+    three fixed settings: the **main run** uses the round's volume-weighted average award
+    with correction factor 1; two **sensitivity runs** use the low and high ends of the
+    range. Report r̂ under all three — a large spread is itself a finding about
+    identification. Plants past the end of their EEG support period get θ = 0.
+    **STOP** and report if the Zuschlagsnummer column is missing from the MaStR snapshot,
+    or is filled for less than 50% of the **capacity** of wind units above 750 kW
+    commissioned on or after 1 Jan 2019, excluding pilot plants — the group that must have
+    one. Older, small and transition plants legitimately lack it, so a fill rate over all
+    units means nothing. (750 kW is the EEG 2017 tender exemption; [VERIFY] the threshold
+    in EEG 2021/2023 before coding it.) Do not substitute commissioning year for it.
 
 ## Phase 1 — docs and structure
 
@@ -157,7 +168,10 @@ Create `src/censoring/` with:
     now, with placeholder values clearly marked; real values come in Phase 3.
   - Cohort capacity shares are a parameter (dict).
   - **(new 30 Oct)** Expose a two-cohort mode (quarter-hour clock vs hourly clock) from the
-    start, so the rule-18 fallback is a switch rather than a rewrite.
+    start, so the rule-18 fallback is a switch rather than a rewrite. In that mode exposure
+    is still computed per rule-table row and aggregated to capacity-weighted exposed shares
+    per macro-cohort; only r is pooled. Unit-test that the two modes give identical c_t
+    when every cohort in a macro-cohort shares the same r.
   - Unit tests on hand-built price sequences for every rule row, plus the market-premium
     case.
 
@@ -269,9 +283,11 @@ Start with a smoke run (one cell of the grid, one seed) and report runtime befor
   auction award value **not** to be joinable to unit IDs — this is already flagged as
   unresolved in `docs/05_eeg_rule_table.md` §6. Per rule 19, the cohort flag is the
   presence of a Zuschlagsnummer, not the commissioning year; **STOP** if that column is
-  missing or under 50% filled. Where it is present, report AW_k as a min–max range widened
-  by the correction-factor uncertainty, never a point estimate, and set θ = 0 for plants
-  past the end of their support period.
+  missing or filled for under 50% of the capacity of wind units above 750 kW commissioned
+  from 1 Jan 2019 (rule 19 — never a fill rate over all units). Where it is present,
+  report AW_k as a min–max range widened by the correction-factor uncertainty, run θ at
+  the round average (main) and at both ends (sensitivity), and set θ = 0 for plants past
+  the end of their support period.
 - Market values (`src/ingest_market_values.py`): monthly wind onshore/offshore market
   values (Marktwerte) from Netztransparenz into `data/raw/netztransparenz/`. Award values
   AW_k per cohort: statutory values and auction averages, with sources recorded in
