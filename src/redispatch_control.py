@@ -103,7 +103,15 @@ def norm(s: str) -> str:
 
 
 def find_input() -> list[str]:
-    return sorted(glob.glob(os.path.join(RAW_RD, "*.csv")))
+    """Redispatch exports only.
+
+    This used to glob every CSV in the Netztransparenz folder, which was fine when
+    the redispatch export was the only file there. It is not any more -- the
+    monthly market values and the Online-Hochrechnung now live alongside it -- and
+    the glob picked them up and failed on the column check. Matching the filename
+    keeps the kill test reading the file it was validated on.
+    """
+    return sorted(glob.glob(os.path.join(RAW_RD, "redispatch_*.csv")))
 
 
 def blocked(msg: str) -> int:

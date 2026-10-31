@@ -521,6 +521,25 @@ reviewer discipline.
   (`results/34_hochrechnung_check.csv`). The Nr. 5.1 compliance check remains
   **unrun** and needs the genuine fleet projection.
 
+  **Baseline corrected (31 Oct 2026).** Nr. 5.1 excludes grid-operator reductions
+  as well as direct-marketing ones, so the comparator is the SMARD actual **plus
+  onshore wind redispatch**, not the actual alone. On 2026-10-30 the raw excess was
+  +3.5% over three areas (50Hertz +8.2%, Amprion +2.8%, TransnetBW +1.7%). That
+  cannot be a curtailment-free baseline: the committed redispatch export stops on
+  28 Oct, but in its last covered week onshore wind redispatch averaged 98.4 MW in
+  50Hertz and 68.5 MW in Amprion, both **larger** than the 47 MW and 60 MW excess
+  measured on the 30th. Redispatch of that size would absorb the excess entirely in
+  those two areas. **The 1.035 figure is withdrawn as a baseline**; the real
+  baseline is the > 5 €/MWh band over the full range with an event-day bootstrap,
+  and it needs projection data inside the redispatch export's window.
+  TransnetBW had no wind redispatch at all that week, and its +1.7% (12 MW) stands
+  unexplained.
+
+  **The two series are not independent (31 Oct 2026).** SMARD's "actual" may itself
+  derive from the TSO extrapolation — TransnetBW correlates 1.000 and TenneT/Amprion
+  0.99+ — so outside curtailment the comparison is close to self-referential. Only
+  the negative-price quarter-hours are informative, which is what the check is for.
+
 - **E2 — real data (task T2 unless stated).** 15-minute panel, Oct 2025 – Oct 2026, four control areas plus DE. Rolling origin by month, 7-day embargo, event-day blocks. Metrics on negative QHs and overall: MAE, pinball, coverage, bias by price band; Diebold-Mariano with event-day block bootstrap. 50Hertz and Amprion are primary (cleanest signal in v3).
   **Order (v1.8):** DE first, then 50Hertz — which is unaffected by the split-state
   control-area proxy — then the remaining areas only after the Netzanschlusspunkte
