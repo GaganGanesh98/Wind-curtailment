@@ -16,6 +16,52 @@ generation-weighted average spot price over the month,
 computed here on the quarter-hour panel, which is the resolution the spot market
 has settled in since 1 Oct 2025.
 
+Which resolution applies in which period (block 5, 1 Nov 2026)
+--------------------------------------------------------------
+From `marktwertberechnung_umstellung.pdf` (Netztransparenz, archived in data/raw),
+**page 1**, section "Gesetzliche Grundlage":
+
+* **Legal basis: EEG §100(43)–(45)**, named on page 1. The market-value basis moves
+  to 15-minute values at the same time as the SDAC changeover.
+* **Up to delivery 2025-09-30:** 60-minute spot prices and a 60-minute
+  Online-Hochrechnung. Page 1: "Werte in der Vergangenheit werden im 60 Min Raster
+  dargestellt."
+* **From delivery 2025-10-01:** 15-minute values only, for both the spot price and
+  the Online-Hochrechnung. Page 1: "Ab dem 01.10.2025 werden ausschließlich die
+  15 Min Werte … veröffentlicht", and there is **no parallel publication** and **no
+  retroactive 15-minute republication** ("Eine rückwirkende 15 Min Veröffentlichung
+  … findet nicht statt"). So the pre-October-2025 period is hourly permanently.
+* **The changeover falls INSIDE the extended window 2024-01 … 2026-10** — on
+  1 Oct 2025 — so both regimes occur in the Test 2 training history.
+
+**The transition-month provision does not bite.** Page 1 ends the section by
+deferring the month that contains both resolutions to the statute ("Für die
+Berechnung im Monat der Umstellung … verweisen wir auf die entsprechenden Regelungen
+im Gesetz"), and the switch date was only "voraussichtlich" 30 Sep 2025. Checked
+empirically rather than assumed: in the panel, **745 of 745 calendar hours in October
+2025 have a non-zero within-hour price spread** (mean 28.04 €/MWh), and September is
+entirely hourly, so the changeover landed exactly on a month boundary and **no month
+in this window is mixed**. The §100(43)–(45) text is not on disk, which is therefore
+non-blocking here; it would be needed only if a mixed month existed. [VERIFY] if ever
+required.
+
+**No 60-minute code path is needed, and this is why.** MV is a ratio of sums, and
+pre-October-2025 SMARD serves each quarter-hour its own hour's price (verified: 168
+of 168 hours in a 2024 sample week have four identical quarter-hour prices, zero
+nulls). With p constant inside each hour and the hourly quantity being the sum of its
+four quarter-hourly ones,
+
+    sum_h p_h A_h / sum_h A_h   where A_h = sum_{q in h} a_q
+      = sum_h sum_{q in h} p_h a_q / sum_h sum_q a_q
+      = sum_q p_{h(q)} a_q / sum_q a_q
+
+so the quarter-hour computation is **algebraically identical** to the statutory
+hourly one. (`act_onshore_mw` is MW rather than MWh, but every quarter-hour has the
+same duration, so the constant cancels in the ratio.) Rule 17's requirement to use
+the formula in force for each month is therefore satisfied by the existing code
+without branching — not by coincidence, but because the ratio form is invariant to
+the resolution when the price is piecewise-constant on the coarser grid.
+
 NOT YET VALIDATED -- do not use this in theta
 ---------------------------------------------
 The recomputation does not reproduce the published series. It is systematically
@@ -33,9 +79,13 @@ A capture rate of 91% for onshore wind in April, a month full of negative prices
 is not credible; 73% is. So the published figure is right and this recomputation
 is wrong, and the cause is the generation series, not the price series.
 
-`marktwertberechnung_umstellung.pdf` (Netztransparenz, archived in data/raw) says
-the market values are computed from the TSOs' **Online-Hochrechnung** of actual
-generation, which is a different series from SMARD's "Realisierte Erzeugung". The
+The weighting series is the TSOs' **Online-Hochrechnung** of actual generation, not
+SMARD's "Realisierte Erzeugung". **Source: EEG Anlage 1 no. 3.3.2.** (An earlier
+version of this docstring credited `marktwertberechnung_umstellung.pdf` with that
+statement. Having read the PDF in full on 1 Nov 2026, it does not say it: the PDF is
+a two-page FAQ about the 15-minute changeover and says only that the
+Online-Hochrechnung series and the spot prices move to 15-minute resolution. The
+claim stands; the citation was wrong.) The
 published series evidently places more weight on cheap quarter-hours than SMARD's
 actual does -- consistent with an extrapolation that does not fully reflect
 market-driven switch-off, since switching off during the cheapest quarter-hours is

@@ -19,12 +19,14 @@ import json
 import os
 import sys
 import time
+from datetime import datetime
 
 import requests
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from smard_config import (  # noqa: E402
     AREAS,
+    BERLIN,
     FILTERS,
     OFFSHORE_AREAS,
     OFFSHORE_SERIES,
@@ -96,14 +98,34 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--force", action="store_true",
                     help="re-download files that already exist")
+    # The extended training history (2024-01-01 onwards, brief of 31 Oct 2026) has to
+    # be fetchable without editing smard_config: PERIOD_START_BERLIN also defines the
+    # panel's range and the kill test's sample, and widening it there would change the
+    # panel before the rebuild is actually wanted. data/raw is append-only, so pulling
+    # extra weeks into it is safe on its own.
+    ap.add_argument("--start", metavar="YYYY-MM-DD",
+                    help="override the period start (Berlin local)")
+    ap.add_argument("--end", metavar="YYYY-MM-DD",
+                    help="override the period end (Berlin local, inclusive day)")
     args = ap.parse_args()
 
-    start_ms = int(PERIOD_START_BERLIN.astimezone(UTC).timestamp() * 1000)
-    end_ms = int(PERIOD_END_BERLIN.astimezone(UTC).timestamp() * 1000)
+    start = PERIOD_START_BERLIN
+    end = PERIOD_END_BERLIN
+    if args.start:
+        start = datetime.strptime(args.start, "%Y-%m-%d").replace(tzinfo=BERLIN)
+    if args.end:
+        end = (datetime.strptime(args.end, "%Y-%m-%d")
+               .replace(hour=23, minute=45, tzinfo=BERLIN))
+    if end < start:
+        raise SystemExit(f"end {end} is before start {start}")
+
+    start_ms = int(start.astimezone(UTC).timestamp() * 1000)
+    end_ms = int(end.astimezone(UTC).timestamp() * 1000)
+    PERIOD_START_BERLIN_EFF, PERIOD_END_BERLIN_EFF = start, end
 
     print("=" * 72)
     print("STEP 1  ingest_smard.py")
-    print(f"period (Berlin) : {PERIOD_START_BERLIN}  ..  {PERIOD_END_BERLIN}")
+    print(f"period (Berlin) : {PERIOD_START_BERLIN_EFF}  ..  {PERIOD_END_BERLIN_EFF}")
     print(f"period (UTC ms) : {start_ms}  ..  {end_ms}")
     print("=" * 72)
 
