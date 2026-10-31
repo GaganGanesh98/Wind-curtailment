@@ -1,12 +1,17 @@
-"""Real-data diagnostic: how does log(G/F) move with the day-ahead price?
+"""4a-RESPONSE: how does log(G/F) move with the day-ahead price?
 
     python src/diag_price_logratio.py
 
-Item 4a of the 31 Oct 2026 decision list. Light, independent of the E1 grid, and
-needed before the E1-MNAR arm can be pre-registered sensibly: that arm has to choose
-a placement weight, and the choice should be informed by what the real relationship
-between price and the output shortfall actually looks like, not by what makes E1
-convenient.
+**This is 4a-response, NOT the test-1 question.** It measures the switch-off
+response below 0 EUR/MWh, which RQ1 had already established; it describes how far
+output falls below forecast as the price goes negative. It is kept as a description
+of that response and as input to the MNAR arm's choice of placement weight.
+
+The test-1 question -- does the price predict the forecast error where NO switch-off
+incentive exists, i.e. above 5 EUR/MWh, once F is controlled for -- is a different
+question and is answered by `src/diag_price_placebo.py` (4a-proper,
+`results/16_4a_proper_placebo.csv`). A response below zero is not evidence that the
+mechanism story is the right one; the placebo test is what can falsify it.
 
 The quantities
 --------------
@@ -61,7 +66,7 @@ from src.smard_config import PRICE_BANDS  # noqa: E402
 from src.stats_boot import eventday_bootstrap_mean, eventday_bootstrap_ratio  # noqa: E402
 
 PANEL = REPO_ROOT / "data" / "processed" / "panel_qh.parquet"
-OUT_CSV = REPO_ROOT / "results" / "15_price_logratio.csv"
+OUT_CSV = REPO_ROOT / "results" / "15_4a_response.csv"
 AREAS = ("DE", "50Hertz", "Amprion", "TenneT", "TransnetBW")
 F_FLOOR_FRACTION = 0.02   # drop F below 2% of the area's median F: log(G/F) explodes
 

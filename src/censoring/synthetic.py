@@ -134,6 +134,7 @@ class SyntheticData:
     ts_utc_ns: np.ndarray        # synthetic contiguous timeline
     berlin_date: np.ndarray      # event-day label on the SYNTHETIC timeline
     real_berlin_date: np.ndarray  # the real Berlin date each base QH came from
+    real_hour: np.ndarray        # the real Berlin-local hour of each base QH
     forecast_mw: np.ndarray      # F_t, the TSO day-ahead forecast (real)
     a_true_mw: np.ndarray        # A_t, the true available power (real actual wind)
     price_eur_mwh: np.ndarray    # synthetic day-ahead price
@@ -295,6 +296,14 @@ def load_base(area: str, safe_price_floor: float) -> dict[str, np.ndarray]:
         # timeline is a relabelling, so a day-type feature built on it would be
         # noise; the price-free proxy baseline needs the real one to mean anything.
         "real_berlin_date": df["berlin_date"].to_numpy()[idx],
+        # The real Berlin-local hour, for the same reason: the synthetic timeline's
+        # hour is an artefact of the reordering, so a diurnal diagnostic needs the
+        # hour the quarter-hour actually came from. Carried, never used as a feature.
+        "real_hour": (pl.Series("t", ts_all[idx])
+                        .cast(pl.Datetime("ns"))
+                        .dt.replace_time_zone("UTC")
+                        .dt.convert_time_zone("Europe/Berlin")
+                        .dt.hour().to_numpy()),
         "real_negative_prices": price_all[neg_qh],
         "real_hour_run_lengths": neg_hour_runs,
         "n_base_available": n_keep,
@@ -550,6 +559,7 @@ def generate(cfg: SyntheticConfig, cohorts: CohortSet | None = None) -> Syntheti
         ts_utc_ns=ts,
         berlin_date=berlin_date,
         real_berlin_date=base["real_berlin_date"],
+        real_hour=base["real_hour"],
         forecast_mw=forecast,
         a_true_mw=a_true,
         price_eur_mwh=price,
