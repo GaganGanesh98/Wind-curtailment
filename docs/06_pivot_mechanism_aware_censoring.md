@@ -33,6 +33,19 @@ Working spec, not proposal prose.
 - **Real award values AW_k** from the BNetzA tender statistics, weighted by built MaStR
   capacity (`results/31_award_values.csv`).
 - **Market value recomputation is NOT validated** and must not build θ yet — see §3.
+- **The market premium is zero for most of the fleet in most of 2026 (v1.8).**
+  MP = max(0, AW − MV), and 2026 market values have been high: in six of the nine
+  published months **100% of tendered capacity had MP = 0**, so θ = 0 *de facto*
+  whatever §51 says. Only April (MV 57.2 €/MWh, the year's lowest) leaves a real
+  premium. This matters for identification: with θ = 0 almost everywhere the
+  market-premium channel barely separates cohorts, and the live identifying
+  variation is the §51 clock and run length alone (§3, I4).
+  `results/35_market_premium_zero.csv`.
+- **AW for non-tendered capacity is UNRESOLVED and must not be a tender average
+  (v1.8).** 48.1 GW — all pre-2016, 80% of the 2016–2020 cohort, 91% of the
+  size-exempt — was built under the statutory tariff, never bid, and has no award
+  value in this repo. Tendered and non-tendered AW are reported apart, with a
+  status-A slot and a ±15% band awaiting Hirth (2026) Table A1.
 - **Anlage 1, §36h and §51a read at source (31 Oct 2026, texts in `docs/legal/`).**
   The reference period, the correction table and the §51a question are all settled;
   what replaces them is a single new dependency, the Online-Hochrechnung. See §3.
@@ -478,8 +491,16 @@ reviewer discipline.
   as **never a T2 input**, since it is published after the fact. **If it does fall
   with the curtailment**, the projection is tracking metered output, it is not a
   potential series, and it must not be used as one. Report the result before
-  deciding either way. **Status: cannot be run — the Online-Hochrechnung series is
-  not in `data/raw/`.**
+  deciding either way. **Status, 31 Oct 2026: RAN, and the download is the wrong
+  series.** The Netztransparenz "Hochrechnung Windenergie" export is **1.57% of the
+  SMARD metered onshore actual** over six sample days, region-dependent — 50Hertz
+  0.89%, Amprion 1.55%, TenneT 2.17%, TransnetBW 0.05% (never above 1.0 MW) — while
+  correlating 0.80–0.995 with it. It tracks wind but covers a tiny subset, so it is
+  **not** the fleet-level Nr. 5.1 projection. Labelled **"EEG-vermarktete
+  Windeinspeisung [VERIFY]"**; **not** to be used for MV/JW or as a proxy for A, and
+  kept only as a candidate for sizing the feed-in-tariff cohort
+  (`results/34_hochrechnung_check.csv`). The Nr. 5.1 compliance check remains
+  **unrun** and needs the genuine fleet projection.
 
 - **E2 — real data (task T2 unless stated).** 15-minute panel, Oct 2025 – Oct 2026, four control areas plus DE. Rolling origin by month, 7-day embargo, event-day blocks. Metrics on negative QHs and overall: MAE, pinball, coverage, bias by price band; Diebold-Mariano with event-day block bootstrap. 50Hertz and Amprion are primary (cleanest signal in v3).
   **Order (v1.8):** DE first, then 50Hertz — which is unaffected by the split-state
