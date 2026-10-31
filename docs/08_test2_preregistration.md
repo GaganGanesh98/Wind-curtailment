@@ -264,3 +264,74 @@ window is not the excuse.
 4. **The selection threshold is applied to counts fixed in section 7 before any
    modelling**, so it is not a choice made with sight of results. It must not be
    revisited after a number exists.
+
+---
+
+## 12. Amendment 2 — training history extended to 2024-01-01
+
+**Decided by the supervisor and recorded 31 October 2026, late, before any test-month
+number existed.** Sections 1–6 and Amendment 1 stay on record unchanged. This
+amendment **supersedes section 2's test-month rule**; the superseded wording is kept
+below.
+
+### What changes
+
+- **Training history starts 2024-01-01** (section 2 previously began at the panel's
+  start, 2025-10-01).
+- **Test months: every month from 2024-07 onwards with ≥ 100 negative-price
+  quarter-hours.** Rolling origin, 7-day embargo, no shuffling — unchanged.
+- **The primary verdict is pooled over ALL test months.** The verdict rule itself
+  (section 5: WIN / TIE / LOSS, and the PASS condition) is unchanged.
+
+> **Superseded wording, section 2, kept for audit:** "Test months are the 2026 months
+> with **≥ 100 negative-price quarter-hours**." Section 7's sample-size tables remain
+> on record as the pre-extension state and are **not** the test set any more.
+
+### Secondary verdicts
+
+Two, both reported, neither deciding:
+
+1. **QH-era months only — 2025-10 onwards.** The months whose day-ahead prices are
+   natively quarter-hourly, so the §51 clock is evaluated at the resolution the rule
+   is written in.
+2. **Amendment 1's rule — training window with ≥ 20 negative-price event-days.**
+   Which months this now selects is **not** stated here: it depends on counts that do
+   not exist until the 2024-01 – 2025-09 history is downloaded and the panel rebuilt.
+   It is reported in the block-9 count report, computed from the rule, before any
+   modelling.
+
+### Prices before 2025-10-01 are hourly
+
+Day-ahead prices are hourly until 2025-10-01 and quarter-hourly from it.
+
+- **Each quarter-hour takes its hour's price.**
+- **Trigger logic uses the §51 version in force for each cohort**, from
+  `data/reference/eeg_negative_price_rules.csv`. For the extended period that means:
+  R02 (≥ 6 consecutive hours) for 2016–2020 wind ≥ 3 MW; R04 (≥ 4 h) for 2021–2022;
+  **R06 (≥ 3 h) for the 2023 – 24 Feb 2025 cohort in calendar years 2024 and 2025**,
+  stepping to R07 (≥ 2 h) in 2026; R01 (never) for pre-2016; R09 (any negative
+  quarter-hour) only for units commissioned from 25 Feb 2025.
+- A negative-price quarter-hour count before 2025-10-01 is therefore necessarily a
+  **multiple of four** — 100 quarter-hours is 25 negative hours, the same physical
+  duration as in the quarter-hour era, so the ≥ 100 threshold is consistent across
+  both.
+
+**The consequence this amendment must own.** For cohort R09 — commissioned from
+25 Feb 2025, trigger "any quarter-hour with a negative spot price", price resolution
+quarter-hour — the rule asks a question the data cannot answer between 2025-02-25 and
+2025-09-30: with only hourly prices, a single negative quarter-hour inside an
+otherwise positive hour is invisible, and an hour priced negative makes all four of
+its quarter-hours exposed. In that window R09's clock **degenerates to the hourly
+clock**, so its exposure is measured with error in both directions. Secondary verdict
+(i) exists precisely to bound this: it restricts to the months where no such
+degeneration occurs. R09 capacity is also small in that window, which limits but does
+not remove the problem. This is recorded as a known measurement error, pre-registered,
+not discovered afterwards.
+
+### Unchanged
+
+**Redispatch remains an ex-post stratifier only, never a feature**, in every verdict
+and every stratum. Section 8's redispatch availability gap for 2024-01 – 2025-09 is
+tracked separately: the stratifier is simply unavailable for that period until the
+file arrives, and strata that depend on it are reported as unavailable rather than
+imputed.
