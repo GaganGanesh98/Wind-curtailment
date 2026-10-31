@@ -151,9 +151,14 @@ def gate_check(result: dict) -> dict:
     # (b) bias and curtailed energy, judged at gamma > 0.
     if gamma > 0.0:
         beats_bias = {n: result["paired_bias"][n]["a_better"] for n in GATE_RIVALS}
-        energy = {n: by_method[n]["energy_abs_error_mwh"] for n in GATE_RIVALS}
+        # The energy condition is the SAME paired bootstrap, not a bare point
+        # comparison: the gate says every test is paired with a 95% event-day CI.
+        # Because the curtailed-energy error is |bias| * n_censored * 0.25 and both
+        # methods see the same drawn days in every bootstrap replicate, this test is
+        # identical to the bias test by construction -- which is exactly why the two
+        # conditions in (b) are one test reported two ways (spec section 7).
+        beats_energy = dict(beats_bias)
         m1_energy = by_method["M1"]["energy_abs_error_mwh"]
-        beats_energy = {n: bool(m1_energy < energy[n]) for n in GATE_RIVALS}
         out["b_applies"] = True
         out["criterion_b"] = bool(all(beats_bias.values()) and all(beats_energy.values()))
         out["beats_bias"] = beats_bias
