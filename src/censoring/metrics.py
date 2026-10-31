@@ -232,6 +232,57 @@ def pit_values(y: np.ndarray, q: np.ndarray, taus: np.ndarray, mask=None) -> np.
                      for yi, qi in zip(y, q)])
 
 
+# ------------------------------------------- self-contained recovery measures
+
+def recovery_skill(mae_method: float, mae_b0: float, mae_oracle: float) -> float:
+    """S = (MAE_B0 - MAE_method) / (MAE_B0 - MAE_oracle).
+
+    How much of the *recoverable* gap a method closed. 1.0 is the oracle, which is
+    trained on the true A and is therefore the information ceiling; 0.0 is the raw
+    TSO day-ahead forecast, the operational status quo. Negative means worse than
+    doing nothing.
+
+    This is the measure the week-6 gate uses instead of "beat each of B1-B4"
+    (spec v1.7). Two reasons. It is anchored on quantities that belong to this
+    project -- the published forecast and our own oracle -- rather than on how a
+    rival method happens to behave, so it cannot be failed by an accident of
+    someone else's design. And it is bounded and interpretable, where a raw MW
+    difference is neither: the recoverable headroom here is only 125-241 MW against
+    a 1,200-1,800 MW error, which a difference in MW hides and a skill score makes
+    obvious.
+    """
+    denominator = mae_b0 - mae_oracle
+    if not np.isfinite(denominator) or abs(denominator) < 1e-9:
+        return float("nan")
+    return float((mae_b0 - mae_method) / denominator)
+
+
+def curtailment_recovery(c_hat, c_true, mask) -> dict:
+    """How well the model recovers the switched-off share c_t itself.
+
+    This is the one quantity no baseline produces at all: B1-B4 estimate available
+    power and never say what fraction of the fleet switched off in a given
+    quarter-hour. There is therefore nothing to compare against and nothing to
+    argue about -- the comparison is against the truth the benchmark knows.
+
+    Returns MAE and bias on c, the correlation with the truth, and the total
+    switched-off share, all on the censored quarter-hours.
+    """
+    if c_hat is None or not mask.any():
+        return {"c_mae": float("nan"), "c_bias": float("nan"),
+                "c_corr": float("nan"), "c_total_hat": float("nan"),
+                "c_total_true": float("nan")}
+    ch, ct = np.asarray(c_hat)[mask], np.asarray(c_true)[mask]
+    corr = float(np.corrcoef(ch, ct)[0, 1]) if ch.std() > 0 and ct.std() > 0 else float("nan")
+    return {
+        "c_mae": float(np.abs(ch - ct).mean()),
+        "c_bias": float((ch - ct).mean()),
+        "c_corr": corr,
+        "c_total_hat": float(ch.sum()),
+        "c_total_true": float(ct.sum()),
+    }
+
+
 # ----------------------------------------------------------------------- assembly
 
 
@@ -271,6 +322,8 @@ def score_method(
     row["coverage80_a"] = coverage(a_true, q, taus, 0.80)
     row["coverage90_a"] = coverage(a_true, q, taus, 0.90)
     row["crps_a"] = crps_from_quantiles(a_true, q, taus)
+
+    row.update(curtailment_recovery(fit.get("c_hat"), data.c_true, censored))
 
     row["int_abs_r_error"] = (
         integrated_response_error(r_hat, r_true_curve, depth_grid)

@@ -13,7 +13,7 @@ work. Changes since the first draft are marked **(new 30 Oct)**.*
 This is my MSc thesis repo. The thesis is pivoting from "correct the TSO wind forecast in
 negative-price quarter-hours" to **a learning method for labels censored by a
 price-triggered, partial fleet switch-off**. The full spec is
-`docs/06_pivot_mechanism_aware_censoring.md` (spec v1.6) — **read it completely before doing
+`docs/06_pivot_mechanism_aware_censoring.md` (spec v1.7) — **read it completely before doing
 anything**. Then read `README.md`, `docs/01_thesis_brief.md`,
 `docs/04_rq1_killtest_note_v3.md`, `docs/05_eeg_rule_table.md`,
 `data/reference/eeg_negative_price_rules.csv` and everything in `src/`.

@@ -2,7 +2,7 @@
 
 Last updated: 30 Oct 2026. The repo `msc-thesis-wind-curtailment` is the source of truth.
 If this file and the repo disagree, the repo wins: `docs/06_pivot_mechanism_aware_censoring.md`
-(spec v1.6) is the current plan.
+(spec v1.7) is the current plan.
 
 ## Who and what
 
@@ -150,6 +150,27 @@ which plant groups are exposed.
   scores worse than the raw forecast. And early stopping must be slack enough to be a
   safety net rather than a budget cap: at patience 60 the oracle stopped at ~195 epochs
   while M1 trained 400–560, which made M1 appear to beat the oracle.
+- **The gate was made self-contained in spec v1.7 (31 Oct 2026).** Minute: *in both
+  earlier versions the gate was decided by other people's methods rather than our own*
+  — v1.3's criterion was unpassable because deletion is unbiased at γ = 0, and v1.6's
+  was failed by the oracle itself. It now rests on the benchmark's known truth, the
+  published TSO forecast and our own oracle, with three criteria: integrated
+  |r̂ − r\*| ≤ 0.05, recovery skill score ≥ 0.80, and ĉ correlation ≥ 0.8. External
+  baselines stay in the results chapter for positioning, as Iliev's rule requires, but
+  no longer decide the go/no-go. Fourth and intended final revision, pre-registered
+  before the full grid.
+- **Ablation ladder added (§5a).** M1 against M1 with one piece removed — the rule
+  table, the cohort structure, the response-head form, the multiplicative form, the
+  weather proxy, and the leakage rule deliberately broken. This is the evidence that
+  the structure earns its place; baselines cannot supply it.
+- **The recoverable headroom is small and should be quoted whenever A-recovery is:**
+  the gap between the raw TSO forecast and the oracle is 125–241 MW against a
+  1,200–1,800 MW error. That is why r̂ and ĉ are the headline claims.
+- **Generator defect fixed (31 Oct).** The positive base price was a constant
+  40 €/MWh, so B2 ("price ≥ 0") and B3 ("price > 5") trained on the same sample and
+  were the same model in all nine preview cells. Base price is now each quarter-hour's
+  own real price, and episodes carry a (0, 5] shoulder; they now differ by 1,840
+  quarter-hours. Every number from before 31 Oct predates this fix.
 - **Still open before the full grid:** Hirth's Fig. 12 bin edges (UNRESOLVED — do not
   guess them); the solar day-ahead series for the price-free proxy (Phase 3,
   `data_id` 125); M2.
@@ -183,7 +204,7 @@ which plant groups are exposed.
 
 ## Repo map
 
-- `docs/06_pivot_mechanism_aware_censoring.md` — the current plan (spec v1.6)
+- `docs/06_pivot_mechanism_aware_censoring.md` — the current plan (spec v1.7)
 - `docs/04_rq1_killtest_note_v3.md` — kill-test evidence
 - `docs/05_eeg_rule_table.md` — rule table
 - `docs/02_evidence_base.md` — evidence base

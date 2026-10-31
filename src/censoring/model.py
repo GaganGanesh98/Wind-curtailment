@@ -268,18 +268,35 @@ class MechanismAwareM1(nn.Module):
     """The full observation model. `forward` returns quantiles of G, not of A."""
 
     def __init__(self, in_dim: int, group_index: np.ndarray, hidden: int = 32,
-                 n_quantiles: int = len(TAUS), response_head: str = "piecewise"):
+                 n_quantiles: int = len(TAUS), response_head: str = "piecewise",
+                 latent_form: str = "multiplicative", additive_scale: float = 1000.0):
         super().__init__()
         if response_head not in RESPONSE_HEADS:
             raise ValueError(
                 f"response_head {response_head!r} not in {sorted(RESPONSE_HEADS)}"
             )
+        if latent_form not in ("multiplicative", "additive"):
+            raise ValueError(f"latent_form {latent_form!r} unknown")
         self.latent = MonotoneQuantileHead(in_dim, hidden, n_quantiles)
         self.response = RESPONSE_HEADS[response_head](group_index)
         self.response_head_name = response_head
+        self.latent_form = latent_form
+        # The latent head emits a log-ratio, order 0.1-1. In additive mode that has
+        # to become MW, so it is scaled to the forecast's own scale.
+        self.additive_scale = float(additive_scale)
 
     def latent_quantiles(self, x: torch.Tensor, forecast: torch.Tensor) -> torch.Tensor:
-        """A quantiles: F * exp(g(x)). (T, n_quantiles)."""
+        """A quantiles. Multiplicative F * exp(g(x)), or additive F + g(x).
+
+        Multiplicative is the default and the spec's form, because the kill test
+        found the over-forecast behaves as a roughly constant ~9% proportional
+        haircut (-9.1% overall against -9.3% in windy quarter-hours) rather than a
+        fixed MW offset. The additive form exists to test that claim rather than
+        assert it, and is clamped at zero because negative available power is not a
+        thing.
+        """
+        if self.latent_form == "additive":
+            return (forecast[:, None] + self.latent(x) * self.additive_scale).clamp(min=0.0)
         return forecast[:, None] * torch.exp(self.latent(x))
 
     def curtailed(self, shares: torch.Tensor, s: torch.Tensor, depth: torch.Tensor,
@@ -343,15 +360,28 @@ def standardise(x: np.ndarray, mask: np.ndarray) -> tuple[np.ndarray, float, flo
 
 
 def build_latent_features(
-    data, task: str = "E1", use_weather: bool = True
+    data, task: str = "E1", use_weather: bool = True, allow_price: bool = False
 ) -> tuple[np.ndarray, list[str]]:
-    """Assemble x^A and check it against the allow-list before anything is trained."""
+    """Assemble x^A and check it against the allow-list before anything is trained.
+
+    `allow_price=True` deliberately puts the price into the latent head, bypassing
+    hard rule 16. It exists for exactly one purpose: the A7 ablation, which shows
+    what the leakage rule is protecting against. When price is visible to g, A can
+    absorb the curtailment and the response head has nothing left to explain, so r̂
+    collapses while G-fit looks fine -- the failure is invisible in the headline
+    error and only shows up in r̂. Keeping it runnable turns the rule into evidence
+    rather than an assertion. It must never be set anywhere else.
+    """
     names = ["forecast_mw"]
     cols = [data.forecast_mw]
     if use_weather and data.weather_ms is not None:
         names.append("weather_ms")
         cols.append(data.weather_ms)
-    check_latent_features(names, task=task)
+    if allow_price:
+        names.append("price_eur_mwh")
+        cols.append(data.price_eur_mwh)
+    else:
+        check_latent_features(names, task=task)
     return np.column_stack(cols).astype(np.float64), names
 
 
@@ -374,6 +404,92 @@ def cohort_runlength_hours(data) -> np.ndarray:
     return np.stack(rows)
 
 
+@dataclass(frozen=True)
+class Ablation:
+    """One rung of the ablation ladder: M1 with exactly one piece changed.
+
+    An ablation is not a baseline. A baseline is somebody else's method, and it
+    answers "is this better than what exists?". An ablation is *this* method with a
+    component switched off, same code, same data, same seed, and it answers "which
+    part is doing the work?" -- which is the question a method contribution has to
+    answer and which no external baseline can.
+
+    Every field defaults to the full model, so each rung differs from `FULL` in one
+    place only.
+    """
+
+    label: str
+    name: str
+    piece_removed: str
+    response_head: str = "piecewise"
+    latent_form: str = "multiplicative"
+    use_weather: bool = True
+    exposure_mode: str = "rules"     # "rules" | "always_on"
+    cohort_mode: str = "K"           # "K" | "two" | "one"
+    price_in_latent: bool = False
+
+    def differs_from_full(self) -> list[str]:
+        full = ABLATION_FULL
+        return [f for f in ("response_head", "latent_form", "use_weather",
+                            "exposure_mode", "cohort_mode", "price_in_latent")
+                if getattr(self, f) != getattr(full, f)]
+
+
+ABLATION_FULL = Ablation(
+    label="M1", name="full model", piece_removed="nothing",
+)
+
+
+def apply_exposure_ablation(data, mode: str):
+    """Exposure, depth and run length as the ablated model sees them.
+
+    "rules"     -- s_k and the depth below each cohort's own theta, from the EEG
+                   rule table. This is the method.
+    "always_on" -- every cohort exposed in every quarter-hour, with depth measured
+                   below zero instead of below theta. The model still sees that the
+                   price is negative and how far; it no longer knows *who is
+                   exposed*. This is what isolates the value of the legal structure
+                   as opposed to the price signal.
+    """
+    if mode == "rules":
+        return data.s, data.depth, cohort_runlength_hours(data)
+    if mode == "always_on":
+        k, n = data.s.shape
+        s = np.ones((k, n), dtype=float)
+        depth = np.tile(np.maximum(0.0, -data.price_eur_mwh), (k, 1))
+        return s, depth, cohort_runlength_hours(data)
+    raise ValueError(f"exposure_mode {mode!r} unknown")
+
+
+def apply_cohort_ablation(data, s, depth, runlen, mode: str):
+    """Cohort structure as the ablated model sees it.
+
+    "K"   -- every legal cohort separately (the rule table).
+    "two" -- the rule-18 fallback: response parameters pooled per clock, exposure
+             and depth still per legal cohort.
+    "one" -- a single cohort carrying the capacity-weighted exposed share and the
+             capacity-weighted mean depth. This is what a modeller without the rule
+             table would build: one fleet, one threshold, one response.
+    """
+    w = data.cohorts.shares
+    if mode == "K":
+        return w, s, depth, runlen, np.arange(len(w))
+    if mode == "two":
+        return w, s, depth, runlen, data.cohorts.macro_index()
+    if mode == "one":
+        exposed = (w[:, None] * s).sum(axis=0)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            mean_depth = np.where(
+                exposed > 0, (w[:, None] * s * depth).sum(axis=0) / np.maximum(exposed, 1e-12), 0.0
+            )
+            mean_rl = np.where(
+                exposed > 0, (w[:, None] * s * runlen).sum(axis=0) / np.maximum(exposed, 1e-12), 0.0
+            )
+        return (np.array([1.0]), exposed[None, :], mean_depth[None, :],
+                mean_rl[None, :], np.array([0]))
+    raise ValueError(f"cohort_mode {mode!r} unknown")
+
+
 def fit_m1(
     data,
     train_cfg: TrainConfig | None = None,
@@ -381,14 +497,31 @@ def fit_m1(
     use_weather: bool = True,
     two_cohort: bool = False,
     response_head: str = "piecewise",
+    ablation: "Ablation | None" = None,
 ) -> dict:
-    """Fit M1 on the observed G. Returns the model and its predictions."""
+    """Fit M1 on the observed G. Returns the model and its predictions.
+
+    `ablation` overrides the individual switches; it is the supported way to run a
+    rung of the ladder, so that every rung differs from the full model in exactly
+    one recorded place.
+    """
     cfg = train_cfg or TrainConfig()
+    ab = ablation or ABLATION_FULL
+    if ablation is not None:
+        response_head = ab.response_head
+        use_weather = ab.use_weather
     torch.manual_seed(cfg.seed)
     np.random.seed(cfg.seed)
 
-    x_raw, feature_names = build_latent_features(data, task=task, use_weather=use_weather)
-    runlen = cohort_runlength_hours(data)
+    x_raw, feature_names = build_latent_features(
+        data, task=task, use_weather=use_weather,
+        allow_price=ab.price_in_latent,
+    )
+    s_in, depth_in, rl_in = apply_exposure_ablation(data, ab.exposure_mode)
+    cohort_mode = ab.cohort_mode if ablation is not None else ("two" if two_cohort else "K")
+    shares, s_in, depth_in, runlen, group_index = apply_cohort_ablation(
+        data, s_in, depth_in, rl_in, cohort_mode
+    )
 
     train_mask, val_mask = eventday_split(data.berlin_date, cfg.val_fraction, cfg.seed)
 
@@ -396,21 +529,16 @@ def fit_m1(
     for j in range(x_raw.shape[1]):
         x[:, j], _, _ = standardise(x_raw[:, j], train_mask)
 
-    group_index = (
-        data.cohorts.macro_index() if two_cohort else np.arange(len(data.cohorts))
-    )
-
     t = lambda a: torch.as_tensor(a, dtype=torch.float32)  # noqa: E731
     x_t, f_t = t(x), t(data.forecast_mw)
     g_t = t(data.g_obs_mw)
-    shares_t, s_t, depth_t, rl_t = (
-        t(data.cohorts.shares), t(data.s), t(data.depth), t(runlen)
-    )
+    shares_t, s_t, depth_t, rl_t = (t(shares), t(s_in), t(depth_in), t(runlen))
     taus_t = t(TAUS)
     tr, va = torch.as_tensor(train_mask), torch.as_tensor(val_mask)
 
     model = MechanismAwareM1(x.shape[1], group_index, hidden=cfg.hidden,
-                             response_head=response_head)
+                             response_head=response_head,
+                             latent_form=ab.latent_form)
     opt = torch.optim.Adam(model.parameters(), lr=cfg.lr)
 
     best_val, best_state, bad = float("inf"), None, 0
@@ -445,8 +573,13 @@ def fit_m1(
 
     median = int(np.argmin(np.abs(TAUS - 0.5)))
     return {
-        "name": "M1" if response_head == "piecewise" else f"M1-{response_head}",
+        "name": ab.label,
+        "ablation": ab,
+        "piece_removed": ab.piece_removed,
+        "differs_from_full": ab.differs_from_full(),
         "response_head": response_head,
+        "cohort_mode": cohort_mode,
+        "shares": shares,
         "model": model,
         "feature_names": feature_names,
         "a_quantiles": a_q.numpy(),
@@ -456,7 +589,7 @@ def fit_m1(
         "c_hat": c.numpy(),
         "epochs_run": epoch + 1,
         "best_val_pinball": best_val,
-        "two_cohort": two_cohort,
+        "two_cohort": cohort_mode == "two",
         "group_index": group_index,
     }
 
@@ -470,7 +603,7 @@ def m1_response_curve(fit: dict, data, depth_grid: np.ndarray) -> np.ndarray:
     """
     per_group = fit["model"].response.curve(depth_grid)
     group_index = fit["group_index"]
-    shares = data.cohorts.shares
+    shares = fit.get("shares", data.cohorts.shares)
     out = np.zeros_like(depth_grid, dtype=float)
     for i, w in enumerate(shares):
         out += w * per_group[group_index[i]]

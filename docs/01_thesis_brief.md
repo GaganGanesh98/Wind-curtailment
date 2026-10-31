@@ -7,7 +7,7 @@ Last updated: 30 Oct 2026
 
 > **Working document, not proposal text.** This is a structured brief for planning and for
 > Claude Code. Proposal and thesis prose must be written by the student (SRH AI-use rubric).
-> The authoritative specification is `06_pivot_mechanism_aware_censoring.md` (spec v1.6).
+> The authoritative specification is `06_pivot_mechanism_aware_censoring.md` (spec v1.7).
 > Where this brief and the spec disagree, **the spec wins**.
 
 Status (30 Oct 2026): **RQ1 kill test reproduced in full — GO.** All four checks pass,

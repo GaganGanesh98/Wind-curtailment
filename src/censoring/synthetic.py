@@ -96,6 +96,11 @@ class SyntheticConfig:
     # whose mean stays positive. These are the quarter-hours that separate the two
     # clocks, so the K-cohort structure is only identified if some exist.
     subhour_episode_share: float = 0.25
+    # Quarter-hours of "shoulder" either side of an episode, priced in (0, 5].
+    # Real price series ramp down into negative territory rather than stepping, and
+    # without the ramp there are no quarter-hours in the 0-5 band at all -- which is
+    # the only band on which B2 (price >= 0) and B3 (price > 5) differ.
+    shoulder_qh: int = 2
     observation_noise_mw: float = 0.0
     with_weather_proxy: bool = True
     weather_noise_ms: float = 0.6
@@ -252,6 +257,12 @@ def load_base(area: str, safe_price_floor: float) -> dict[str, np.ndarray]:
     return {
         "forecast_mw": df["da_wind_mw"].to_numpy()[idx],
         "a_true_mw": df["act_wind_mw"].to_numpy()[idx],
+        # The real price of each kept quarter-hour, used as the positive base level.
+        # A constant base (the first version used a flat 40 EUR/MWh) made B2's
+        # "price >= 0" and B3's "price > 5" select exactly the same sample, so the
+        # two baselines collapsed into one model, and B5's price feature carried no
+        # information away from the injected episodes.
+        "base_price_eur_mwh": price_all[idx],
         # The real calendar date each kept quarter-hour came from. The synthetic
         # timeline is a relabelling, so a day-type feature built on it would be
         # noise; the price-free proxy baseline needs the real one to mean anything.
@@ -311,6 +322,7 @@ def _inject_prices(
     weights = weights / weights.sum()
 
     negative_mask = np.zeros(n, dtype=bool)
+    shoulder_mask = np.zeros(n, dtype=bool)
     placed = 0
     attempts = 0
     max_attempts = 20 * n
@@ -362,6 +374,15 @@ def _inject_prices(
 
         price[sl] = depths
         negative_mask[sl] = True
+        # Shoulder: ramp into and out of the episode through the 0-5 EUR/MWh band.
+        # Not negative, so no cohort is exposed and nothing is curtailed there; its
+        # only job is to exist, because it is the band that separates B2 from B3.
+        if cfg.shoulder_qh > 0:
+            for a, b in ((max(0, sl.start - cfg.shoulder_qh), sl.start),
+                         (sl.stop, min(n, sl.stop + cfg.shoulder_qh))):
+                if b > a and not negative_mask[a:b].any():
+                    price[a:b] = rng.uniform(0.01, 5.0, size=b - a)
+                    shoulder_mask[a:b] = True
         placed = int(negative_mask.sum())
 
     diagnostics = {
@@ -371,6 +392,8 @@ def _inject_prices(
         "episodes_hourly": n_hourly,
         "episodes_subhour": n_subhour,
         "placement_attempts": attempts,
+        "shoulder_qh_placed": int(shoulder_mask.sum()),
+        "qh_in_0_to_5_band": int(((price > 0) & (price <= 5)).sum()),
     }
     if placed < 0.9 * target_negative:
         raise RuntimeError(
@@ -420,9 +443,10 @@ def generate(cfg: SyntheticConfig, cohorts: CohortSet | None = None) -> Syntheti
         ]
     ).repeat(QH_PER_DAY)[:n]
 
-    # Baseline positive price level: a calm, clearly safe level, so that any negative
-    # price in the series is one the generator put there.
-    base_level = np.full(n, 40.0)
+    # Positive base level: each quarter-hour's own real price (all above the safe
+    # floor by construction). Keeps the real price distribution and autocorrelation,
+    # and keeps B2, B3 and B5 meaningfully different from one another.
+    base_level = base["base_price_eur_mwh"].copy()
     price, price_diag = _inject_prices(
         base_level, forecast, cfg,
         base["real_negative_prices"], base["real_hour_run_lengths"], rng,
