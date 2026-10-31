@@ -80,6 +80,10 @@ vs B5, **and** no-harm (M1 not LOSS vs B0 on the other quarter-hours).
 Report the event-day count per test month, and **say plainly if power is too low to
 separate the models.**
 
+> **Amendment 1 (31 Oct 2026) adds a SECONDARY verdict on a restricted set of test
+> months. It does not change this primary verdict, which still decides. See
+> section 11.**
+
 ## 6. Output
 
 `results/40_test2_preview.csv`, `results/40_test2_by_band.csv`, and a one-paragraph
@@ -196,3 +200,67 @@ Recorded because each is a real gap, and none may be filled from memory later.
 - Any change to sections 1–6 after the first test-month number exists, without a dated
   written decision.
 - Re-running with different settings and reporting the better outcome.
+
+---
+
+## 11. Amendment 1 — a pre-declared secondary verdict
+
+**Decided by the supervisor and recorded 31 October 2026, before any test-month number
+was computed.** Nothing in sections 1–6 is withdrawn or reworded.
+
+### What changes
+
+A **secondary verdict** is added, on the test months whose **training window holds
+≥ 20 negative-price event-days**. Applying that threshold to the counts already fixed
+in section 7 selects:
+
+> **2026-05, 2026-06, 2026-07, 2026-08, 2026-09** — five months.
+
+2026-03 (1 training event-day) and 2026-04 (11) are excluded from the secondary.
+
+The **verdict rule is unchanged** — WIN / TIE / LOSS on the CI of
+(MAE_M1 − MAE_other), and PASS = WIN vs B0 **and** WIN vs B3-G **and** (WIN or TIE)
+vs B5, **and** no-harm. Only the set of test months differs.
+
+**Both verdicts are reported. The primary, over all seven months, decides.** The
+secondary is evidence about *why* a primary result came out as it did, not an appeal
+against it.
+
+### Why it is worth having
+
+The primary pools months whose training windows differ by two orders of magnitude —
+10 negative-price quarter-hours for 2026-03 against 1,639 for 2026-09. If M1 loses the
+primary, that pooling makes two very different explanations observationally similar:
+the method does not work, or the method was never given enough data to fit a response
+in the early months. The secondary separates them. If M1 loses the primary and wins
+the secondary, the first explanation is the weaker one; if it loses both, the training
+window is not the excuse.
+
+### What the secondary sample is
+
+| | primary | secondary |
+|---|---|---|
+| test months | 7 (2026-03 … 09) | 5 (2026-05 … 09) |
+| negative-price QH | 1,820 | **1,189** |
+| event-days | 87 | **58** |
+| [0, −5) | 1,236 | 915 |
+| [−5, −50) | 436 | 229 |
+| < −50 | 148 | **45** |
+
+### What this amendment does **not** fix
+
+1. **It makes the deepest band worse, not better.** Dropping 2026-04 removes 103 of
+   the 148 quarter-hours below −50 €/MWh, leaving **45**, of which 42 are in 2026-05
+   alone. The `< −50` band in the secondary rests on essentially one month and
+   **cannot support any verdict**. Section 8's warning about that band applies with
+   more force here, not less.
+2. **It costs a third of the event-days** — 87 down to 58. Confidence intervals on
+   MAE differences widen, so the secondary is *more* likely to return TIE, not less.
+   A secondary TIE where the primary is a LOSS is weak evidence for the training-window
+   explanation, and must be reported as weak.
+3. **It does not create power that the data lacks.** Both verdicts run on the same
+   87 event-days of real negative prices, and the RQ1 finding that a handful of
+   event-days carry most of the error applies to both.
+4. **The selection threshold is applied to counts fixed in section 7 before any
+   modelling**, so it is not a choice made with sight of results. It must not be
+   revisited after a number exists.
