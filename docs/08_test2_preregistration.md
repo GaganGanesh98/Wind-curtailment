@@ -335,3 +335,99 @@ and every stratum. Section 8's redispatch availability gap for 2024-01 – 2025-
 tracked separately: the stratifier is simply unavailable for that period until the
 file arrives, and strata that depend on it are reported as unavailable rather than
 imputed.
+
+---
+
+### Dated note to Amendment 2 — 1 November 2026: the R09 error claim is withdrawn
+
+Amendment 2's section 12 is **not** rewritten. This note corrects one claim in it.
+
+**Withdrawn.** Section 12 asserted that between 2025-02-25 and 2025-09-30 cohort R09's
+clock "degenerates to the hourly clock, so its exposure is measured with error in both
+directions". That is wrong. There is no measurement error.
+
+**Not via § 3 Nr. 42a, though.** Checked in the buzer.de version history of EEG 2023
+§ 3 (accessed 1 Nov 2026, https://www.buzer.de/3_EEG.htm and the version pages linked
+from it): Nr. 42a's reference changed from `Stromstundenkontrakten` to
+`Stromviertelstundenkontrakten am Day-Ahead-Markt` **with effect from 1 January
+2025** — retroactively, promulgated 24 Feb 2025 — by Art. 3 Nr. 1 of the
+EnWGEÜVÄndG, G. v. 21.02.2025, BGBl. 2025 I Nr. 51
+(https://www.buzer.de/gesetz/16897/a321772.htm). So from 1 Jan 2025 the definition
+already pointed at quarter-hour contracts, months before the market traded any. Nr. 42a
+on its own therefore cannot be what makes the price hourly in that window; read alone
+it points at a product that did not yet exist.
+
+**The bridge is § 100 Abs. 45 Satz 1** (verbatim text at
+https://www.gesetze-im-internet.de/eeg_2014/__100.html and
+https://www.buzer.de/100_EEG.htm, both accessed 1 Nov 2026; inserted by Art. 3 Nr. 2
+of the same law). For the period from 1 January 2025 up to and including the day on
+which the exchanges first base the day-ahead order-book coupling on quarter-hour
+contracts, the **31 December 2024 version of § 3 Nr. 42a — the hourly one — applies**
+for determining the hours in which the Spotmarktpreis is negative under § 51(1). It
+names the version of § 51(1) in force from 25 Feb 2025 explicitly, so it covers R09.
+
+**So the supervisor's conclusion is confirmed: the hourly trigger for R09 in
+2025-02-25 … 2025-09-30 is the law as applied, not an approximation.**
+
+**And the reason the withdrawn claim was wrong is sharper than "the law says hourly".**
+The legal spot price in that window is constant inside each calendar hour. With a
+constant price, "any quarter-hour whose spot price is negative" and "the quarter-hours
+of a negative hour" select **exactly the same set of quarter-hours**. The error I
+claimed required a finer, quarter-hourly price to exist and go unobserved. None
+existed — not in the market and not in law — so there was nothing to be in error
+against, in either direction.
+
+**Secondary verdict (i) is restated accordingly.** It is a **market-regime
+comparison** — hourly-contract day-ahead market against quarter-hour-contract
+day-ahead market, two genuinely different price-formation regimes — and **not** an
+error bound on a degraded clock. Its purpose is to show whether the method's
+performance depends on the regime, which is a question about generalisation, not about
+measurement quality. Its value does not rest on the withdrawn claim.
+
+**The statute gives a condition, not a date.** Both Abs. 44 and Abs. 45 end at "the
+day the exchanges first base the coupling on quarter-hour contracts"; neither names
+30 Sep or 1 Oct 2025, and no legal source consulted states the actual first coupling
+day. Empirically the changeover is at delivery 2025-10-01: 745 of 745 October 2025
+calendar hours show a non-zero within-hour price spread and September shows none. A
+one-day ambiguity remains between the auction day (30 Sep) and the delivery day
+(1 Oct). **It is immaterial here:** 2025-10-01 contains no negative quarter-hour at
+all (minimum price 61.37 €/MWh) and the first negative October day is 2025-10-04, so
+no § 51 determination turns on which of the two days is meant.
+
+**One open point, now much narrower.** Whether R09's counting unit in that window is
+the hour or the quarter-hour is not settled here — Abs. 45 Satz 2 is conditioned on the
+applicable § 51(1) version using *hours* as the unit, which implies some versions do
+not. It makes **no difference to exposure**, by the constant-price argument above, but
+it may matter to **§ 51a(1)**, which extends the support period by the *number of
+zeroed quarter-hours*: four per negative hour, or one. [VERIFY] — needs § 51(1) as in
+force 25 Feb 2025, and § 51a. Not blocking for Test 2, which models exposure.
+
+**Correction to `data/reference/eeg_negative_price_rules.csv`.** Its
+`price_resolution_since_2025-10-01` column reads "hourly mean of the four QH prices".
+Abs. 45 Satz 2 says the arithmetic mean of the Spotmarktpreise of *the quarter-hours
+of that calendar hour*, with no "four". Immaterial for this project — `build_clock_features`
+groups on UTC hours, and because Berlin is a whole number of hours from UTC the Berlin
+calendar-hour partition is the same partition, so every hour has exactly four
+quarter-hours including at DST transitions — but the table over-specifies the statute
+and should not be quoted as if the number four were in it.
+
+**Also found, and it bears on block 5 rather than on this amendment: § 100 Abs. 44.**
+Satz 1 applies the hourly Nr. 42a and Anlage 1, for the same period, to the monthly
+market values (Anlage 1 Nr. 3), the TSO publication duties (Nr. 5.1, 5.2, 5.4) and the
+exchanges' reports to the TSOs (Nr. 6). Satz 2, for the 2025 **annual** value, sets
+each quarter-hour's Spotmarktpreis to its calendar hour's hourly-contract average and
+spreads the hourly Online-Hochrechnung quantity **evenly across the quarter-hours**.
+That is precisely the construction under which block 5's ratio-of-sums identity holds,
+so the "no 60-minute code path is needed" conclusion is not merely algebraically safe —
+it is the computation the statute prescribes. Satz 3 is the mixed-month provision the
+Netztransparenz PDF deferred to; it never bites here, because the changeover fell on a
+month boundary.
+
+### Precondition for Test 2, added 1 November 2026
+
+After the panel rebuild, the block-4 negative-price flag validation **must be re-run on
+the 21 months 2024-01 … 2025-09**, covering the 6H / 4H / 3H / 1H rule versions.
+**Any mismatch stops Test 2 and is reported, not worked around.** The first 12 months
+checked (2025-10 … 2026-09, 61 comparisons) passed with no mismatch, which is what
+makes a later mismatch interpretable as a statement about the data rather than about
+the trigger logic.
