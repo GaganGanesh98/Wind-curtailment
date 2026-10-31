@@ -43,6 +43,13 @@ from src.censoring.synthetic import SyntheticConfig, generate, true_response_cur
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RESULTS_DIR = REPO_ROOT / "results"
+ARTIFACT_DIR = REPO_ROOT / "data" / "processed" / "e1_gate_artifacts"
+
+
+def artifact_path(cfg: SyntheticConfig) -> Path:
+    """One file per grid cell. Not committed -- it is regenerable from the seed."""
+    return ARTIFACT_DIR / (f"cell_r{int(round(cfg.censoring_rate * 100)):02d}"
+                           f"_g{cfg.gamma}_{cfg.r_shape}_s{cfg.seed}.npz")
 
 RATES = (0.10, 0.20, 0.40)
 GAMMAS = (0.0, 0.5, 1.0)
@@ -62,20 +69,36 @@ A2B = Ablation(label="A2b", name="common threshold at price < 0",
 FULL_LADDER = list(LADDER) + [A2B]
 
 
-class Writer:
-    """Append-as-you-go CSV. The header is fixed by the first row written."""
+PAIRED_FIELDS = ("paired_mae_diff", "paired_mae_sig", "m1_better_mae",
+                 "paired_absbias_diff", "paired_absbias_sig", "m1_better_absbias")
 
-    def __init__(self, path: Path):
+
+class Writer:
+    """Append-as-you-go CSV, header fixed by the first row plus `extra_fieldnames`.
+
+    The extras exist because not every row carries every column. The M1 row has no
+    paired-comparison columns -- it is the thing the others are paired against -- and
+    M1 is written first, so until 1 Nov 2026 `extrasaction="ignore"` silently dropped
+    the paired columns from the entire file. The 81-cell run of 31 Oct 2026 therefore
+    could not be judged on gate criteria (b) and (c) at all. The action is now
+    "raise": a column missing from the header stops the run instead of vanishing from
+    it.
+    """
+
+    def __init__(self, path: Path, extra_fieldnames: tuple[str, ...] = ()):
         self.path = path
+        self.extra = tuple(extra_fieldnames)
         self.fh = None
         self.writer = None
 
     def write(self, row: dict) -> None:
         if self.writer is None:
+            fields = list(row) + [f for f in self.extra if f not in row]
             self.path.parent.mkdir(parents=True, exist_ok=True)
             self.fh = open(self.path, "w", newline="", encoding="utf-8")
-            self.writer = csv.DictWriter(self.fh, fieldnames=list(row),
-                                         lineterminator="\n", extrasaction="ignore")
+            self.writer = csv.DictWriter(self.fh, fieldnames=fields,
+                                         lineterminator="\n", restval="",
+                                         extrasaction="raise")
             self.writer.writeheader()
         self.writer.writerow(row)
         self.fh.flush()
@@ -93,12 +116,53 @@ def fit_all(data, train_cfg) -> dict:
     return fits
 
 
-def score_cell(cfg: SyntheticConfig, train_cfg: TrainConfig, cohorts) -> list[dict]:
+def save_artifact(path: Path, cfg: SyntheticConfig, data, fits: dict,
+                  r_true: np.ndarray, r_hat: dict) -> None:
+    """Per-quarter-hour predictions for one cell, so the gate needs no refit.
+
+    The week-6 gate wants a paired event-day block bootstrap **pooled over seeds**
+    (spec section 7). A per-cell row cannot carry that: pooling needs the individual
+    quarter-hours of all three seeds in one resample. Scoring the gate off the CSV
+    alone was therefore never possible, and re-fitting 729 models every time a gate
+    criterion is re-read costs about four hours. These arrays are the fix.
+
+    Everything is float32 and compressed. `depth` and `s` are (K, T) and mostly zero,
+    so they compress to a fraction of their nominal size.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "censoring_rate": cfg.censoring_rate, "gamma": cfg.gamma,
+        "r_shape": cfg.r_shape, "seed": cfg.seed, "area": cfg.area,
+        "a_true": data.a_true_mw.astype(np.float32),
+        "g_obs": data.g_obs_mw.astype(np.float32),
+        "forecast": data.forecast_mw.astype(np.float32),
+        "c_true": data.c_true.astype(np.float32),
+        "censored": data.censored,
+        "berlin_date": data.berlin_date.astype(str),
+        "real_berlin_date": data.real_berlin_date.astype(str),
+        "shares": np.asarray(data.cohorts.shares, dtype=np.float32),
+        "depth": data.depth.astype(np.float32),
+        "s": data.s.astype(np.float32),
+        "depth_grid": DEPTH_GRID.astype(np.float32),
+        "r_curve_true": r_true.astype(np.float32),
+        "r_curve_M1": r_hat["M1"].astype(np.float32),
+        "r_curve_B3": r_hat["B3"].astype(np.float32),
+        "struct_c_M1": np.asarray(fits["M1"]["c_hat"], dtype=np.float32),
+    }
+    for name, fit in fits.items():
+        payload[f"a_hat_{name}"] = np.asarray(fit["a_hat"], dtype=np.float32)
+    np.savez_compressed(path, **payload)
+
+
+def score_cell(cfg: SyntheticConfig, train_cfg: TrainConfig, cohorts,
+               artifact_path: Path | None = None) -> list[dict]:
     data = generate(cfg, cohorts=cohorts)
     r_true = true_response_curve(cfg, DEPTH_GRID)
     fits = fit_all(data, train_cfg)
     r_hat = {"M1": m1_response_curve(fits["M1"], data, DEPTH_GRID),
              "B3": bl.b3_response_curve(fits["B3"], DEPTH_GRID)}
+    if artifact_path is not None:
+        save_artifact(artifact_path, cfg, data, fits, r_true, r_hat)
 
     mae = lambda f: float(np.abs(f["a_hat"] - data.a_true_mw)[data.censored].mean())
     mae_b0, mae_oracle = mae(fits["B0"]), mae(fits["Oracle"])
@@ -141,7 +205,8 @@ def phase_grid(train_cfg, cohorts, writer: Writer) -> None:
         t0 = time.perf_counter()
         cfg = SyntheticConfig(censoring_rate=rate, gamma=gamma, r_shape=shape, seed=seed)
         try:
-            for row in score_cell(cfg, train_cfg, cohorts):
+            for row in score_cell(cfg, train_cfg, cohorts,
+                                  artifact_path=artifact_path(cfg)):
                 writer.write(row)
             print(f"  [{i:>3}/{len(cells)}] rate {rate:.0%} gamma {gamma} "
                   f"{shape:<9} seed {seed}  {time.perf_counter() - t0:6.1f}s", flush=True)
@@ -268,16 +333,16 @@ def main() -> None:
         print(f"  {c.cohort_id:<30}{c.capacity_share:7.2%}  {c.clock}")
 
     phases = {
-        "grid": (phase_grid, "12_reduced_grid.csv"),
-        "ladder": (phase_ladder, "12_ladder.csv"),
-        "proxy": (phase_proxy, "12_proxy_quality.csv"),
-        "hetero": (phase_hetero, "12_hetero_r.csv"),
+        "grid": (phase_grid, "12_reduced_grid.csv", PAIRED_FIELDS),
+        "ladder": (phase_ladder, "12_ladder.csv", ()),
+        "proxy": (phase_proxy, "12_proxy_quality.csv", PAIRED_FIELDS),
+        "hetero": (phase_hetero, "12_hetero_r.csv", ()),
     }
     chosen = [args.only] if args.only else list(phases)
     wall0 = time.perf_counter()
     for name in chosen:
-        fn, out = phases[name]
-        w = Writer(RESULTS_DIR / out)
+        fn, out, extras = phases[name]
+        w = Writer(RESULTS_DIR / out, extra_fieldnames=extras)
         try:
             fn(train_cfg, cohorts, w)
         finally:
