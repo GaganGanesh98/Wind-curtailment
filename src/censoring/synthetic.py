@@ -104,6 +104,16 @@ class SyntheticConfig:
     observation_noise_mw: float = 0.0
     with_weather_proxy: bool = True
     weather_noise_ms: float = 0.6
+    # Target correlation between the weather proxy and A_true. When set, the noise
+    # level is calibrated to hit it and `weather_noise_ms` is ignored. The default
+    # proxy correlates about 0.91 with A_true because it IS A_true plus noise, far
+    # better than a real numerical weather prediction; varying this is how E1 tests
+    # whether the method survives a realistically poor proxy.
+    weather_target_corr: float | None = None
+    # Per-cohort offsets on r*. None gives one shared r* across cohorts, which is
+    # simpler but cannot test whether cohort structure is worth having: a single
+    # fleet-wide cohort then reproduces the truth by construction.
+    r_cohort_offsets: tuple[float, ...] | None = None
     # Fleet power curve used only to turn A_true into a plausible wind speed.
     curve_v50_ms: float = 9.0
     curve_k: float = 1.6
@@ -169,6 +179,24 @@ class SyntheticData:
 
 
 # --------------------------------------------------------------------- the response
+
+
+def true_response_per_cohort(depth: np.ndarray, cfg: SyntheticConfig) -> np.ndarray:
+    """r* per cohort, with optional cohort-specific offsets.
+
+    With `r_cohort_offsets=None` every cohort shares one r*, so one fleet-wide
+    cohort reproduces the truth exactly and the A3 ablation has nothing to detect.
+    With offsets the cohorts genuinely differ and cohort structure becomes testable.
+    """
+    base = true_response(depth, cfg)
+    if cfg.r_cohort_offsets is None:
+        return base
+    off = np.asarray(cfg.r_cohort_offsets, dtype=float)
+    if off.size != depth.shape[0]:
+        raise ValueError(
+            f"r_cohort_offsets has {off.size} entries for {depth.shape[0]} cohorts"
+        )
+    return np.clip(base + off[:, None], 0.0, 1.0) * (depth > 0.0)
 
 
 def true_response(depth: np.ndarray, cfg: SyntheticConfig) -> np.ndarray:
@@ -406,6 +434,28 @@ def _inject_prices(
 # --------------------------------------------------------------------- weather proxy
 
 
+def _calibrate_weather_noise(a_true_mw, cfg, target: float) -> float:
+    """Speed-noise level whose proxy correlates `target` with A_true.
+
+    The correlation falls monotonically in the noise, so a bisection suffices.
+    Calibrating on the realised correlation rather than setting a noise level by
+    hand means "proxy quality 0.8" means the same thing in every cell of the grid.
+    """
+    import dataclasses
+
+    lo, hi = 0.01, 60.0
+    for _ in range(40):
+        mid = 0.5 * (lo + hi)
+        trial = dataclasses.replace(cfg, weather_noise_ms=mid,
+                                    weather_target_corr=None)
+        v = _weather_proxy(a_true_mw, trial, np.random.default_rng(cfg.seed))
+        if float(np.corrcoef(v, a_true_mw)[0, 1]) > target:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
 def _weather_proxy(a_true_mw: np.ndarray, cfg: SyntheticConfig,
                    rng: np.random.Generator) -> np.ndarray:
     """A_true passed through a noisy inverse fleet power curve, giving a wind speed.
@@ -414,6 +464,11 @@ def _weather_proxy(a_true_mw: np.ndarray, cfg: SyntheticConfig,
     model has to learn the curve. Noise is added on the speed, which is where a
     numerical weather prediction's error actually lives.
     """
+    if cfg.weather_target_corr is not None:
+        import dataclasses
+        noise = _calibrate_weather_noise(a_true_mw, cfg, cfg.weather_target_corr)
+        cfg = dataclasses.replace(cfg, weather_noise_ms=noise,
+                                  weather_target_corr=None)
     capacity = float(np.nanmax(a_true_mw)) * 1.05 + 1e-9
     cf = np.clip(a_true_mw / capacity, 1e-4, 1.0 - 1e-4)
     v = cfg.curve_v50_ms - cfg.curve_k * np.log(1.0 / cf - 1.0)
@@ -455,7 +510,7 @@ def generate(cfg: SyntheticConfig, cohorts: CohortSet | None = None) -> Syntheti
     clock = build_clock_features(ts, price)
     theta, s, depth = theta_and_exposure(cohorts, clock, cfg.mv_eur_mwh)
 
-    r_true = true_response(depth, cfg) * s
+    r_true = true_response_per_cohort(depth, cfg) * s
     c_true = curtailed_share(cohorts.shares, s, r_true)
 
     g_obs = a_true * (1.0 - c_true)
@@ -464,6 +519,8 @@ def generate(cfg: SyntheticConfig, cohorts: CohortSet | None = None) -> Syntheti
         g_obs = np.maximum(g_obs, 0.0)
 
     weather = _weather_proxy(a_true, cfg, rng) if cfg.with_weather_proxy else None
+    weather_corr = (float(np.corrcoef(weather, a_true)[0, 1])
+                    if weather is not None else float("nan"))
 
     diagnostics = {
         **price_diag,
@@ -479,6 +536,7 @@ def generate(cfg: SyntheticConfig, cohorts: CohortSet | None = None) -> Syntheti
         "exposed_rate_per_cohort": {
             c.cohort_id: float((s[i] > 0).mean()) for i, c in enumerate(cohorts)
         },
+        "weather_corr_with_a_true": weather_corr,
         "mean_a_true_mw": float(a_true.mean()),
         "mean_g_obs_mw": float(g_obs.mean()),
         "curtailed_energy_share": float(

@@ -1,8 +1,28 @@
 # 06 — Pivot: from forecast correction to mechanism-aware censored learning
 
-Version 1.7, 31 Oct 2026 (v1.6: commit 46026bf; v1.5: commit 8e3b708; v1.4: commit
+Version 1.8, 31 Oct 2026 (v1.7: commit 9454c8c; v1.6: commit 46026bf; v1.5: commit 8e3b708; v1.4: commit
 4b9dc8c; v1.3: commit 2538e56; v1.2: commit 980cd30; v1.1 and v1: not committed).
 Working spec, not proposal prose.
+
+**Changes in v1.8** (31 Oct 2026, student decision).
+
+> **Minute — final revision; criteria fixed before the reduced grid.** v1.7's
+> absolute-only gate is withdrawn. Comparative criteria return as the primary test,
+> with v1.7's absolute thresholds retained as secondary floors. **No further gate
+> changes without the student's written decision.**
+
+- **§7: the gate is comparative again**, in the form below. v1.7's absolute
+  thresholds stay as **secondary floors**, explicitly labelled *set after the
+  one-seed smoke run* so a reader knows they were chosen with sight of data.
+- **§7 (b) is now bias and curtailed-share MAE**, and **every baseline is scored on
+  ĉ too**, via ĉ = 1 − G/Â.
+- **Correction.** v1.7 claimed no baseline produces a per-quarter-hour ĉ, and built
+  a criterion on that. It is wrong: any method with an Â implies ĉ = 1 − G/Â. What
+  is distinctive about M1 is that its ĉ is a *structural* output of the observation
+  model, not a residual of its own A-estimate — a narrower and defensible claim.
+- **§7 E2: switch-back validation and an aggregate volume check** added.
+- **§7 E3: the 1 Jan 2026 confound** recorded — two things happen at once.
+- **E1 now uses the real MaStR cohort shares**, not the invented dict.
 
 **Changes in v1.7** (31 Oct 2026, after the nine-cell gate preview).
 
@@ -26,8 +46,10 @@ Working spec, not proposal prose.
 - **§7: new metric, the recovery skill score** S = (MAE_B0 − MAE_method) /
   (MAE_B0 − MAE_oracle). Bounded, interpretable, and anchored on the status quo and
   the information ceiling rather than on a rival's behaviour.
-- **§7: new metric, curtailment recovery** — ĉ against c_true. No baseline produces a
-  per-quarter-hour ĉ at all, so this claim has no competitor by construction.
+- **§7: new metric, curtailment recovery** — ĉ against c_true.
+  **Corrected in v1.8:** the v1.7 text claimed no baseline produces a per-quarter-hour
+  ĉ. That was wrong. Any method with an estimate of available power yields one by
+  ĉ = 1 − G/Â, so every baseline can be scored on it and must be.
 - **§5a (new): the ablation ladder.** M1 against M1 with one piece removed, same code,
   same data, same seed. This is the evidence that the structure earns its place;
   baselines cannot supply it.
@@ -367,55 +389,61 @@ reviewer discipline.
 ## 7. Experiments
 
 - **E1 — semi-synthetic benchmark (do first; needs no MaStR, no ERA5).** Base data: uncensored QHs (price > 5 €/MWh). Treat their actual G as true A. Inject synthetic censoring: choose QHs with probability rising in F_t (confounding strength γ ∈ {0, 0.5, 1}), assign synthetic negative prices and run lengths, compute s_k with the real rule logic and synthetic cohort shares, apply known r*_k (step, logistic, 50%-compliance). Grid: censoring rate {5, 10, 20, 30, 40}% × γ × r* shape × 5 seeds. Metrics: MAE of Â on censored QHs, integrated absolute error of r̂ vs r*, 80/90% coverage, MAE on G, **CRPS and PIT histograms for A** (true A is known here, so calibration of P(A|x) can be checked directly). Add a weather-proxy arm: synthetic censoring with and without the weather covariate, to measure how much it helps identification.
-- **Week-6 checkpoint — go/no-go on E1 (v1.7, due 31 Dec 2026).** Censoring rates
-  ≥ 10%, seeds 42–46, all three r\* shapes. Every test is paired, with a 95% event-day
-  block-bootstrap CI pooled over the five seeds.
+- **Week-6 checkpoint — go/no-go on E1 (v1.8, due 31 Dec 2026).** Censoring rates
+  ≥ 10%, seeds 42–44 on the reduced grid, all three r\* shapes. Every test is paired,
+  with a 95% event-day block-bootstrap CI pooled over seeds. Pass needs all three:
 
-  The gate is **self-contained**: it is decided by the known truth of the benchmark,
-  by the published TSO forecast, and by our own oracle — never by how a rival method
-  happens to behave. Pass needs all three:
+  - **(a) γ = 0, each r\* shape.** Integrated |r̂ − r\*| lower than B3's implied
+    response.
+  - **(b) γ ∈ {0.5, 1}.** Both the **absolute bias of Â** and the **curtailed-share
+    MAE** (ĉ against c_true) lower than each of B1–B4. Every baseline's ĉ is
+    **1 − G/Â**; M1 is scored the same way, so the comparison uses one formula for
+    everyone. M1's structural ĉ = Σ w·s·r is reported alongside as its real output.
+  - **(c) γ = 0.** M1's MAE not significantly worse than B2 — the no-harm clause.
 
-  - **(a) Response recovery.** Integrated |r̂ − r\*| ≤ **0.05** at γ = 0 for each r\*
-    shape. An absolute threshold, not a comparison: r\* is known, so "did we recover
-    it?" needs no second method. (M1 is currently at 0.003–0.007.)
-  - **(b) Latent-power recovery.** The recovery skill score
-    S = (MAE_B0 − MAE_M1) / (MAE_B0 − MAE_oracle) ≥ **0.80** at γ ∈ {0.5, 1}, each
-    shape. 1.0 is the oracle, 0.0 is the raw TSO forecast. The oracle is the
-    information ceiling, so no method can exceed 1.0 and the v1.6 pathology — a
-    baseline beating the ceiling on the gate's own metric — cannot recur.
-  - **(c) Curtailment recovery.** ĉ against c_true on censored quarter-hours:
-    correlation ≥ **0.8** and |mean ĉ − mean c_true| ≤ **0.05**. No baseline produces
-    a per-quarter-hour ĉ at all, so this claim has no competitor by construction.
+  **Secondary floors (set after the one-seed smoke run, 30–31 Oct 2026).** Reported
+  with the verdict, not part of the pass: integrated |r̂ − r\*| ≤ 0.05; recovery skill
+  S = (MAE_B0 − MAE_M1)/(MAE_B0 − MAE_oracle) ≥ 0.80 at γ > 0. They were chosen with
+  sight of one seed's results and are labelled as such, so they carry less weight
+  than the comparative criteria.
 
-  **Reported but not required:** M1's skill score at least matching the best of
-  B1–B5 at γ > 0, and the ablation ladder of §5a. A purely self-referential gate can
-  be passed by a method no reviewer would accept, so the comparison is still run and
-  still published — it simply does not decide the go/no-go.
-
-  **Recoverable headroom.** MAE_B0 − MAE_oracle is only **125–241 MW** against a
-  1,200–1,800 MW error. That bounds what any method can win on A-recovery, and it is
-  why r̂ and ĉ are the headline claims and A-recovery is supporting. Report the
-  headroom beside every skill score; a skill score without it invites the reader to
-  imagine a larger prize than exists.
+  **Recoverable headroom** (MAE_B0 − MAE_oracle) is reported beside every skill
+  score. It was 125–241 MW against a 1,200–1,800 MW error on the one-seed preview;
+  a skill score without it invites the reader to imagine a larger prize than exists.
 
   On a fail: refit with the two-cohort / single-response structure and re-test by
   15 Jan 2027; if that also fails, the structure is not identified on this design —
   stop and agree the next step with the supervisor before any further real-data work.
 
-  **Superseded wordings, kept for audit.**
-  *v1.3 (replaced 30 Oct 2026):* pass if, at γ = 0, (a) integrated |r̂ − r\*| below
-  B3's and (b) MAE of Â on censored QHs below each of B1–B4. Replaced because at
-  γ = 0 censoring is random with respect to F, so deletion is unbiased by
-  construction, B2/B3/B4 land on the oracle and (b) was unpassable.
-  *v1.6 (replaced 31 Oct 2026):* (a) as above; (b) |bias| and curtailed-energy error
-  below each of B1–B4 at γ ∈ {0.5, 1}; (c) no harm against B2 at γ = 0. Replaced
-  because (b) was failed by the oracle itself — at γ = 1 deletion records |bias| 100 MW
-  against the oracle's 141 MW while having the worse MAE, so the criterion rewarded
-  cancelling errors — and because (a) on the step and half shapes compared two numbers
-  at the noise floor (0.0031 against B3's 0.0017).
+  **Superseded wordings, kept for audit.** *v1.3* (replaced 30 Oct): γ = 0 only, MAE
+  below each of B1–B4 — unpassable because deletion is unbiased at γ = 0. *v1.6*
+  (replaced 31 Oct): |bias| and curtailed-energy error at γ > 0 — failed by the
+  oracle itself, which records a larger |bias| than deletion while having the better
+  MAE. *v1.7* (replaced 31 Oct): absolute thresholds only — withdrawn by the student
+  as insufficiently comparative, and one of its criteria rested on the mistaken claim
+  that baselines have no ĉ.
 
 - **E2 — real data (task T2 unless stated).** 15-minute panel, Oct 2025 – Oct 2026, four control areas plus DE. Rolling origin by month, 7-day embargo, event-day blocks. Metrics on negative QHs and overall: MAE, pinball, coverage, bias by price band; Diebold-Mariano with event-day block bootstrap. 50Hertz and Amprion are primary (cleanest signal in v3).
-- **E3 — regulatory transfer.** **Constraint found 29 Oct 2026:** only **199 negative QHs on 7 event-days** fall before 1 Jan 2026 in the 15-minute panel, so "train 2025, test 2026" is not feasible on that panel alone. Options: (a) add the hourly 2023 – Sep 2025 dataset (already planned in v1 §5.3), train before the 1 Jan 2026 staircase change and test after; (b) leave-one-cohort-out within 2026. Decide in month 2.
+  **Order (v1.8):** DE first, then 50Hertz — which is unaffected by the split-state
+  control-area proxy — then the remaining areas only after the Netzanschlusspunkte
+  fix lands.
+  **Switch-back validation (v1.8).** Real data has no A_true, so recovery cannot be
+  scored directly; the nearest observable is the switch-back. Compare Â in the last
+  negative quarter-hour of an episode with observed G in the first positive
+  quarter-hours after it: if Â was right, the two should line up once the incentive
+  goes. Wang & Wang (2026) validate on release events in the same spirit; cite them.
+  Confounded by ramping, so report the ramp rate alongside.
+  **Aggregate volume check (v1.8).** Total recovered market curtailment for
+  Jan–Aug 2026 against Hirth (2026). [VERIFY] whether his wind figure includes
+  offshore before comparing; this project's panel is onshore plus offshore by area.
+- **E3 — regulatory transfer.** **Confound, found 31 Oct 2026 (v1.8): two things
+  happen on 1 Jan 2026.** The 2023 – Feb 2025 staircase steps 3 h → 2 h, *and* the
+  2005 commissioning vintage leaves EEG support (20 years plus the commissioning
+  year, §25), moving that capacity's threshold from −MP to 0. Both change exposure
+  on the same date, in the same direction. E3 must separate them — the staircase hits
+  one cohort and the support expiry another, so the capacity shares identify them
+  separately, but a naive before/after comparison attributes the sum to the rule
+  change. **Constraint found 29 Oct 2026:** only **199 negative QHs on 7 event-days** fall before 1 Jan 2026 in the 15-minute panel, so "train 2025, test 2026" is not feasible on that panel alone. Options: (a) add the hourly 2023 – Sep 2025 dataset (already planned in v1 §5.3), train before the 1 Jan 2026 staircase change and test after; (b) leave-one-cohort-out within 2026. Decide in month 2.
 - **E4 — plausibility (domain result, secondary; task T1, ERA5 allowed).** Compare r̂ with the statutory "should switch off" curve and with Hirth's (2026) Fig. 12 pooled wind response by profit margin, aggregating quarter-hour r̂ to hours ([VERIFY] whether his "wind" includes offshore); report the compliance gap per cohort. Hirth's Table A11 (2026: 32.8% curtailed in negative runs ≥ 6 h vs 6.0% in 1–3 h) is a second check on the run-length term.
 - **E5 — stretch.** Same code on solar curtailment (SMARD solar series), to show the method is not wind-specific; or the pre-auction price-forecast variant from v1.
 

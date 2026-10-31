@@ -565,3 +565,89 @@ def placeholder_cohort_set(
             ),
         ]
     )
+
+
+# --------------------------------------------------- the real fleet, from MaStR
+
+MASTR_SHARES_PATH = REPO_ROOT / "results" / "30_mastr_cohort_shares.csv"
+
+# Award values remain PLACEHOLDERS until the tender results are ingested (rule 19:
+# a range, three settings, keyed to the Zuschlagsnummer). The capacity SHARES below
+# are real -- they key on commissioning date and size, which MaStR gives directly
+# and which the Zuschlagsnummer join does not affect.
+MASTR_COHORT_SPEC = {
+    "out_of_support": dict(
+        rule_id="R01", clock=HOUR_CLOCK, run_length_h=None, subject_to_s51=False,
+        in_support=False, aw=None, macro=MACRO_HOUR,
+        note="Past 20 years plus the commissioning year (EEG s.25): no premium left "
+             "to lose, so theta = 0.",
+    ),
+    "pre2016_in_support_no_s51": dict(
+        rule_id="R01", clock=HOUR_CLOCK, run_length_h=None, subject_to_s51=False,
+        in_support=True, aw=62.0, macro=MACRO_HOUR,
+        note="Commissioned before 1 Jan 2016, still in support. Section 51 never "
+             "applies, so theta is minus the market premium throughout.",
+    ),
+    "wind2016_2020_6h": dict(
+        rule_id="R02", clock=HOUR_CLOCK, run_length_h=6, subject_to_s51=True,
+        in_support=True, aw=62.0, macro=MACRO_HOUR, note="Wind >= 3 MW, 2016-2020.",
+    ),
+    "wind2021_2022_4h": dict(
+        rule_id="R04", clock=HOUR_CLOCK, run_length_h=4, subject_to_s51=True,
+        in_support=True, aw=59.0, macro=MACRO_HOUR, note=">= 500 kW, 2021-2022.",
+    ),
+    "wind2023_feb2025_staircase": dict(
+        rule_id="R07", clock=HOUR_CLOCK, run_length_h="staircase", subject_to_s51=True,
+        in_support=True, aw=71.0, macro=MACRO_HOUR,
+        note="2023 - 24 Feb 2025; steps by the calendar year of the negative prices.",
+    ),
+    "post_feb2025_qh": dict(
+        rule_id="R09", clock=QH_CLOCK, run_length_h=None, subject_to_s51=True,
+        in_support=True, aw=74.0, macro=MACRO_QH,
+        note="From 25 Feb 2025: every negative quarter-hour, no run-length condition.",
+    ),
+    "size_exempt": dict(
+        rule_id="R10", clock=HOUR_CLOCK, run_length_h=None, subject_to_s51=False,
+        in_support=True, aw=66.0, macro=MACRO_HOUR,
+        note="Below its vintage's size threshold: never triggers, so theta stays at "
+             "the market premium.",
+    ),
+    "pilot_exempt": dict(
+        rule_id="R12", clock=HOUR_CLOCK, run_length_h=None, subject_to_s51=False,
+        in_support=True, aw=66.0, macro=MACRO_HOUR,
+        note="Pilot wind, exempt in every version before 25 Feb 2025.",
+    ),
+}
+
+
+def mastr_cohort_set(area: str = "DE", path: Path = MASTR_SHARES_PATH) -> CohortSet:
+    """Cohorts with REAL capacity shares from the MaStR snapshot.
+
+    Replaces `placeholder_cohort_set`, whose shares were invented. Award values are
+    still placeholders and are marked as such; the shares are real.
+    """
+    if not path.exists():
+        raise FileNotFoundError(
+            f"{path} not found. Run `python src/ingest_mastr.py` first."
+        )
+    with open(path, newline="", encoding="utf-8") as fh:
+        rows = [r for r in csv.DictReader(fh) if r["area"] == area]
+    if not rows:
+        raise ValueError(f"No MaStR cohort shares for area {area!r} in {path}")
+
+    unknown = {r["cohort"] for r in rows} - set(MASTR_COHORT_SPEC)
+    if unknown:
+        raise ValueError(f"Unmapped MaStR cohort(s) {sorted(unknown)} (hard rule 12)")
+
+    total = sum(float(r["capacity_share"]) for r in rows)
+    cohorts = []
+    for r in sorted(rows, key=lambda r: r["cohort"]):
+        spec = MASTR_COHORT_SPEC[r["cohort"]]
+        cohorts.append(Cohort(
+            cohort_id=r["cohort"], rule_id=spec["rule_id"], clock=spec["clock"],
+            run_length_h=spec["run_length_h"], subject_to_s51=spec["subject_to_s51"],
+            in_support=spec["in_support"], aw_eur_mwh=spec["aw"],
+            capacity_share=float(r["capacity_share"]) / total, macro=spec["macro"],
+            note=spec["note"],
+        ))
+    return CohortSet(cohorts)

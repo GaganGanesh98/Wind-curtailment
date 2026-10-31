@@ -424,7 +424,7 @@ class Ablation:
     response_head: str = "piecewise"
     latent_form: str = "multiplicative"
     use_weather: bool = True
-    exposure_mode: str = "rules"     # "rules" | "always_on"
+    exposure_mode: str = "rules"     # "rules" | "common_zero" | "always_on"
     cohort_mode: str = "K"           # "K" | "two" | "one"
     price_in_latent: bool = False
 
@@ -453,6 +453,19 @@ def apply_exposure_ablation(data, mode: str):
     """
     if mode == "rules":
         return data.s, data.depth, cohort_runlength_hours(data)
+    if mode == "common_zero":
+        # A2b. One common threshold at zero for every cohort: the model knows the
+        # price is negative and how far below zero it is, but nothing about who is
+        # legally exposed. This is what a modeller without the rule table would
+        # actually assume, and it is the fair measure of what the rule table buys.
+        # A2 ("always_on") is the harsher version -- it asserts that everyone is
+        # exposed at every price, which is not an absence of structure but a false
+        # one, so A2's cost is an upper bound and A2b's is the honest number.
+        k, n = data.s.shape
+        neg = (data.price_eur_mwh < 0.0).astype(float)
+        s_new = np.tile(neg, (k, 1))
+        depth = np.tile(np.maximum(0.0, -data.price_eur_mwh), (k, 1)) * s_new
+        return s_new, depth, cohort_runlength_hours(data)
     if mode == "always_on":
         k, n = data.s.shape
         s = np.ones((k, n), dtype=float)

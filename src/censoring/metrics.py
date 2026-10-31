@@ -232,6 +232,26 @@ def pit_values(y: np.ndarray, q: np.ndarray, taus: np.ndarray, mask=None) -> np.
                      for yi, qi in zip(y, q)])
 
 
+def derived_curtailed_share(a_hat, g_obs) -> np.ndarray:
+    """c-hat = 1 - G / A-hat, clipped to [0, 1].
+
+    The estimate of the switched-off share implied by any method that estimates
+    available power. This is how B1-B5, the proxy and the oracle are scored on
+    curtailment recovery, so that the comparison with M1 uses one formula for
+    everyone (spec v1.8, criterion b).
+
+    M1 also has a *structural* c-hat -- sum_k w_k s_k r_k, straight out of the
+    observation model -- which is its real output and is reported alongside. The
+    gate uses the derived form for every method including M1, because that is the
+    like-for-like comparison and the stricter test of the two.
+    """
+    a = np.asarray(a_hat, dtype=float)
+    g = np.asarray(g_obs, dtype=float)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        c = 1.0 - np.divide(g, a, out=np.full_like(g, np.nan), where=np.abs(a) > 1e-9)
+    return np.clip(np.nan_to_num(c, nan=0.0), 0.0, 1.0)
+
+
 # ------------------------------------------- self-contained recovery measures
 
 def recovery_skill(mae_method: float, mae_b0: float, mae_oracle: float) -> float:
@@ -260,10 +280,13 @@ def recovery_skill(mae_method: float, mae_b0: float, mae_oracle: float) -> float
 def curtailment_recovery(c_hat, c_true, mask) -> dict:
     """How well the model recovers the switched-off share c_t itself.
 
-    This is the one quantity no baseline produces at all: B1-B4 estimate available
-    power and never say what fraction of the fleet switched off in a given
-    quarter-hour. There is therefore nothing to compare against and nothing to
-    argue about -- the comparison is against the truth the benchmark knows.
+    **Every method can be scored on this, not only M1.** An earlier version of this
+    docstring claimed no baseline produces a per-quarter-hour c-hat; that was wrong.
+    Any method with an estimate of available power implies one by c-hat = 1 - G/A-hat,
+    so the baselines get exactly that (see `derived_curtailed_share`) and the
+    comparison is like for like. What is distinctive about M1 is not that it is the
+    only method with a c-hat, but that its c-hat is a structural output of the
+    observation model rather than a residual of its own A-estimate.
 
     Returns MAE and bias on c, the correlation with the truth, and the total
     switched-off share, all on the censored quarter-hours.
@@ -323,7 +346,12 @@ def score_method(
     row["coverage90_a"] = coverage(a_true, q, taus, 0.90)
     row["crps_a"] = crps_from_quantiles(a_true, q, taus)
 
-    row.update(curtailment_recovery(fit.get("c_hat"), data.c_true, censored))
+    # Derived c-hat, the like-for-like form every method has (spec v1.8).
+    row.update(curtailment_recovery(
+        derived_curtailed_share(a_hat, data.g_obs_mw), data.c_true, censored))
+    # M1's structural c-hat, reported alongside; absent for the baselines.
+    row.update({f"struct_{k}": v for k, v in
+                curtailment_recovery(fit.get("c_hat"), data.c_true, censored).items()})
 
     row["int_abs_r_error"] = (
         integrated_response_error(r_hat, r_true_curve, depth_grid)
