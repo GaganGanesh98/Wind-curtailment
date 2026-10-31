@@ -2,7 +2,7 @@
 
     python src/diag_price_logratio.py
 
-Item 4a of the 1 Nov 2026 decision list. Light, independent of the E1 grid, and
+Item 4a of the 31 Oct 2026 decision list. Light, independent of the E1 grid, and
 needed before the E1-MNAR arm can be pre-registered sensibly: that arm has to choose
 a placement weight, and the choice should be informed by what the real relationship
 between price and the output shortfall actually looks like, not by what makes E1
