@@ -76,14 +76,23 @@ def cohort_parameters() -> pl.DataFrame:
         sub = df.filter(pl.col("cohort") == cohort)
         cap = float(sub["net_kw"].sum() or 0.0)
         with_aw = sub.filter(pl.col("aw_eur_mwh").is_not_null())
-        aw = (float((with_aw["aw_eur_mwh"].to_numpy()
-                     * with_aw["net_kw"].to_numpy()).sum()
-                    / with_aw["net_kw"].sum()) if with_aw.height else None)
+        def wmean(col: str):
+            v = with_aw.drop_nulls(col)
+            if v.height == 0:
+                return None
+            w = v["net_kw"].to_numpy()
+            return float((v[col].to_numpy() * w).sum() / w.sum())
+
+        aw = wmean("aw_eur_mwh")
         monthly_cap = float(sub.filter(pl.col("ref_period") == "monthly")
                                ["net_kw"].sum() or 0.0)
         rows.append({
             "cohort": cohort, "capacity_mw": cap / 1000,
             "aw_eur_mwh": round(aw, 2) if aw else None,
+            "aw_low_eur_mwh": (lambda v: round(v, 2) if v else None)(
+                wmean("aw_low_eur_mwh")),
+            "aw_high_eur_mwh": (lambda v: round(v, 2) if v else None)(
+                wmean("aw_high_eur_mwh")),
             "share_monthly_reference": round(monthly_cap / cap, 4) if cap else None,
             "reference": "monthly" if monthly_cap >= cap / 2 else "annual",
             "fit_share": round(float(sub.filter(pl.col("aw_source") == PROV_HIRTH_FIT)
@@ -152,22 +161,35 @@ def main() -> None:
     jw = np.where(np.array([k[0] for k in ym]) == 2025, JW_2025_EUR_MWH, jw26)
 
     pmap = {r["cohort"]: r for r in params.iter_rows(named=True)}
-    theta, trig, untriggered = [], [], []
-    for c in cohorts:
-        p = pmap[c.cohort_id]
-        active = trigger_active(c, clock)
-        ref = mv if p["reference"] == "monthly" else jw
-        if p["aw_eur_mwh"] is None:
-            th = np.zeros_like(price)            # out of support: theta = 0
-        else:
-            th = -np.maximum(0.0, p["aw_eur_mwh"] - ref)
-        untriggered.append(th.copy())
-        theta.append(np.where(active, 0.0, th))
-        trig.append(active)
-    theta = np.vstack(theta)
-    theta_untriggered = np.vstack(untriggered)
-    trig = np.vstack(trig)
     shares = cohorts.shares
+
+    def build_theta(setting: str):
+        """theta per cohort under one of rule 19's AW settings.
+
+        "stress" is not an AW setting but a structural what-if: every pre-2016
+        in-support cohort is forced to MP = 0, standing in for the possibility
+        that most of it sits on the BASE tariff rather than on the blended value
+        Table A1 quotes. It is the pessimistic case for identification, because
+        the premium is what gates cohort separation.
+        """
+        col = {"main": "aw_eur_mwh", "low": "aw_low_eur_mwh",
+               "high": "aw_high_eur_mwh", "stress": "aw_eur_mwh"}[setting]
+        th_list, trig_list, untrig = [], [], []
+        for c in cohorts:
+            p = pmap[c.cohort_id]
+            active = trigger_active(c, clock)
+            ref = mv if p["reference"] == "monthly" else jw
+            aw = p[col]
+            if setting == "stress" and c.cohort_id == "pre2016_in_support_no_s51":
+                aw = None
+            th = np.zeros_like(price) if aw is None else -np.maximum(0.0, aw - ref)
+            untrig.append(th.copy())
+            th_list.append(np.where(active, 0.0, th))
+            trig_list.append(active)
+        return np.vstack(th_list), np.vstack(untrig), np.vstack(trig_list)
+
+    results = {st: build_theta(st) for st in ("main", "low", "high", "stress")}
+    theta, theta_untriggered, trig = results["main"]
     s = (price[None, :] < theta).astype(int)
 
     mask = covered_mask = np.array([k in have for k in ym])
@@ -208,6 +230,27 @@ def main() -> None:
     print(f"\n  Where the premium is zero, theta = 0 whether or not the section 51")
     print(f"  trigger is active, so the trigger cannot create a difference at all.")
     print(f"  The clock channel is only live while a premium is.")
+
+    print("\nRULE 18 UNDER RULE 19's AW SETTINGS, AND THE BASE-TARIFF STRESS CASE")
+    print("  (stress = all pre-2016 in-support capacity forced to MP = 0)")
+    print(f"\n  {'setting':<10}{'QHs differing':>15}{'EVENT-DAYS':>13}{'verdict':>24}")
+    setting_rows = []
+    for setting in ("low", "main", "high", "stress"):
+        th, _, _ = results[setting]
+        ss = (price[None, :] < th).astype(int)
+        dd = (ss.max(axis=0) != ss.min(axis=0)) & mask
+        nd = len(set(dates[dd]))
+        verdict = "K-cohort stands" if nd >= 10 else "TWO-COHORT FALLBACK"
+        print(f"  {setting:<10}{int(dd.sum()):>15,}{nd:>13,}{verdict:>24}")
+        setting_rows.append({"setting": setting, "qh_differing": int(dd.sum()),
+                             "event_days": nd, "threshold": 10, "verdict": verdict})
+    with open(RESULTS_DIR / "38_rule18_settings.csv", "w", newline="",
+              encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(setting_rows[0]), lineterminator="\n")
+        w.writeheader()
+        w.writerows(setting_rows)
+    print("\n  Cohort separation is gated by the premium, so r-hat stability across")
+    print("  these settings is the primary real-data identification check (spec I4).")
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     with open(RESULTS_DIR / "38_rule18_real.csv", "w", newline="",

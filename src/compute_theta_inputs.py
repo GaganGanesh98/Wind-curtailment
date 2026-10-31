@@ -72,6 +72,9 @@ STATUS_A_BAND = 0.15
 # Feed-in-tariff share within each vintage, from Table A1's own capacities.
 HIRTH_A1_FIT_SHARE = {"2003_2011": 0.51 / (9.69 + 0.51), "2012_2015": 0.75 / (14.25 + 0.75)}
 JW_2025_EUR_MWH = 74.41
+# s.36h correction factors at the ends of rule 19's sensitivity: a good 90% site
+# and a poor 60% site.
+S36H_LOW, S36H_HIGH = 1.07, 1.42
 
 
 PROV_TENDERED = "BNetzA round x 1.226"
@@ -174,6 +177,19 @@ def build() -> pl.DataFrame:
           .then(pl.col("aw_wmean_eur_mwh") * CORRECTION_FACTOR_MAIN)
           .otherwise(pl.col("vintage").replace_strict(HIRTH_A1_AW_EUR_MWH, default=None))
           .alias("aw_eur_mwh"),
+        # Rule 19's three settings, per unit. Tendered: the awarded-bid range
+        # crossed with the s.36h correction range (good 90% site to poor 60%).
+        # Status A: Hirth's blended value +/- 15%.
+        pl.when(pl.col("out_of_support")).then(None)
+          .when(pl.col("aw_min_eur_mwh").is_not_null())
+          .then(pl.col("aw_min_eur_mwh") * S36H_LOW)
+          .otherwise(pl.col("vintage").replace_strict(HIRTH_A1_AW_EUR_MWH, default=None)
+                     * (1 - STATUS_A_BAND)).alias("aw_low_eur_mwh"),
+        pl.when(pl.col("out_of_support")).then(None)
+          .when(pl.col("aw_max_eur_mwh").is_not_null())
+          .then(pl.col("aw_max_eur_mwh") * S36H_HIGH)
+          .otherwise(pl.col("vintage").replace_strict(HIRTH_A1_AW_EUR_MWH, default=None)
+                     * (1 + STATUS_A_BAND)).alias("aw_high_eur_mwh"),
         pl.when(pl.col("out_of_support")).then(pl.lit(PROV_OUT_OF_SUPPORT))
           .when(pl.col("aw_wmean_eur_mwh").is_not_null()).then(pl.lit(PROV_TENDERED))
           .when(pl.col("vintage") == "post_2020").then(pl.lit(PROV_GAP))

@@ -327,6 +327,30 @@ rule changes.
 - I3 — monotonicity: r_k is non-decreasing in price depth (constraint built into the model).
 - I4 — separability of cohorts: the two price clocks (quarter-hour vs hourly mean plus run length) create QHs where one cohort is exposed and another is not. This regulatory mismatch is the identifying variation. If K cohorts are not separable, collapse to two cohorts (QH-clock vs hourly-clock). **Pre-registered test (v1.2):** before any modelling on real data, count the Berlin-local event-days on which the cohort exposure vectors s_k actually differ. Fewer than **10** such days and the K-cohort model is abandoned for the two-cohort one, with the count reported either way. **The collapse pools the response, not the exposure (v1.3):** s_k,t is still computed per legal cohort (rule-table row) and aggregated into each macro-cohort's exposed capacity share; only r is shared within a macro-cohort. The staircase cohort sits at 2 h throughout 2026, but the hourly-clock cohorts still differ by run-length threshold (6 h, 4 h, 2 h), and that variation is kept.
 
+**I4 on real data — cohort separation is gated by the market premium (v1.8,
+31 Oct 2026).** The pre-registered rule-18 count was run on real 2026 data with
+real MaStR shares, the per-unit AW provenance, published MW/JW and real prices:
+**55 event-days** with differing cohort exposure against a threshold of 10, so the
+K-cohort model stands. Decomposed by quarter-hour, the §51 clock **never**
+separates cohorts on its own (0 of 803); the premium alone accounts for 169 and
+both channels together for 634. The reason is structural: θ = 0 both when the §51
+trigger fires and when the premium is zero, so where MP = 0 the trigger changes
+nothing. Repeated across rule 19's AW settings and a base-tariff stress case
+(all pre-2016 in-support capacity forced to MP = 0):
+
+| setting | QHs differing | event-days | verdict |
+|---|---|---|---|
+| AW low | 292 | 19 | K-cohort stands |
+| AW main | 803 | 55 | K-cohort stands |
+| AW high | 1,220 | 71 | K-cohort stands |
+| base-tariff stress | 362 | 29 | K-cohort stands |
+
+All four clear the threshold, but the low setting at 19 days is far closer to it
+than the headline 55 suggests. **Because separation is gated by the premium, the
+stability of r̂ across these three θ settings is the primary real-data
+identification check** — not the day count, which only says the variation exists.
+`results/38_rule18_settings.csv`.
+
 ## 3a. Two tasks and the weather proxy (v1.1)
 
 The thesis separates two tasks, because they allow different data:

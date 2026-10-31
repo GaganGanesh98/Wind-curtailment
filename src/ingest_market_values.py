@@ -79,6 +79,10 @@ PANEL = REPO_ROOT / "data" / "processed" / "panel_qh.parquet"
 PUBLISHED = REPO_ROOT / "data" / "raw" / "netztransparenz" / "Monatsmarktwerte_2026.csv"
 RESULTS_DIR = REPO_ROOT / "results"
 
+# Rule 17: how many days of the current month must be available before the
+# month-to-date value is used instead of the previous month's completed one.
+MIN_DAYS_MTD = 7
+
 MONTHS_DE = {"Jan": 1, "Feb": 2, "Mär": 3, "Mrz": 3, "Apr": 4, "Mai": 5, "Jun": 6,
              "Jul": 7, "Aug": 8, "Sep": 9, "Okt": 10, "Nov": 11, "Dez": 12}
 CT_PER_KWH_TO_EUR_PER_MWH = 10.0
@@ -179,21 +183,33 @@ def month_to_date(area: str = "DE") -> pl.DataFrame:
           .sort(["year", "month"])
           .with_columns(pl.col("mv_complete").shift(1).alias("mv_prev_month"))
     )
+    # Rule 17 amendment, fixed 31 Oct 2026: a month-to-date value built from one
+    # or two days is not a market value, it is noise -- 2026-01-02 read
+    # 9.17 EUR/MWh off a single day. T2 therefore uses the PREVIOUS month's
+    # recomputed value until at least MIN_DAYS_MTD days of the current month are
+    # available, and the same logic carries the previous year's JW through early
+    # January for the year-to-date series.
+    df = df.with_columns(
+        pl.col("d").dt.day().alias("day_of_month"),
+        pl.col("d").dt.ordinal_day().alias("day_of_year"),
+    )
     return (
         df.join(monthly_complete.select(["year", "month", "mv_prev_month"]),
                 on=["year", "month"], how="left")
           .with_columns(
-              pl.when(pl.col("q_mtd") > 0)
+              pl.when((pl.col("q_mtd") > 0) & (pl.col("day_of_month") > MIN_DAYS_MTD))
                 .then(pl.col("pq_mtd") / pl.col("q_mtd"))
                 .otherwise(pl.col("mv_prev_month"))
                 .alias("mv_t2_known_by_d_minus_1"),
-              pl.when(pl.col("q_ytd") > 0)
+              pl.when((pl.col("q_ytd") > 0) & (pl.col("day_of_year") > MIN_DAYS_MTD))
                 .then(pl.col("pq_ytd") / pl.col("q_ytd"))
                 .otherwise(None)
                 .alias("mv_ytd_known_by_d_minus_1"),
+              ((pl.col("day_of_month") <= MIN_DAYS_MTD)
+               | (pl.col("q_mtd").is_null())).alias("mv_t2_is_carried_forward"),
           )
           .select(["d", "year", "month", "mv_t2_known_by_d_minus_1",
-                   "mv_ytd_known_by_d_minus_1"])
+                   "mv_ytd_known_by_d_minus_1", "mv_t2_is_carried_forward"])
     )
 
 

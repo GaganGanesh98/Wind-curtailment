@@ -1,0 +1,5 @@
+setting,qh_differing,event_days,threshold,verdict
+low,292,19,10,K-cohort stands
+main,803,55,10,K-cohort stands
+high,1220,71,10,K-cohort stands
+stress,362,29,10,K-cohort stands
