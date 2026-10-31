@@ -23,6 +23,22 @@ that day are the same real day -- so a drawn day brings all of its quarter-hours
 every pooled cell. Blocking on (seed, day) instead would treble the apparent number
 of independent blocks and narrow every interval; it is reported as a sensitivity.
 
+Shape-invariant baselines
+-------------------------
+B0, B2 and B3 produce **bit-identical** A-estimates across the three r* shapes at the
+same rate, gamma and seed, and the censored mask is identical too; B1, B4 and M1 are
+not. Verified directly from the stored arrays, not assumed. B2 and B3 fit on the
+uncensored sample, which the choice of r* does not touch (the generator's placement
+depends on rate, gamma and seed alone). B3's *implied response* does vary with shape,
+because it is read off binned ratios of G -- only its A-estimate is invariant.
+
+Consequence for (b) and (c): pooling over shapes averages three distinct M1 fits
+against ONE B2 or B3 fit repeated three times. The confidence interval remains valid
+for that estimand, because blocks are whole days and all three copies of a day travel
+together in a drawn block, so no spurious independence is manufactured. But the
+estimand is "M1 averaged over shapes versus that one baseline fit", not 27 independent
+comparisons, and per-shape rows are reported so this is visible rather than implied.
+
 Pooling the bias (criterion b)
 ------------------------------
 The bias statistic is the **absolute value of the pooled signed bias**: all censored
@@ -283,6 +299,44 @@ def criterion_b(cells: list[dict], rows: list[dict]) -> dict:
         verdicts[gamma] = ok
         print(f"    -> gamma {gamma}: {'PASS' if ok else 'FAIL'} "
               f"(needs M1 better on BOTH statistics against ALL of B1-B4)")
+
+        # Per shape, because B0/B2/B3 are shape-invariant (verified: a_hat identical
+        # across r* shapes at the same rate, gamma and seed, as is the censored mask).
+        # Pooling over shapes therefore averages three distinct M1 fits against ONE
+        # B2 or B3 fit repeated three times. The CI stays valid for that estimand --
+        # day blocks carry all three copies together, so no spurious independence is
+        # created -- but the estimand is "M1 averaged over shapes", not 27 independent
+        # comparisons, and the per-shape rows are where that becomes visible.
+        for shape in SHAPES:
+            ss = [c for c in sub if str(c["r_shape"]) == shape]
+            if not ss:
+                continue
+            line = f"      {shape:<9}"
+            for rival in GATE_RIVALS:
+                sa, sb, days = pool(ss, lambda c, r=rival: (
+                    signed_err(c, "M1"), signed_err(c, r), c["censored"],
+                    c["berlin_date"]))
+                pb = paired_abs_bias(sa, sb, np.ones(sa.shape, dtype=bool), days)
+                ca, cb, cdays = pool(ss, lambda c, r=rival: (
+                    c_abs_err(c, "M1"), c_abs_err(c, r), c["censored"],
+                    c["berlin_date"]))
+                pc = paired_difference(ca, cb, np.ones(ca.shape, dtype=bool), cdays)
+                mark = ("both" if pb["a_better"] and pc["a_better"]
+                        else "bias" if pb["a_better"]
+                        else "cmae" if pc["a_better"] else "-")
+                line += f"{rival}:{mark:<6}"
+                rows.append(
+                    {"criterion": "b", "stratum": f"gamma={gamma},shape={shape}",
+                     "rival": rival, "statistic": "abs_bias_mw + curtailed_share_mae",
+                     "m1_value": "", "rival_value": "",
+                     "paired_diff": round(pb["diff"], 6),
+                     "ci_lo": round(pb["lo"], 6), "ci_hi": round(pb["hi"], 6),
+                     "significant": pb["significant"], "m1_better": mark == "both",
+                     "n_qh": pb["n_qh"], "n_days": pb["n_days"], "n_cells": len(ss),
+                     "note": f"per-shape split; cmae diff {pc['diff']:+.6f} "
+                             f"[{pc['lo']:+.6f}, {pc['hi']:+.6f}]; "
+                             f"B0/B2/B3 are shape-invariant"})
+            print(line + "   (which statistic M1 significantly wins)")
     return verdicts
 
 
