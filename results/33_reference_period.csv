@@ -1,0 +1,5 @@
+dec_2022_counts_as_2023,reference_period,capacity_mw,units
+False,monthly,60359.7,28085
+False,annual,11216.0,2355
+True,monthly,60186.3,28051
+True,annual,11389.4,2389

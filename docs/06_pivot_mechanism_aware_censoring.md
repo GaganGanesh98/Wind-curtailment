@@ -33,6 +33,9 @@ Working spec, not proposal prose.
 - **Real award values AW_k** from the BNetzA tender statistics, weighted by built MaStR
   capacity (`results/31_award_values.csv`).
 - **Market value recomputation is NOT validated** and must not build θ yet — see §3.
+- **Anlage 1, §36h and §51a read at source (31 Oct 2026, texts in `docs/legal/`).**
+  The reference period, the correction table and the §51a question are all settled;
+  what replaces them is a single new dependency, the Online-Hochrechnung. See §3.
 
 **Changes in v1.7** (31 Oct 2026, after the nine-cell gate preview).
 
@@ -231,7 +234,38 @@ Per quarter-hour t and control area:
   - Otherwise θ = −MP_k,t, the market premium: MP = max(0, AW_k − MV_m), with AW_k the cohort's award value (anzulegender Wert) and MV_m the monthly market value for wind. This covers cohorts §51 never touches (pre-2016 plants, rule R01), which still switch off below −MP.
   - **AW_k is a range, not a point (v1.2).** The cohort flag is the presence of a Zuschlagsnummer in MaStR, not the commissioning year. AW_k is reported as the rounded minimum and maximum award for the cohort, widened by the correction-factor (Korrekturfaktor) uncertainty. θ is run at three fixed settings: the **main run** uses the round's volume-weighted average award multiplied by the **mean site-correction factor 1.226** (Hirth 2026, Table A1, derived from the Fachagentur Wind und Solar (2025) distribution of awarded turbines — [VERIFY] at that source), and two **sensitivity runs** use the low and high ends of the correction-factor distribution and the round's bid range; r̂ is reported under all three (v1.3; factor corrected from 1 in v1.5, which understated AW by about a fifth). The Zuschlagsnummer fill rate is measured by capacity on wind units > 750 kW commissioned 2019–2022 and ≥ 1 MW from 2023 (the EEG 2023 tender threshold), excluding pilot plants, the group that must carry one; below 50% the join is treated as broken (v1.3). Plants past the end of their support period have θ = 0 regardless.
   - **MV_m is task-dependent (v1.2).** For T1 (ex-post) the published monthly Netztransparenz market value is correct. For T2 it is **leakage** — it is released after the month ends — so T2 recomputes MV_m from SMARD data available by D−1, month-to-date per EEG Anlage 1 Nr. 3.3.2, falling back to the previous month's value on day 1 of a month. The published series is then used only to validate the recomputation.
-  - **Reference period — [VERIFY] (v1.5).** EEG Anlage 1 Nr. 2 applies the *monthly* market value to plants commissioned or awarded before 1 Jan 2023; cohorts commissioned and awarded from 2023 may settle on the *annual* value (JW). If so, θ for those cohorts needs a year-to-date recomputation in T2. Hirth (2026, Table A1) lists the post-2023 onshore cohorts as monthly, which conflicts with that text; check the current Anlage 1 (amended 25 Feb 2025) before coding. Hirth also anchors his monthly reconstruction on the official annual value — that anchoring is leakage in T2.
+  - **Reference period — RESOLVED 31 Oct 2026 (v1.8), EEG Anlage 1 Nr. 2 read at
+    source (`docs/legal/anlage1_EEG2023.pdf`).** A unit uses the **monthly** market
+    value MW if it was commissioned before 1 Jan 2023 **or** its award was granted
+    before 1 Jan 2023 — either condition suffices — and the **annual** value JW
+    otherwise. This is per unit, not per cohort, so θ carries both: for
+    annual-reference units θ = −max(0, AW − JW). On the MaStR snapshot that is
+    60,360 MW monthly (28,085 units) against 11,216 MW annual (2,355 units).
+    **Hirth (2026, Table A1) lists the post-2023 onshore cohorts as monthly; the
+    statute governs, and the discrepancy is noted here rather than reconciled.**
+    Remaining **[VERIFY]:** whether the 01.12.2022 round counts as awarded in 2023.
+    Both readings are computed; the difference is **173 MW**, 0.24% of the fleet,
+    so it cannot change a conclusion. In T2 the JW is year-to-date from data up to
+    D−1; for T1 in 2026 the year-to-date JW is used and labelled approximate,
+    because the year is not over.
+  - **MV and JW must be weighted by the Online-Hochrechnung, not by metered
+    output (v1.8).** Anlage 1 Nr. 3.3.2 defines MW_onshore as the spot price
+    weighted by "the amount of electricity generated in that quarter hour from
+    onshore wind turbines **according to the online projection in section 5.1**".
+    Recomputing on SMARD's realised generation is therefore not an approximation of
+    the legal definition but a different quantity, which is why the first attempt
+    missed the published series by up to 25%.
+  - **Anlage 1 Nr. 5.1 — the online projection is a curtailment-free potential
+    (v1.8).** Verbatim: *"Reductions in the feed-in power of the plant by the grid
+    operator or within the framework of direct marketing are not to be taken into
+    account when creating the online projection."* Both grid curtailment and
+    price-driven switch-off are excluded **by law**. If the published series
+    complies, it is an official, public, quarter-hourly estimate of uncurtailed wind
+    potential — which is very close to A, the quantity this thesis exists to
+    recover. That would be a major input and a major caveat at once, so it is tested
+    before it is used: see the pre-E2 check in §7. Compliance is a legal
+    requirement, not a guarantee of practice.
+
   - θ is a **step function of the rules**, computed deterministically; nothing about it is learned. Its only uncertainty is the AW_k range above.
 - s_k,t = 1[p_t < θ_k,t] — exposure indicator (deterministic given prices, rules, AW and MV)
 - r_k(z_t) ∈ [0,1] — fraction of exposed cohort-k capacity that actually switches off, as a function of price depth and run length z_t (**unknown, learned**)
@@ -432,6 +466,20 @@ reviewer discipline.
   MAE. *v1.7* (replaced 31 Oct): absolute thresholds only — withdrawn by the student
   as insufficiently comparative, and one of its criteria rested on the mistaken claim
   that baselines have no ĉ.
+
+- **Pre-E2 check — does the Online-Hochrechnung actually ignore curtailment?
+  (v1.8, blocking).** Anlage 1 Nr. 5.1 says it must. Test it before any E2 fitting:
+  in negative-price quarter-hours, compare the Netztransparenz Online-Hochrechnung
+  for wind onshore against the SMARD actual, per control area — bias and ratio by
+  price band, with the event-day block bootstrap. **If the projection does not fall
+  with the curtailment** (i.e. the gap to the metered actual widens as prices go
+  negative), it is behaving as the law requires and becomes an **external, ex-post
+  proxy for A**: admissible in T1 and as validation, and added to the leakage list
+  as **never a T2 input**, since it is published after the fact. **If it does fall
+  with the curtailment**, the projection is tracking metered output, it is not a
+  potential series, and it must not be used as one. Report the result before
+  deciding either way. **Status: cannot be run — the Online-Hochrechnung series is
+  not in `data/raw/`.**
 
 - **E2 — real data (task T2 unless stated).** 15-minute panel, Oct 2025 – Oct 2026, four control areas plus DE. Rolling origin by month, 7-day embargo, event-day blocks. Metrics on negative QHs and overall: MAE, pinball, coverage, bias by price band; Diebold-Mariano with event-day block bootstrap. 50Hertz and Amprion are primary (cleanest signal in v3).
   **Order (v1.8):** DE first, then 50Hertz — which is unaffected by the split-state

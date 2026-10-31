@@ -63,6 +63,79 @@ PROCESSED_DIR = REPO_ROOT / "data" / "processed"
 # Hirth (2026) Table A1.
 CORRECTION_FACTOR_MAIN = 1.226
 
+# EEG 2023 section 36h(1), read from docs/legal/s36h_EEG2023.pdf on 31 Oct 2026.
+# Quality factor (Guetefaktor, site yield over reference yield, %) -> correction
+# factor. Linear interpolation between neighbouring values; above 150% the factor
+# is 0.79; below 60% it is 1.42, and below 50% it is 1.55 but only for plants in
+# the southern region. The factor EXCEEDS 1 at poorer sites, which is why using 1
+# understates AW.
+S36H_CORRECTION = {
+    50: 1.55, 60: 1.42, 70: 1.29, 80: 1.16, 90: 1.07, 100: 1.00,
+    110: 0.94, 120: 0.89, 130: 0.85, 140: 0.81, 150: 0.79,
+}
+# The three settings rule 19 asks for. The main factor 1.226 implies a mean site
+# quality of about 75% on this table, which is plausible for the German fleet.
+CORRECTION_SETTINGS = {
+    "main": CORRECTION_FACTOR_MAIN,   # Hirth (2026) Table A1, from Fachagentur 2025
+    "good_site_90pct": S36H_CORRECTION[90],    # 1.07
+    "poor_site_60pct": S36H_CORRECTION[60],    # 1.42
+}
+
+
+def s36h_correction(quality_factor_pct: float, southern_region: bool = False) -> float:
+    """Correction factor for a quality factor, by section 36h(1) with interpolation."""
+    xs = sorted(S36H_CORRECTION)
+    if quality_factor_pct >= xs[-1]:
+        return S36H_CORRECTION[xs[-1]]
+    floor = 50 if southern_region else 60
+    if quality_factor_pct <= floor:
+        return S36H_CORRECTION[floor]
+    import bisect
+
+    i = bisect.bisect_left(xs, quality_factor_pct)
+    lo, hi = xs[i - 1], xs[i]
+    w = (quality_factor_pct - lo) / (hi - lo)
+    return S36H_CORRECTION[lo] + w * (S36H_CORRECTION[hi] - S36H_CORRECTION[lo])
+
+
+# EEG 2023 Anlage 1 Nr. 2, read from docs/legal/anlage1_EEG2023.pdf on 31 Oct 2026:
+# "For electricity from installations that were commissioned before January 1,
+# 2023, OR for which the award was granted before January 1, 2023, the market
+# premium is calculated based on the ... monthly market value. For electricity
+# from other installations ... the annual market value."
+#
+# So the reference period is per unit, and either condition is enough to keep a
+# unit on the monthly value. Hirth (2026, Table A1) lists the post-2023 onshore
+# cohorts as monthly; the statute governs, and the discrepancy is noted in the spec.
+ANLAGE1_CUTOFF = date(2023, 1, 1)
+
+
+# The one round the [VERIFY] is about: the bid date was 01.12.2022, but if the
+# award counts as granted when the result is announced, it may fall in 2023.
+DEC_2022_ROUND_CODE = "WIN22-4"
+
+
+def reference_period(commissioned: date, round_code: str | None,
+                     award_date: date | None,
+                     dec_2022_counts_as_2023: bool = False) -> str:
+    """"monthly" or "annual" per Anlage 1 Nr. 2.
+
+    Either condition is enough to keep a unit on the monthly value: commissioned
+    before 1 Jan 2023, OR awarded before 1 Jan 2023.
+
+    `dec_2022_counts_as_2023` is the open [VERIFY] and moves **only the December
+    2022 round**, not every 2022 award -- the February, May and September 2022
+    rounds were unambiguously granted in 2022.
+    """
+    if commissioned < ANLAGE1_CUTOFF:
+        return "monthly"
+    if award_date is not None:
+        if dec_2022_counts_as_2023 and round_code == DEC_2022_ROUND_CODE:
+            return "annual"
+        if award_date < ANLAGE1_CUTOFF:
+            return "monthly"
+    return "annual"
+
 ZUSCHLAG_RE = re.compile(r"^(?P<scheme>[A-Za-z]{3})(?P<yy>\d{2})-(?P<n>\d+)")
 CT_PER_KWH_TO_EUR_PER_MWH = 10.0
 
@@ -241,7 +314,54 @@ def main() -> None:
     for y, m, n in by_year.iter_rows():
         print(f"  {y}  {m:6.1f}  ({n} rounds)")
 
-    print("\nWrote results/31_award_values.csv")
+    # --- Anlage 1 Nr. 2: monthly MW or annual JW, per unit ---
+    rows = []
+    for dec_as_2023 in (False, True):
+        lab = df.with_columns(
+            pl.struct(["commissioned", "round_code", "round_date"]).map_elements(
+                lambda r: reference_period(r["commissioned"], r["round_code"],
+                                           r["round_date"], dec_as_2023),
+                return_dtype=pl.String,
+            ).alias("ref_period")
+        )
+        for period, cap, n in (
+            lab.group_by("ref_period")
+               .agg(pl.col("net_kw").sum().alias("kw"), pl.len().alias("n"))
+               .sort("kw", descending=True).iter_rows()
+        ):
+            rows.append({"dec_2022_counts_as_2023": dec_as_2023,
+                         "reference_period": period,
+                         "capacity_mw": round(cap / 1000, 1), "units": n})
+        if not dec_as_2023:
+            lab.select(["EinheitMastrNummer", "commissioned", "net_kw",
+                        "round_code", "round_date", "ref_period"]).write_parquet(
+                PROCESSED_DIR / "mastr_reference_period.parquet")
+
+    with open(RESULTS_DIR / "33_reference_period.csv", "w", newline="",
+              encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
+        w.writeheader()
+        w.writerows(rows)
+
+    print("\nAnlage 1 Nr. 2 -- monthly MW vs annual JW, per unit:")
+    for r in rows:
+        tag = "Dec-2022 round = 2023" if r["dec_2022_counts_as_2023"] else "as written"
+        print(f"  [{tag:<22}] {r['reference_period']:<8}"
+              f"{r['capacity_mw']:>9,.0f} MW  {r['units']:>7,} units")
+    monthly_a = next(r["capacity_mw"] for r in rows
+                     if not r["dec_2022_counts_as_2023"] and r["reference_period"] == "monthly")
+    monthly_b = next(r["capacity_mw"] for r in rows
+                     if r["dec_2022_counts_as_2023"] and r["reference_period"] == "monthly")
+    print(f"  the open [VERIFY] moves {abs(monthly_a - monthly_b):,.0f} MW "
+          f"between the two reference periods")
+
+    print("\nCorrection-factor settings (EEG s.36h(1), docs/legal/s36h_EEG2023.pdf):")
+    for k, v in CORRECTION_SETTINGS.items():
+        print(f"  {k:<18}{v:.3f}")
+    print(f"  the main 1.226 implies a mean quality factor of about 75% on the "
+          f"s.36h table (75% -> {s36h_correction(75):.4f})")
+
+    print("\nWrote results/31_award_values.csv, results/33_reference_period.csv")
 
 
 if __name__ == "__main__":
