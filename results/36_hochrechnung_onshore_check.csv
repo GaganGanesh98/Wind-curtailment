@@ -1,0 +1,4 @@
+area,price_band,hr_mean_mw,smard_mean_mw,ratio,corr,n_qh
+50Hertz,> 5,614.1,567.3,1.0825,0.9862,96
+Amprion,> 5,2209.7,2149.8,1.0279,0.9992,96
+TransnetBW,> 5,712.7,700.9,1.0169,1.0,96
