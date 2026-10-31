@@ -91,10 +91,20 @@ BUNDESLAND_TO_TSO = {
 # the grid-connection point: MaStR's Lokationen / Netzanschlusspunkte tables give
 # the actual network operator, and this ingest does not fetch them. Until then the
 # per-control-area split is approximate and the affected share is reported.
+# Control-area codes as they appear in RegelzoneNetzanschlusspunkt, read from
+# Katalogwerte.xml in this snapshot. This is the REAL control area of the grid
+# connection point, so it supersedes the federal-state proxy wherever it is present.
+REGELZONE_CODE = {
+    "1000001": "50Hertz",
+    "1000010": "Amprion",
+    "1001564": "TenneT",
+    "1001572": "TransnetBW",
+}
+
 SPLIT_STATES = {"1403", "1405", "1408", "1402"}  # Bayern, Hessen, Niedersachsen, BW
 
 EINHEIT_FIELDS = (
-    "EinheitMastrNummer", "EegMaStRNummer", "Inbetriebnahmedatum",
+    "EinheitMastrNummer", "EegMaStRNummer", "LokationMaStRNummer", "Inbetriebnahmedatum",
     "Nettonennleistung", "Bruttoleistung", "EinheitBetriebsstatus",
     "DatumEndgueltigeStilllegung", "Bundesland", "WindAnLandOderAufSee",
     "NameWindpark",
@@ -239,6 +249,57 @@ def build(snapshot_dir: Path) -> pl.DataFrame:
     )
 
 
+# ------------------------------------------- real control area, not the proxy
+
+
+def fetch_regelzonen(lokation_ids: set[str], snapshot: str) -> dict[str, str]:
+    """Map each wind unit's Lokation to its control area, from the register itself.
+
+    `Netzanschlusspunkte` records `RegelzoneNetzanschlusspunkt` -- the control area
+    of the grid connection point. That is the real answer, so the federal-state
+    proxy in `BUNDESLAND_TO_TSO` is only a fallback for units this does not cover.
+
+    The table is 8.75 GB uncompressed across 61 members and the machine has under
+    10 GB free, so nothing is written to disk: each member is streamed, filtered to
+    the Lokationen we actually care about, and discarded. Peak memory is one
+    member's text.
+    """
+    import unzip_http
+    from open_mastr.xml_download.utils_download_bulk import gen_xml_download_url
+
+    url = gen_xml_download_url(use_version="current")
+    rz = unzip_http.RemoteZipFile(url)
+    members = sorted(f.filename for f in rz.infolist()
+                     if f.filename.startswith("Netzanschlusspunkte_"))
+    rec = re.compile(r"<Netzanschlusspunkt>(.*?)</Netzanschlusspunkt>", re.S)
+    lok = re.compile(r"<LokationMaStRNummer>(.*?)</LokationMaStRNummer>")
+    rz_re = re.compile(r"<RegelzoneNetzanschlusspunkt>(.*?)</RegelzoneNetzanschlusspunkt>")
+
+    out: dict[str, str] = {}
+    for i, member in enumerate(members, 1):
+        buf = ""
+        with rz.open(member) as fh:
+            while True:
+                chunk = fh.read(16 * 1024 * 1024)
+                if not chunk:
+                    break
+                buf += chunk.decode("utf-16", "replace")
+                last = 0
+                for m in rec.finditer(buf):
+                    last = m.end()
+                    body = m.group(1)
+                    lm = lok.search(body)
+                    if lm and lm.group(1) in lokation_ids:
+                        zm = rz_re.search(body)
+                        if zm:
+                            out[lm.group(1)] = zm.group(1)
+                buf = buf[last:]
+        if i % 10 == 0 or i == len(members):
+            print(f"    {i:>3}/{len(members)} members, {len(out):,} of "
+                  f"{len(lokation_ids):,} Lokationen matched", flush=True)
+    return out
+
+
 # ----------------------------------------------------------- rule 19 fill rate
 
 
@@ -351,6 +412,8 @@ def cohort_shares(df: pl.DataFrame) -> pl.DataFrame:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--download", action="store_true")
+    ap.add_argument("--regelzone", action="store_true",
+                    help="stream Netzanschlusspunkte for the REAL control area")
     ap.add_argument("--snapshot", default=None)
     args = ap.parse_args()
 
@@ -384,6 +447,44 @@ def main() -> None:
           f"{split_cap / 1e6:.2f} GW "
           f"({split_cap / float(df['net_kw'].sum()) * 100:.1f}% -- assigned to the "
           f"majority TSO, so the per-area split is approximate)")
+
+    if args.regelzone:
+        print("\nResolving the real control area from Netzanschlusspunkte "
+              "(streamed, nothing written to disk)...")
+        ids = set(df["LokationMaStRNummer"].drop_nulls().to_list())
+        mapping = fetch_regelzonen(ids, snapshot)
+        codes = Counter(mapping.values())
+        print(f"  Regelzone codes found: {dict(codes)}")
+        rz_df = pl.DataFrame(
+            {"LokationMaStRNummer": list(mapping), "regelzone_code": list(mapping.values())}
+        )
+        df = df.join(rz_df, on="LokationMaStRNummer", how="left")
+        unmapped = set(codes) - set(REGELZONE_CODE)
+        if unmapped:
+            raise ValueError(f"Unmapped Regelzone code(s): {sorted(unmapped)}")
+        df = df.with_columns(
+            pl.col("regelzone_code").replace_strict(REGELZONE_CODE, default=None)
+              .alias("regelzone"),
+        ).with_columns(
+            # The register's own answer where it exists, the state proxy otherwise.
+            pl.coalesce(["regelzone", "control_area"]).alias("control_area_final"),
+            pl.col("regelzone").is_null().alias("control_area_is_proxy"),
+        )
+        cov = float(df.filter(pl.col("regelzone").is_not_null())["net_kw"].sum() or 0)
+        total = float(df["net_kw"].sum())
+        print(f"  covered: {cov / 1e6:.2f} GW of {total / 1e6:.2f} GW "
+              f"({cov / total:.1%} by capacity)")
+        wrong = float(df.filter(pl.col("regelzone").is_not_null()
+                                & (pl.col("regelzone") != pl.col("control_area")))
+                        ["net_kw"].sum() or 0)
+        print(f"  the federal-state PROXY was wrong for {wrong / 1e6:.2f} GW "
+              f"({wrong / cov:.1%} of the covered capacity). The 31.7% figure "
+              f"reported earlier was capacity EXPOSED to the proxy in split states, "
+              f"not capacity the proxy got wrong.")
+        # Cohort shares and everything downstream now key on the real control area.
+        df = df.drop("control_area").rename({"control_area_final": "control_area"})
+        df.write_parquet(out)
+        print(f"  rewrote {out} with regelzone_code")
 
     fr = zuschlagsnummer_fill_rate(df)
     print("\nRule 19 -- Zuschlagsnummer fill rate")
