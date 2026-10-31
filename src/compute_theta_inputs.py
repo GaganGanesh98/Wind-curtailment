@@ -74,6 +74,55 @@ HIRTH_A1_FIT_SHARE = {"2003_2011": 0.51 / (9.69 + 0.51), "2012_2015": 0.75 / (14
 JW_2025_EUR_MWH = 74.41
 
 
+PROV_TENDERED = "BNetzA round x 1.226"
+PROV_HIRTH_MP = "Hirth Table A1 status A, market premium"
+PROV_HIRTH_FIT = "Hirth Table A1 status A, feed-in tariff (theta = never)"
+PROV_OUT_OF_SUPPORT = "out of support (theta = 0)"
+PROV_GAP = "non-tendered post-2020: NO AW (gap)"
+PROVENANCES = (PROV_TENDERED, PROV_HIRTH_MP, PROV_HIRTH_FIT, PROV_OUT_OF_SUPPORT,
+               PROV_GAP)
+
+
+def assign_fit(df: pl.DataFrame) -> pl.DataFrame:
+    """Split the feed-in-tariff share out of the market-premium slot.
+
+    Table A1 gives the feed-in-tariff share as 5.0% of capacity in each pre-2016
+    vintage, but MaStR does not say WHICH units those are. The share is assigned to
+    the SMALLEST units in each vintage until that capacity is reached. That is a
+    heuristic, not a fact: plants that stayed out of direct marketing are
+    overwhelmingly small ones, since direct marketing has been compulsory above
+    100 kW since 2016. Only the aggregate share comes from Table A1; the selection
+    within the vintage is this project's assumption, and anything depending on
+    WHICH units are on a feed-in tariff inherits it.
+    """
+    keep = []
+    for v, share in HIRTH_A1_FIT_SHARE.items():
+        sub = (df.filter((pl.col("vintage") == v) & (~pl.col("out_of_support"))
+                         & (pl.col("aw_source") == PROV_HIRTH_MP)).sort("net_kw"))
+        if sub.height == 0:
+            continue
+        target = float(sub["net_kw"].sum()) * share
+        n = int((sub["net_kw"].cum_sum() <= target).sum()) or 1
+        keep.extend(sub["EinheitMastrNummer"].to_list()[:n])
+    return df.with_columns(
+        pl.when(pl.col("EinheitMastrNummer").is_in(keep))
+          .then(pl.lit(PROV_HIRTH_FIT)).otherwise(pl.col("aw_source")).alias("aw_source")
+    )
+
+
+def assert_provenance_complete(df: pl.DataFrame) -> None:
+    """Every unit carries exactly one provenance, and they sum to fleet capacity."""
+    unknown = set(df["aw_source"].to_list()) - set(PROVENANCES)
+    if unknown:
+        raise ValueError(f"Unknown provenance label(s): {sorted(unknown)}")
+    if df["aw_source"].null_count():
+        raise ValueError("Some units carry no provenance at all")
+    by = float(df.group_by("aw_source").agg(pl.col("net_kw").sum().alias("kw"))["kw"].sum())
+    tot = float(df["net_kw"].sum())
+    if abs(by - tot) > 1e-6:
+        raise ValueError(f"Provenance capacities sum to {by:,.0f} kW, fleet {tot:,.0f} kW")
+
+
 def vintage(commissioned: date) -> str:
     if commissioned.year <= 2002:
         return "up_to_2002"
@@ -125,36 +174,29 @@ def build() -> pl.DataFrame:
           .then(pl.col("aw_wmean_eur_mwh") * CORRECTION_FACTOR_MAIN)
           .otherwise(pl.col("vintage").replace_strict(HIRTH_A1_AW_EUR_MWH, default=None))
           .alias("aw_eur_mwh"),
-        pl.when(pl.col("out_of_support")).then(pl.lit("out of support: theta = 0"))
-          .when(pl.col("aw_wmean_eur_mwh").is_not_null())
-          .then(pl.lit("BNetzA round x 1.226"))
-          .otherwise(pl.lit(HIRTH_A1_STATUS)).alias("aw_source"),
+        pl.when(pl.col("out_of_support")).then(pl.lit(PROV_OUT_OF_SUPPORT))
+          .when(pl.col("aw_wmean_eur_mwh").is_not_null()).then(pl.lit(PROV_TENDERED))
+          .when(pl.col("vintage") == "post_2020").then(pl.lit(PROV_GAP))
+          .otherwise(pl.lit(PROV_HIRTH_MP)).alias("aw_source"),
     )
 
 
 def main() -> None:
-    df = build()
+    df = assign_fit(build())
+    assert_provenance_complete(df)
     published = read_published()
     jw26 = jw_2026_ytd(published)
     print(f"JW 2025 = {JW_2025_EUR_MWH:.2f} EUR/MWh (given); "
           f"JW 2026 year-to-date ~ {jw26:.2f} EUR/MWh (APPROXIMATE: year not over, "
           f"and weighted by SMARD metered output, not the Online-Hochrechnung)")
 
-    in_support = df.filter(pl.col("aw_eur_mwh").is_not_null())
-    print(f"\nAW assigned to {in_support.height:,} units, "
-          f"{in_support['net_kw'].sum() / 1e6:.2f} GW:")
-    for src, cap, n in (in_support.group_by("aw_source")
+    print("\nProvenance -- exactly one per unit, partitioning the fleet:")
+    tot = float(df["net_kw"].sum()) / 1e6
+    for src, cap, n in (df.group_by("aw_source")
                         .agg(pl.col("net_kw").sum().alias("kw"), pl.len().alias("n"))
                         .sort("kw", descending=True).iter_rows()):
-        print(f"  {src:<42}{cap / 1e6:6.2f} GW  {n:>7,} units")
-    print(f"  theta = 0 (out of support / up to 2002):      "
-          f"{df.filter(pl.col('aw_eur_mwh').is_null())['net_kw'].sum() / 1e6:6.2f} GW")
-    fit_gw = sum(
-        float(df.filter((pl.col("vintage") == v) & (~pl.col("out_of_support")))
-                ["net_kw"].sum() or 0) / 1e6 * sh
-        for v, sh in HIRTH_A1_FIT_SHARE.items())
-    print(f"  of which feed-in tariff, theta = NEVER:       {fit_gw:6.2f} GW "
-          f"(5.0% of each pre-2016 vintage, Table A1)")
+        print(f"  {src:<50}{cap / 1e6:6.2f} GW  {n:>7,} units")
+    print(f"  {'TOTAL':<50}{tot:6.2f} GW   (checked: they partition the fleet)")
 
     # --- negative-price quarter-hours per month, the weights for the table ---
     neg = (pl.scan_parquet(PANEL).filter((pl.col("area") == "DE") & (pl.col("price_eur_mwh") < 0))

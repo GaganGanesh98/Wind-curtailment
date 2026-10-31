@@ -1,0 +1,9 @@
+metric,value
+negative_qh_covered,1853
+negative_qh_total,2059
+qh_differing_exposure,803
+event_days_differing,55
+threshold,10
+qh_clock_or_runlength,634
+qh_market_premium,803
+jw_2026_ytd,89.3
