@@ -489,6 +489,20 @@ reviewer discipline.
 ## 7. Experiments
 
 - **E1 — semi-synthetic benchmark (do first; needs no MaStR, no ERA5).** Base data: uncensored QHs (price > 5 €/MWh). Treat their actual G as true A. Inject synthetic censoring: choose QHs with probability rising in F_t (confounding strength γ ∈ {0, 0.5, 1}), assign synthetic negative prices and run lengths, compute s_k with the real rule logic and synthetic cohort shares, apply known r*_k (step, logistic, 50%-compliance). Grid: censoring rate {5, 10, 20, 30, 40}% × γ × r* shape × 5 seeds. Metrics: MAE of Â on censored QHs, integrated absolute error of r̂ vs r*, 80/90% coverage, MAE on G, **CRPS and PIT histograms for A** (true A is known here, so calibration of P(A|x) can be checked directly). Add a weather-proxy arm: synthetic censoring with and without the weather covariate, to measure how much it helps identification.
+- **E1-MNAR arm — CONSIDERED AND CANCELLED, 31 Oct 2026 (student's decision).** The
+  proposal was a fourth E1 arm whose placement weight was exp(γ·z(A − F)) rather than
+  exp(γ·z(F)), or which used a synthetic "market forecast" closer to A than F — i.e.
+  censoring that depends on the thing being recovered, making it missing-not-at-random.
+  It was to be pre-registered as post-fail and exploratory, never a gate replacement.
+  **Cancelled before it was built**, because 4a-proper removed its real-data
+  motivation: above 5 €/MWh, where no switch-off incentive exists, the price does not
+  predict log(G/F) once F is controlled for — the (5,20] versus (50,100] contrast
+  excludes zero in neither DE nor 50Hertz, and the signs differ (+0.041 and −0.015).
+  Bracketed on the treatment that keeps all 942/961 quarter-hours, the effect sits
+  near zero from both sides (`results/16_4a_proper_placebo.csv`). An MNAR arm with no
+  evidence of MNAR behaviour in the real data would be a synthetic construction
+  answering a question the data does not pose. **Not deferred — dropped.** Reopening
+  it needs a written decision and new evidence.
 - **Week-6 checkpoint — go/no-go on E1 (v1.8, due 31 Dec 2026).** Censoring rates
   ≥ 10%, seeds 42–44 on the reduced grid, all three r\* shapes. Every test is paired,
   with a 95% event-day block-bootstrap CI pooled over seeds. Pass needs all three:
@@ -522,6 +536,51 @@ reviewer discipline.
   MAE. *v1.7* (replaced 31 Oct): absolute thresholds only — withdrawn by the student
   as insufficiently comparative, and one of its criteria rested on the mistaken claim
   that baselines have no ĉ.
+
+  **E1 design findings, recorded 31 Oct 2026. These change nothing in the gate** —
+  the criteria, thresholds and fail branch above stand exactly as written. They are
+  recorded because they govern how the verdict should be *read*, and because each was
+  found while building the gate rather than inferred afterwards.
+
+  **(i) The placement weight makes the censoring MAR given F, so criterion (b) has
+  near-zero discriminating power.** Quarter-hours are selected with weight
+  exp(γ·z(F_t)), which depends only on the day-ahead forecast — a variable *every*
+  baseline observes. Censoring is therefore missing-at-random conditional on F, and
+  simple deletion stays unbiased however large γ grows. The pooled absolute bias of
+  B2 across the 31 Oct grid bears this out: 92.5 MW at γ = 0, 14.8 at γ = 0.5, 0.4 at
+  γ = 1 — deletion gets *better* as the confounding strengthens, which is the opposite
+  of what the design intended. A criterion asking M1 to beat deletion on bias under
+  confounding cannot discriminate when the confounder is observed by both. This is a
+  property of E1's generator, not a result about M1.
+
+  **(ii) No method has an hour feature, so all of them share a ~900 MW diurnal bias,
+  part of which criterion (b) scores.** `LATENT_ALLOWED_FEATURES["E1"]` is
+  {forecast_mw, weather_ms}. There is a real diurnal component in A given F that none
+  of the methods can represent. At γ = 0 the bias runs from −851 (B0), −593 (M1),
+  −592 (Oracle) MW at 23:00 to +149, +285, +294 at 10:00: a swing of 872–1,049 MW
+  against a pooled bias of −136 to −323 MW (`results/17_bias_by_hour.csv`). **The
+  Oracle is trained on the true A and carries a spread of 886 MW**, so this is a
+  shared specification gap, not a modelling failure of any one method. The pooled
+  γ = 0 bias is the incomplete cancellation of that swing. Criterion (b) is therefore
+  partly measuring a missing feature common to every method rather than anything about
+  censoring.
+
+  **(iii) Criterion (a) is sensitive to B3's bin count, which is my choice and not
+  Hirth's.** From `results/10_diag_b3_bins.csv`, integrated |r̂ − r*|:
+
+  | shape | 4 bins | 8 bins | 16 | 32 | 64 |
+  |---|---|---|---|---|---|
+  | logistic, B3 ÷ M1 | 58.4× | 47.9× | 25.5× | 5.5× | 2.7× |
+  | step, M1 better | no | no | no | no | no |
+  | half, M1 better | no | no | no | no | no |
+
+  M1's advantage on the logistic shape falls from about 50× at 8 bins to about 3× at
+  64, while **B3 is the better estimator on step and half at every bin count tested**.
+  `HIRTH_FIG12_MARGIN_EDGES_EUR_MWH` is still `None` [VERIFY], so B3 uses equal-count
+  quantile bins at the default of 8 — a choice that is worth a factor of twenty to the
+  one shape M1 wins. The gate's bin count stays at 8 as pre-registered; this is
+  recorded so that an (a) result on the logistic shape is never read as a clean 50×
+  margin.
 
 - **Pre-E2 check — does the Online-Hochrechnung actually ignore curtailment?
   (v1.8, blocking).** Anlage 1 Nr. 5.1 says it must. Test it before any E2 fitting:
