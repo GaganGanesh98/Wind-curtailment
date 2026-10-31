@@ -33,19 +33,38 @@ Working spec, not proposal prose.
 - **Real award values AW_k** from the BNetzA tender statistics, weighted by built MaStR
   capacity (`results/31_award_values.csv`).
 - **Market value recomputation is NOT validated** and must not build θ yet — see §3.
-- **The market premium is zero for most of the fleet in most of 2026 (v1.8).**
-  MP = max(0, AW − MV), and 2026 market values have been high: in six of the nine
-  published months **100% of tendered capacity had MP = 0**, so θ = 0 *de facto*
-  whatever §51 says. Only April (MV 57.2 €/MWh, the year's lowest) leaves a real
-  premium. This matters for identification: with θ = 0 almost everywhere the
-  market-premium channel barely separates cohorts, and the live identifying
-  variation is the §51 clock and run length alone (§3, I4).
-  `results/35_market_premium_zero.csv`.
-- **AW for non-tendered capacity is UNRESOLVED and must not be a tender average
-  (v1.8).** 48.1 GW — all pre-2016, 80% of the 2016–2020 cohort, 91% of the
-  size-exempt — was built under the statutory tariff, never bid, and has no award
-  value in this repo. Tendered and non-tendered AW are reported apart, with a
-  status-A slot and a ±15% band awaiting Hirth (2026) Table A1.
+- **The market-premium channel IS live where it matters (v1.8, corrected).** An
+  earlier pass reported 100% of capacity at MP = 0 in six of nine months and
+  concluded the premium barely separates cohorts. That was wrong twice over: it
+  covered only the 22.8 GW of *tendered* capacity, and it compared every unit with
+  the monthly MW even where Anlage 1 Nr. 2 prescribes the annual JW. Redone per
+  unit with the correct reference and with Hirth Table A1 status-A values for the
+  non-tendered fleet, and **weighted by negative-price quarter-hours** rather than
+  by month: **48.4%** of in-support capacity has MP = 0 when the price is actually
+  negative, against an unweighted monthly mean of 57.5%. The weighting matters
+  because the months with the most negative quarter-hours are exactly the months
+  with the lowest MP = 0 share — April carries 492 of the 1,853 negative
+  quarter-hours and sits at 1.9%. So **I4 does not rest mainly on the §51 clocks**:
+  roughly half the in-support fleet carries a live premium in the quarter-hours
+  where θ is actually tested, and the premium and the clocks identify cohorts
+  together. `results/35_market_premium_zero.csv`.
+- **MP = 0 shares are a lower bound (v1.8).** Table A1's values are *blended* over
+  the initial and base tariff. A plant that has dropped to the base tariff, roughly
+  5 ct/kWh for these vintages, has MP = 0 against any 2026 market value, so the
+  blended figure overstates the premium for that part of the fleet. No per-plant
+  tariff-phase modelling is done and none is planned: a named limitation.
+- **AW for non-tendered capacity is now a status-A estimate (v1.8).** 36.3 GW of
+  in-support, never-tendered capacity takes Hirth (2026) Table A1 values
+  (`docs/literature/hirth_2026_2609.10053v1.pdf`, App. A2 pp. 26–28): 8.0 ct/kWh up
+  to 2002, 8.5 ct 2003–2011, 8.9 ct 2012–2015 incl. the management premium, 7.6 ct
+  2016–2020 — all labelled *"Hirth (2026) Table A1, own estimate, status A"* with a
+  ±15% band. The 22.8 GW of tendered capacity keeps its BNetzA round value times
+  the §36h factor; **Hirth's tendered-cohort bids are deliberately not used**,
+  because they disagree with the BNetzA statistics, notably for 2021–22. A further
+  12.5 GW is out of support and carries θ = 0 with no AW at all, and 1.20 GW is on
+  a feed-in tariff, where θ does not exist rather than being 0 (Table A1 puts the
+  feed-in-tariff share at 5.0% of each pre-2016 vintage; MaStR does not identify
+  which units they are, so the share is applied within the vintage and labelled).
 - **Anlage 1, §36h and §51a read at source (31 Oct 2026, texts in `docs/legal/`).**
   The reference period, the correction table and the §51a question are all settled;
   what replaces them is a single new dependency, the Online-Hochrechnung. See §3.
