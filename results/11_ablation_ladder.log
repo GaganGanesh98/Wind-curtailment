@@ -1,0 +1,102 @@
+
+ABLATION LADDER — logistic r*, censoring 20%, gamma 0.0, seed 42
+  34,272 QH on 357 days; negative 20.0%, censored 20.0%, 1,840 QH in the 0-5 band
+  M1  full model              32.5s
+  A2  exposure off            48.3s
+  A3  one cohort              19.8s
+  A4  sigmoid head            17.3s
+  A5  additive latent head    29.5s
+  A6  no weather proxy        21.2s
+  A7  price inside g          22.9s
+  A1  no observation model   23.6s
+
+    piece removed                             skill     MAE    bias  int|r-r*|   c_MAE  c_corr
+----------------------------------------------------------------------------------------------
+M1  — (full model)                            1.008   1,202     -81     0.0033  0.0058   1.000
+A1  the whole observation model (= B1)        0.821   1,230    -340          -       -       -
+A2  the EEG rule table (who is exposed)     -29.338   5,635   5,610     0.0351  0.1978   0.993
+A3  cohort structure                          0.977   1,207     -14     0.0053  0.0044   1.000
+A4  the piecewise-linear response head        0.992   1,205     -13     0.0004  0.0052   1.000
+A5  the multiplicative form                   1.002   1,203     -57     0.0038  0.0054   1.000
+A6  the weather proxy                        -0.041   1,355      31     0.0042  0.0064   1.000
+A7  the leakage rule (deliberately broken)    0.761   1,238    -242     0.0080  0.0049   1.000
+
+Cost of removing each piece (MAE of the ablation minus MAE of the full model; positive = the piece was earning its place):
+  A2    4,432.7 MW  [ 3,949.6,  4,931.2]  SIG
+  A3        4.6 MW  [    -3.3,     12.5]  ns 
+  A4        2.4 MW  [    -6.3,     10.8]  ns 
+  A5        1.0 MW  [    -5.5,      7.7]  ns 
+  A6      153.3 MW  [   120.7,    186.4]  SIG
+  A7       36.1 MW  [    13.6,     57.7]  SIG
+  A1       27.4 MW  [    -1.4,     57.8]  ns 
+
+  anchors: B0 MAE 1,350 MW, oracle 1,203 MW, recoverable headroom 146 MW
+
+ABLATION LADDER — logistic r*, censoring 20%, gamma 0.5, seed 42
+  34,272 QH on 357 days; negative 20.0%, censored 20.0%, 1,693 QH in the 0-5 band
+  M1  full model              34.5s
+  A2  exposure off            23.9s
+  A3  one cohort              26.3s
+  A4  sigmoid head            29.5s
+  A5  additive latent head    23.1s
+  A6  no weather proxy        28.6s
+  A7  price inside g          18.3s
+  A1  no observation model    6.3s
+
+    piece removed                             skill     MAE    bias  int|r-r*|   c_MAE  c_corr
+----------------------------------------------------------------------------------------------
+M1  — (full model)                            0.995   1,320     -53     0.0058  0.0036   1.000
+A1  the whole observation model (= B1)        0.250   1,435    -595          -       -       -
+A2  the EEG rule table (who is exposed)     -34.395   6,769   6,756     0.0342  0.1960   0.991
+A3  cohort structure                          0.982   1,322     -65     0.0074  0.0051   1.000
+A4  the piecewise-linear response head        0.994   1,321     -66     0.0026  0.0021   1.000
+A5  the multiplicative form                   0.990   1,321     -82     0.0067  0.0041   1.000
+A6  the weather proxy                         0.118   1,456     -56     0.0066  0.0045   1.000
+A7  the leakage rule (deliberately broken)   -0.401   1,535    -501     0.0158  0.0070   0.999
+
+Cost of removing each piece (MAE of the ablation minus MAE of the full model; positive = the piece was earning its place):
+  A2    5,448.6 MW  [ 4,959.1,  5,925.6]  SIG
+  A3        2.0 MW  [    -2.4,      6.5]  ns 
+  A4        0.1 MW  [    -2.7,      3.0]  ns 
+  A5        0.8 MW  [    -3.0,      4.5]  ns 
+  A6      135.0 MW  [    97.2,    174.1]  SIG
+  A7      215.0 MW  [   171.9,    259.7]  SIG
+  A1      114.8 MW  [    58.1,    173.6]  SIG
+
+  anchors: B0 MAE 1,474 MW, oracle 1,320 MW, recoverable headroom 154 MW
+
+ABLATION LADDER — logistic r*, censoring 20%, gamma 1.0, seed 42
+  34,272 QH on 357 days; negative 20.0%, censored 20.0%, 1,726 QH in the 0-5 band
+  M1  full model              30.2s
+  A2  exposure off            37.7s
+  A3  one cohort              24.0s
+  A4  sigmoid head            22.1s
+  A5  additive latent head    22.5s
+  A6  no weather proxy        20.4s
+  A7  price inside g          26.9s
+  A1  no observation model   14.7s
+
+    piece removed                             skill     MAE    bias  int|r-r*|   c_MAE  c_corr
+----------------------------------------------------------------------------------------------
+M1  — (full model)                            0.968   1,414     -99     0.0047  0.0036   1.000
+A1  the whole observation model (= B1)       -0.990   1,761  -1,058          -       -       -
+A2  the EEG rule table (who is exposed)     -36.050   7,971   7,965     0.0340  0.1980   0.992
+A3  cohort structure                          0.975   1,413     -62     0.0056  0.0045   1.000
+A4  the piecewise-linear response head        0.959   1,415     -75     0.0018  0.0022   1.000
+A5  the multiplicative form                   0.989   1,410    -109     0.0056  0.0039   1.000
+A6  the weather proxy                         0.066   1,574     -64     0.0060  0.0044   1.000
+A7  the leakage rule (deliberately broken)   -0.484   1,671    -522     0.0094  0.0041   1.000
+
+Cost of removing each piece (MAE of the ablation minus MAE of the full model; positive = the piece was earning its place):
+  A2    6,557.4 MW  [ 5,998.3,  7,085.5]  SIG
+  A3       -1.2 MW  [    -4.9,      2.6]  ns 
+  A4        1.6 MW  [    -3.3,      6.6]  ns 
+  A5       -3.6 MW  [   -11.1,      3.6]  ns 
+  A6      159.9 MW  [   118.0,    202.0]  SIG
+  A7      257.3 MW  [   212.1,    303.5]  SIG
+  A1      347.0 MW  [   233.4,    463.2]  SIG
+
+  anchors: B0 MAE 1,585 MW, oracle 1,408 MW, recoverable headroom 177 MW
+
+Wrote results/11_ablation_ladder.csv and figures/11_ablation_gamma*.png
+Total wall clock: 660.9s
