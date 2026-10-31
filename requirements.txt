@@ -17,3 +17,5 @@ pytest==9.2.0
 scikit-learn==1.9.1  # required by lightgbm.sklearn
 open-mastr==1.0.0   # MaStR bulk-export URL resolution
 unzip-http==0.9     # partial download of zip members by HTTP range request
+openpyxl==3.1.5     # BNetzA tender statistics workbook
+pypdf==6.21.4      # reading archived source PDFs

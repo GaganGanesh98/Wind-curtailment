@@ -210,11 +210,14 @@ Create `src/censoring/` with:
     version before 25 Feb 2025 and in none after.
   - **§51a is compensation after the fact** (the support period is extended by the number of
     zeroed quarter-hours). It does **not** change the within-quarter-hour incentive, so it
-    must not enter θ. Note it as a second-order effect only. **(v1.5)** Hirth (2026, App.
-    A1) prices §51a as a discounted deferral (about −0.59σ for wind at 15 years, 6%). That
-    holds only if the extension depends on the plant's own output. [VERIFY] the §51a(1)
-    wording; if it counts zeroed quarter-hours regardless of output, θ = 0 stands and no
-    sensitivity arm is added.
+    must not enter θ. **RESOLVED 31 Oct 2026, §51a(1) EEG 2023 read at source:** the
+    extension counts the zeroed quarter-hours **regardless of the plant's own output**, so
+    a plant gains exactly the same extension whether it produces or switches off. The
+    deferral therefore cancels out of the within-quarter-hour decision and **θ = 0 under an
+    active §51 trigger stands**. The [VERIFY] is closed and the proposed sensitivity arm is
+    **withdrawn**. Hirth (2026, App. A1) prices §51a as a discounted deferral (about
+    −0.59σ for wind at 15 years, 6%); that pricing assumes the extension depends on output,
+    which §51a(1) does not, so it does not apply here. Cite §51a(1) EEG 2023.
   - **The §100(47) opt-in is invisible in public data.** A plant not otherwise subject to a
     reduction may volunteer for §51/§51a in exchange for +0.6 ct/kWh on its AW, and nothing
     public records who did. Treat it as a named modelling uncertainty and add a sensitivity

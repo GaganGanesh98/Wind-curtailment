@@ -1,0 +1,9 @@
+cohort,capacity_mw,tendered_capacity_mw,tendered_share,aw_main_eur_mwh,aw_low_eur_mwh,aw_high_eur_mwh,note,aw_uncorrected_wmean_eur_mwh
+out_of_support,11918.6,0.0,0.0,,,,"no tendered capacity -- AW is the statutory tariff, UNRESOLVED (not in this workbook)",
+pilot_exempt,320.1,42.8,0.1335,64.87,55.62,65.57,built-capacity weighted over 11 units; x1.226 correction factor [VERIFY],52.92
+post_feb2025_qh,9036.2,8612.1,0.9531,89.21,80.36,89.58,built-capacity weighted over 1545 units; x1.226 correction factor [VERIFY],72.76
+pre2016_in_support_no_s51,24039.4,0.0,0.0,,,,"no tendered capacity -- AW is the statutory tariff, UNRESOLVED (not in this workbook)",
+size_exempt,3519.0,306.9,0.0872,70.43,52.82,73.67,built-capacity weighted over 136 units; x1.226 correction factor [VERIFY],57.45
+wind2016_2020_6h,11071.1,2242.2,0.2025,70.68,55.71,73.73,built-capacity weighted over 618 units; x1.226 correction factor [VERIFY],57.65
+wind2021_2022_4h,4267.8,4235.2,0.9924,74.56,67.67,75.38,built-capacity weighted over 1014 units; x1.226 correction factor [VERIFY],60.81
+wind2023_feb2025_staircase,7403.3,7384.3,0.9974,77.28,70.13,78.07,built-capacity weighted over 1481 units; x1.226 correction factor [VERIFY],63.03

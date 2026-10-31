@@ -23,6 +23,16 @@ Working spec, not proposal prose.
 - **§7 E2: switch-back validation and an aggregate volume check** added.
 - **§7 E3: the 1 Jan 2026 confound** recorded — two things happen at once.
 - **E1 now uses the real MaStR cohort shares**, not the invented dict.
+- **§51a RESOLVED (31 Oct 2026), §51a(1) EEG 2023 read at source.** The support-period
+  extension counts zeroed quarter-hours **regardless of the plant's own output**, so the
+  deferral is identical whether the plant produces or switches off and cancels out of the
+  within-quarter-hour decision. **θ = 0 under an active §51 trigger stands**; the
+  [VERIFY] is closed and the proposed sensitivity arm is withdrawn. Hirth's pricing of
+  §51a as a discounted deferral assumes an output-dependent extension and so does not
+  apply.
+- **Real award values AW_k** from the BNetzA tender statistics, weighted by built MaStR
+  capacity (`results/31_award_values.csv`).
+- **Market value recomputation is NOT validated** and must not build θ yet — see §3.
 
 **Changes in v1.7** (31 Oct 2026, after the nine-cell gate preview).
 
