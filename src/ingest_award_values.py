@@ -109,6 +109,30 @@ def s36h_correction(quality_factor_pct: float, southern_region: bool = False) ->
 # cohorts as monthly; the statute governs, and the discrepancy is noted in the spec.
 ANLAGE1_CUTOFF = date(2023, 1, 1)
 
+# AW for capacity that was NEVER TENDERED -- all pre-2016 plants, and about 80% of
+# the 2016-2020 cohort, which was built under the statutory tariff rather than won
+# in an auction. **It must not come from tender round averages**: a round average
+# describes the plants that bid, and extending it to plants that never bid is an
+# extrapolation across a different support regime.
+#
+# Status A (a labelled estimate, not a measurement), intended source Hirth (2026)
+# Table A1 statutory blended values, with a +/-15% sensitivity band.
+#
+# UNRESOLVED: Table A1's values are not recorded anywhere in this repo and the
+# paper is not archived in data/raw/, so the slots below are empty. They are NOT
+# filled with a guess (hard rule 9) and nothing downstream may silently substitute
+# a tender average for them. To settle: read the statutory blended AW per vintage
+# off Hirth (2026) Table A1, or compute it from the EEG tariff tables per
+# commissioning year.
+STATUTORY_AW_STATUS_A: dict[str, float | None] = {
+    "pre2016_in_support_no_s51": None,
+    "wind2016_2020_6h": None,
+    "wind2021_2022_4h": None,
+    "size_exempt": None,
+    "pilot_exempt": None,
+}
+STATUTORY_AW_SENSITIVITY = 0.15
+
 
 # The one round the [VERIFY] is about: the bid date was 01.12.2022, but if the
 # award counts as granted when the result is announced, it may fall in 2023.
@@ -228,7 +252,16 @@ def attach_awards(units: pl.DataFrame, rounds: pl.DataFrame) -> pl.DataFrame:
 
 
 def cohort_award_values(df: pl.DataFrame) -> pl.DataFrame:
-    """AW_k per cohort, weighted by BUILT capacity, at three settings."""
+    """AW_k per cohort, keeping tendered and non-tendered capacity apart.
+
+    An earlier version computed one capacity-weighted mean over the TENDERED units
+    of a cohort and reported it as the cohort's AW. For `wind2016_2020_6h` that
+    meant a value derived from 20% of the capacity was applied to all 11.1 GW of
+    it, and the same for `size_exempt` (9%) and `pilot_exempt` (13%). That is an
+    extrapolation across support regimes and it is no longer done: the two
+    populations are reported separately, and the blended figure is produced only
+    when the non-tendered value is actually known.
+    """
     from src.ingest_mastr import cohort_of
 
     d = df.with_columns(
@@ -242,33 +275,95 @@ def cohort_award_values(df: pl.DataFrame) -> pl.DataFrame:
         sub = d.filter(pl.col("cohort") == cohort)
         tendered = sub.filter(pl.col("aw_wmean_eur_mwh").is_not_null())
         cap_total = float(sub["net_kw"].sum() or 0.0)
-        cap_tendered = float(tendered["net_kw"].sum() or 0.0)
-        if cap_tendered == 0:
-            rows.append({
-                "cohort": cohort, "capacity_mw": round(cap_total / 1000, 1),
-                "tendered_capacity_mw": 0.0, "tendered_share": 0.0,
-                "aw_main_eur_mwh": None, "aw_low_eur_mwh": None,
-                "aw_high_eur_mwh": None,
-                "note": "no tendered capacity -- AW is the statutory tariff, "
-                        "UNRESOLVED (not in this workbook)",
-            })
-            continue
-        w = tendered["net_kw"].to_numpy()
-        wmean = float((tendered["aw_wmean_eur_mwh"].to_numpy() * w).sum() / w.sum())
-        lo = float((tendered["aw_min_eur_mwh"].to_numpy() * w).sum() / w.sum())
-        hi = float((tendered["aw_max_eur_mwh"].to_numpy() * w).sum() / w.sum())
-        rows.append({
+        cap_t = float(tendered["net_kw"].sum() or 0.0)
+        cap_nt = cap_total - cap_t
+        statutory = STATUTORY_AW_STATUS_A.get(cohort)
+
+        row = {
             "cohort": cohort,
             "capacity_mw": round(cap_total / 1000, 1),
-            "tendered_capacity_mw": round(cap_tendered / 1000, 1),
-            "tendered_share": round(cap_tendered / cap_total, 4) if cap_total else 0.0,
-            "aw_main_eur_mwh": round(wmean * CORRECTION_FACTOR_MAIN, 2),
-            "aw_low_eur_mwh": round(lo * CORRECTION_FACTOR_MAIN, 2),
-            "aw_high_eur_mwh": round(hi * CORRECTION_FACTOR_MAIN, 2),
-            "aw_uncorrected_wmean_eur_mwh": round(wmean, 2),
-            "note": f"built-capacity weighted over {tendered.height} units; "
-                    f"x{CORRECTION_FACTOR_MAIN} correction factor [VERIFY]",
-        })
+            "tendered_capacity_mw": round(cap_t / 1000, 1),
+            "non_tendered_capacity_mw": round(cap_nt / 1000, 1),
+            "tendered_share": round(cap_t / cap_total, 4) if cap_total else 0.0,
+            "aw_tendered_main": None, "aw_tendered_low": None,
+            "aw_tendered_high": None,
+            "aw_non_tendered_status_a": statutory,
+            "aw_non_tendered_low": (round(statutory * (1 - STATUTORY_AW_SENSITIVITY), 2)
+                                    if statutory else None),
+            "aw_non_tendered_high": (round(statutory * (1 + STATUTORY_AW_SENSITIVITY), 2)
+                                     if statutory else None),
+            "aw_blended_main": None,
+            "status": "",
+        }
+        if cap_t > 0:
+            w = tendered["net_kw"].to_numpy()
+            wmean = float((tendered["aw_wmean_eur_mwh"].to_numpy() * w).sum() / w.sum())
+            lo = float((tendered["aw_min_eur_mwh"].to_numpy() * w).sum() / w.sum())
+            hi = float((tendered["aw_max_eur_mwh"].to_numpy() * w).sum() / w.sum())
+            row["aw_tendered_main"] = round(wmean * CORRECTION_FACTOR_MAIN, 2)
+            # Sensitivity spans both the bid range and the s.36h correction range:
+            # the low end is the lowest awarded bid at a good (90%) site, the high
+            # end the highest awarded bid at a poor (60%) site.
+            row["aw_tendered_low"] = round(lo * CORRECTION_SETTINGS["good_site_90pct"], 2)
+            row["aw_tendered_high"] = round(hi * CORRECTION_SETTINGS["poor_site_60pct"], 2)
+
+        if cap_total > 0 and row["aw_tendered_main"] is not None and statutory is not None:
+            row["aw_blended_main"] = round(
+                (row["aw_tendered_main"] * cap_t + statutory * cap_nt) / cap_total, 2
+            )
+            row["status"] = "blended: tendered measured + non-tendered status A"
+        elif cap_nt / max(cap_total, 1e-9) < 0.02 and row["aw_tendered_main"] is not None:
+            row["aw_blended_main"] = row["aw_tendered_main"]
+            row["status"] = "effectively all tendered (<2% non-tendered)"
+        elif statutory is None and cap_nt > 0:
+            row["status"] = (f"INCOMPLETE: {cap_nt / 1000:,.0f} MW "
+                             f"({cap_nt / cap_total:.0%}) never tendered and its "
+                             "statutory AW is UNRESOLVED -- must NOT take the "
+                             "tender average")
+        rows.append(row)
+    return pl.DataFrame(rows)
+
+
+def market_premium_zero_shares(df: pl.DataFrame) -> pl.DataFrame:
+    """Share of each cohort's TENDERED capacity whose market premium is zero.
+
+    MP = max(0, AW - MV), so MP = 0 whenever the monthly market value has risen to
+    or above a plant's award value -- and then theta = 0 de facto, exactly as for a
+    plant out of support, whatever section 51 says. In 2026 the market value has
+    been high, so this is not a corner case.
+
+    Computed per unit (each unit carries its own round's AW x 1.226) against the
+    published monthly market value, and only over capacity whose AW is known.
+    """
+    from src.ingest_market_values import read_published
+
+    mv = read_published()
+    from src.ingest_mastr import cohort_of
+
+    d = (df.filter(pl.col("aw_wmean_eur_mwh").is_not_null())
+           .with_columns(
+               (pl.col("aw_wmean_eur_mwh") * CORRECTION_FACTOR_MAIN).alias("aw_unit"),
+               pl.struct(["commissioned", "net_kw", "pilot"]).map_elements(
+                   lambda r: cohort_of(r["commissioned"], r["net_kw"], bool(r["pilot"])),
+                   return_dtype=pl.String).alias("cohort"),
+           ))
+    rows = []
+    for m in mv.iter_rows(named=True):
+        for cohort in sorted(set(d["cohort"].to_list())):
+            sub = d.filter(pl.col("cohort") == cohort)
+            cap = float(sub["net_kw"].sum() or 0.0)
+            if cap == 0:
+                continue
+            zero = float(sub.filter(pl.col("aw_unit") <= m["mv_wind_onshore"])
+                            ["net_kw"].sum() or 0.0)
+            rows.append({
+                "year": m["year"], "month": m["month"],
+                "mv_wind_onshore_eur_mwh": round(m["mv_wind_onshore"], 2),
+                "cohort": cohort,
+                "tendered_capacity_mw": round(cap / 1000, 1),
+                "mp_zero_capacity_mw": round(zero / 1000, 1),
+                "mp_zero_share": round(zero / cap, 4),
+            })
     return pl.DataFrame(rows)
 
 
@@ -296,16 +391,36 @@ def main() -> None:
         w.writeheader()
         w.writerows(aw.to_dicts())
 
-    print("\nAW_k per cohort, EUR/MWh (main = built-capacity weighted x 1.226):")
+    print("\nAW_k per cohort, EUR/MWh. Tendered and non-tendered kept APART:")
     for r in aw.sort("capacity_mw", descending=True).iter_rows(named=True):
-        if r["aw_main_eur_mwh"] is None:
-            print(f"  {r['cohort']:<30}{r['capacity_mw']:>9,.0f} MW   "
-                  f"no tendered capacity -- statutory tariff UNRESOLVED")
-        else:
-            print(f"  {r['cohort']:<30}{r['capacity_mw']:>9,.0f} MW   "
-                  f"main {r['aw_main_eur_mwh']:>6.1f}   "
-                  f"[{r['aw_low_eur_mwh']:>6.1f}, {r['aw_high_eur_mwh']:>6.1f}]   "
-                  f"tendered {r['tendered_share']:.0%}")
+        t = (f"{r['aw_tendered_main']:>6.1f} [{r['aw_tendered_low']:>5.1f},"
+             f"{r['aw_tendered_high']:>6.1f}]" if r["aw_tendered_main"] else "   none")
+        nt = (f"{r['aw_non_tendered_status_a']:>6.1f}"
+              if r["aw_non_tendered_status_a"] else "UNRESOLVED")
+        print(f"  {r['cohort']:<30}{r['capacity_mw']:>8,.0f} MW  "
+              f"tendered {r['tendered_share']:>4.0%} AW {t}  non-tendered AW {nt}")
+        if r["status"]:
+            print(f"      {r['status']}")
+
+    mpz = market_premium_zero_shares(df)
+    with open(RESULTS_DIR / "35_market_premium_zero.csv", "w", newline="",
+              encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=mpz.columns, lineterminator="\n")
+        w.writeheader()
+        w.writerows(mpz.to_dicts())
+
+    print("\nShare of TENDERED capacity with a ZERO market premium (AW <= MW),")
+    print("i.e. theta = 0 de facto whatever section 51 says:")
+    cohorts_present = [c for c in mpz["cohort"].unique().sort().to_list()]
+    hdr = "  month    MW      " + "".join(f"{c[:13]:>15}" for c in cohorts_present)
+    print(hdr)
+    for (y, m), grp in mpz.group_by(["year", "month"], maintain_order=True):
+        mv = grp["mv_wind_onshore_eur_mwh"][0]
+        line = f"  {y}-{m:02d}{mv:>8.1f}  "
+        for c in cohorts_present:
+            sel = grp.filter(pl.col("cohort") == c)
+            line += f"{sel['mp_zero_share'][0]:>15.0%}" if sel.height else f"{'-':>15}"
+        print(line)
 
     print("\nRound values by year (uncorrected gew. Mittel, EUR/MWh):")
     by_year = (rounds.with_columns(pl.col("round_date").dt.year().alias("y"))
@@ -361,7 +476,8 @@ def main() -> None:
     print(f"  the main 1.226 implies a mean quality factor of about 75% on the "
           f"s.36h table (75% -> {s36h_correction(75):.4f})")
 
-    print("\nWrote results/31_award_values.csv, results/33_reference_period.csv")
+    print("\nWrote results/31_award_values.csv, results/33_reference_period.csv, "
+          "results/35_market_premium_zero.csv")
 
 
 if __name__ == "__main__":

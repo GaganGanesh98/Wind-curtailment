@@ -1,0 +1,5 @@
+area,hr_mean_mw,smard_onshore_mean_mw,level_ratio,corr_with_smard_actual,corr_with_da_forecast,hr_max_mw,n_qh
+50Hertz,34.541,3874.4,0.008915,0.9945,0.9929,141.08,576
+Amprion,41.555,2685.1,0.015476,0.9695,0.9825,217.443,576
+TenneT,119.119,5491.0,0.021694,0.9923,0.9901,425.823,576
+TransnetBW,0.193,371.9,0.00052,0.7948,0.8321,1.014,576

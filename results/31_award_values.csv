@@ -1,9 +1,9 @@
-cohort,capacity_mw,tendered_capacity_mw,tendered_share,aw_main_eur_mwh,aw_low_eur_mwh,aw_high_eur_mwh,note,aw_uncorrected_wmean_eur_mwh
-out_of_support,11918.6,0.0,0.0,,,,"no tendered capacity -- AW is the statutory tariff, UNRESOLVED (not in this workbook)",
-pilot_exempt,320.1,42.8,0.1335,64.87,55.62,65.57,built-capacity weighted over 11 units; x1.226 correction factor [VERIFY],52.92
-post_feb2025_qh,9036.2,8612.1,0.9531,89.21,80.36,89.58,built-capacity weighted over 1545 units; x1.226 correction factor [VERIFY],72.76
-pre2016_in_support_no_s51,24039.4,0.0,0.0,,,,"no tendered capacity -- AW is the statutory tariff, UNRESOLVED (not in this workbook)",
-size_exempt,3519.0,306.9,0.0872,70.43,52.82,73.67,built-capacity weighted over 136 units; x1.226 correction factor [VERIFY],57.45
-wind2016_2020_6h,11071.1,2242.2,0.2025,70.68,55.71,73.73,built-capacity weighted over 618 units; x1.226 correction factor [VERIFY],57.65
-wind2021_2022_4h,4267.8,4235.2,0.9924,74.56,67.67,75.38,built-capacity weighted over 1014 units; x1.226 correction factor [VERIFY],60.81
-wind2023_feb2025_staircase,7403.3,7384.3,0.9974,77.28,70.13,78.07,built-capacity weighted over 1481 units; x1.226 correction factor [VERIFY],63.03
+cohort,capacity_mw,tendered_capacity_mw,non_tendered_capacity_mw,tendered_share,aw_tendered_main,aw_tendered_low,aw_tendered_high,aw_non_tendered_status_a,aw_non_tendered_low,aw_non_tendered_high,aw_blended_main,status
+out_of_support,11918.6,0.0,11918.6,0.0,,,,,,,,"INCOMPLETE: 11,919 MW (100%) never tendered and its statutory AW is UNRESOLVED -- must NOT take the tender average"
+pilot_exempt,320.1,42.8,277.4,0.1335,64.87,48.54,75.95,,,,,INCOMPLETE: 277 MW (87%) never tendered and its statutory AW is UNRESOLVED -- must NOT take the tender average
+post_feb2025_qh,9036.2,8612.1,424.1,0.9531,89.21,70.14,103.75,,,,,INCOMPLETE: 424 MW (5%) never tendered and its statutory AW is UNRESOLVED -- must NOT take the tender average
+pre2016_in_support_no_s51,24039.4,0.0,24039.4,0.0,,,,,,,,"INCOMPLETE: 24,039 MW (100%) never tendered and its statutory AW is UNRESOLVED -- must NOT take the tender average"
+size_exempt,3519.0,306.9,3212.1,0.0872,70.43,46.1,85.33,,,,,"INCOMPLETE: 3,212 MW (91%) never tendered and its statutory AW is UNRESOLVED -- must NOT take the tender average"
+wind2016_2020_6h,11071.1,2242.2,8828.9,0.2025,70.68,48.63,85.4,,,,,"INCOMPLETE: 8,829 MW (80%) never tendered and its statutory AW is UNRESOLVED -- must NOT take the tender average"
+wind2021_2022_4h,4267.8,4235.2,32.6,0.9924,74.56,59.06,87.31,,,,74.56,effectively all tendered (<2% non-tendered)
+wind2023_feb2025_staircase,7403.3,7384.3,19.0,0.9974,77.28,61.21,90.42,,,,77.28,effectively all tendered (<2% non-tendered)
