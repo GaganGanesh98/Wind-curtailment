@@ -118,9 +118,10 @@ def paired_abs_bias(err_a_signed, err_b_signed, mask, days, n_boot=N_BOOT, seed=
     b_sum = np.bincount(inv, weights=b, minlength=n_days)
     counts = np.bincount(inv, minlength=n_days).astype(float)
     point = abs(a_sum.sum() / counts.sum()) - abs(b_sum.sum() / counts.sum())
+    n_qh = int(counts.sum())
     if n_days < 2:
         return {"diff": point, "lo": np.nan, "hi": np.nan, "significant": False,
-                "a_better": False}
+                "a_better": False, "n_qh": n_qh, "n_days": n_days}
     rng = np.random.default_rng(seed)
     idx = rng.integers(0, n_days, size=(n_boot, n_days))
     n = counts[idx].sum(axis=1)
@@ -128,7 +129,8 @@ def paired_abs_bias(err_a_signed, err_b_signed, mask, days, n_boot=N_BOOT, seed=
     lo, hi = np.percentile(boot, [2.5, 97.5])
     return {"diff": float(point), "lo": float(lo), "hi": float(hi),
             "significant": ci_excludes_zero(lo, hi),
-            "a_better": bool(point < 0 and ci_excludes_zero(lo, hi))}
+            "a_better": bool(point < 0 and ci_excludes_zero(lo, hi)),
+            "n_qh": n_qh, "n_days": n_days}
 
 
 def mae_with_ci(a_hat, a_true, mask, days, n_boot=N_BOOT, seed=SEED):
