@@ -813,17 +813,47 @@ held-out fold out of fitting *and* out of early stopping — verified in the cod
 matters because early stopping on a quarter-hour makes it not held out in any useful
 sense.
 
-**Measured on cell `r10_g0.0_step_s42`** (MAE against true A, MW):
+**Measured over 9 cells** — 3 censoring rates × 3 seeds at γ = 0 — MAE against true
+A in MW, mean with [min, max] (`results/20_stage_a_diagnostics.csv`). *Numbers
+recomputed 1 Nov 2026 under hard rule 20: the first version of this table quoted a
+single cell with no inference.* Only rate and seed are varied, because stage A trains
+on price > 5 €/MWh quarter-hours whose membership does not depend on the r\* shape.
 
-| estimator | all QH | censored QH |
+| estimator | MAE all QH | MAE censored QH |
 |---|---|---|
-| raw forecast F — the bar to beat | 1,358.3 | 1,387.4 |
-| `fit_stage_a` (OLS + hour, no weather) | 1,367.6 | 1,412.3 |
-| **shared stage A — torch + weather + hour, 5-fold cross-fitted** | **1,238.1** | **1,287.0** |
-| B2's own fit (not shared, not cross-fitted) | 1,212.6 | 1,256.3 |
+| raw forecast F — the bar to beat | 1,358.3 [1,358.3, 1,358.3] | 1,380.9 [1,349.5, 1,410.5] |
+| **shared stage A — torch + weather + hour, 5-fold cross-fitted** | **1,245.3 [1,238.1, 1,254.0]** | **1,267.3 [1,244.2, 1,287.0]** |
+| B2's own fit (not shared, not cross-fitted) | 1,215.0 [1,212.5, 1,221.4] | 1,245.6 [1,211.4, 1,280.0] |
 
-Option 1 works: the shared array beats the raw forecast by 120 MW, where the OLS lost
-to it. **Cost: 5 cross-fitted torch fits, ~23 s per cell.** It depends only on the
+Option 1 works: the shared array **beats the raw forecast in 9 of 9 cells**, by about
+113 MW on average, where the OLS lost to it. B2's edge over the shared array is
+**30.3 MW on average, range [23.1, 41.5]** — the honest price of cross-fitting, since
+B2's `a_hat` is partly in-sample while every value in the shared array is held out.
+**Cost: 5 cross-fitted torch fits, ~23 s per cell.**
+
+**Mean-bias as a denominator (measurement only, no model change).** `A_hat` is the
+denominator of `y = 1 − G/A_hat`, so what propagates into every `c_hat` is
+multiplicative mean-bias, not MAE. Measured on uncensored quarter-hours, where
+`G = A` exactly:
+
+| quantity | mean | range | CI excludes the null |
+|---|---|---|---|
+| `mean(A_hat / A_true)` | **1.0107** | [1.0089, 1.0136] | 6/9 cells |
+| `sum(A_hat) / sum(A_true)` | 0.9999 | [0.9970, 1.0023] | — |
+| **`mean(1 − G/A_hat)` — the offset that propagates** | **−0.01194** | [−0.01379, −0.00938] | **7/9 cells** |
+
+**The direction is the opposite of the one predicted.** `A_hat` is biased *high* by
+about 1.1%, not low, so `c_hat` is pushed **upward**, not downward — curtailment
+over-estimated, not under-estimated. The median-below-mean argument does not bite
+here. Note also that the energy-weighted ratio is essentially exactly 1 (0.9999): the
+per-quarter-hour mean ratio is inflated by low-wind quarter-hours with a small
+denominator, and the two are not interchangeable.
+
+**How material it is.** The response model inherits a **−1.194 pp** offset in `y`
+where there is no censoring at all. Against the true mean `c` over all quarter-hours
+that is **20.0% of the signal at a 10% censoring rate**, 10.0% at 20%, and 5.0% at
+40% (`c_true` means 0.0598, 0.1199, 0.2402). **This figure is to be reported beside
+every `c_hat` result**, and it is largest exactly where T-B is hardest. It depends only on the
 cell, not on T-B's `n_event_days` subsample (Amendment 3 A3.2 item 2 keeps stage A on
 its full sample), so it is fitted **once per cell and reused across all four n-levels
 and all five methods**.
