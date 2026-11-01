@@ -601,8 +601,38 @@ reviewer discipline.
   **not** the fleet-level Nr. 5.1 projection. Labelled **"EEG-vermarktete
   Windeinspeisung [VERIFY]"**; **not** to be used for MV/JW or as a proxy for A, and
   kept only as a candidate for sizing the feed-in-tariff cohort
-  (`results/34_hochrechnung_check.csv`). The Nr. 5.1 compliance check remains
-  **unrun** and needs the genuine fleet projection.
+  (`results/34_hochrechnung_check.csv`).
+
+  **RESOLVED 1 November 2026: the Nr. 5.1 compliance check has RUN and PASSES in all
+  four control areas.** The genuine fleet-level series arrived — Online-Hochrechnung
+  Wind Onshore, 2026-09-01 to 2026-10-29, 5,668 quarter-hours, all four TSOs
+  populated. The test code was committed in `a2e3262` before the data existed, so the
+  verdict is pre-registered. R = projection ÷ (SMARD metered actual + onshore
+  renewable redispatch), so redispatch is added back and cannot masquerade as
+  compliance (`results/39_nr51_compliance.csv`):
+
+  | area | R(> 5) | R(0–5) | R(−5–0) | R(−20–−5) | R(neg) | verdict |
+  |---|---|---|---|---|---|---|
+  | 50Hertz | 1.040 | 1.098 | 1.392 | 2.317 | 1.635 | PASS |
+  | Amprion | 1.022 | 1.120 | 1.373 | 2.324 | 1.611 | PASS |
+  | TenneT | 0.839 | 0.887 | 1.111 | 1.785 | 1.281 | PASS |
+  | TransnetBW | 1.033 | 1.172 | 1.522 | 3.872 | 1.808 | PASS |
+
+  Monotone in every area; the −5 to 0 band's CI excludes the positive-price baseline
+  in all four (50Hertz [1.303, 1.507] against 1.040). Sample 58 days, **9 carrying a
+  negative quarter-hour**. The −20 to −5 band rests on 18 quarter-hours over fewer
+  than two event-days, so its CI is [nan, nan] — **point estimate, no inference**.
+
+  **Consequence, as this bullet pre-committed:** the projection does not fall with the
+  curtailment, so it **becomes an external, ex-post proxy for A** — admissible in T1
+  and as validation, and **added to the leakage list as NEVER a T2 input**, since it is
+  published after the fact.
+
+  **Caveat on levels, not on the verdict.** TenneT's positive-price baseline is 0.839:
+  its projection runs about 16% *below* the metered actual where no curtailment is
+  expected. The test uses the *change* across price bands, not the level, so the
+  verdict stands — but the level bias means the series cannot be used as a direct
+  magnitude for A in TenneT without a calibration step.
 
   **Baseline corrected (31 Oct 2026).** Nr. 5.1 excludes grid-operator reductions
   as well as direct-marketing ones, so the comparator is the SMARD actual **plus
