@@ -81,6 +81,16 @@ def main() -> None:
             # (Jensen), so this is measured directly rather than inverted.
             y_unc = 1.0 - a_true[unc] / sa.a_hat[unc]
             ym, ylo, yhi, _, _ = eventday_bootstrap_mean(y_unc, days)
+            # Decomposition. Write A_hat/A = (1+b)(1+eps) with E[eps] = 0. Then
+            # b = mean(A_hat/A) - 1 and sigma = sd(A_hat/A)/(1+b), and a second-order
+            # expansion of E[A/A_hat] = E[1/((1+b)(1+eps))] ~ (1+sigma^2)/(1+b) gives
+            #     mean(1 - G/A_hat) ~ b - sigma^2
+            # i.e. the level bias MINUS the Jensen term. Checked against the measured
+            # value rather than asserted.
+            r_unc = sa.a_hat[unc] / a_true[unc]
+            b_lvl = float(r_unc.mean()) - 1.0
+            sigma = float(r_unc.std(ddof=1)) / (1.0 + b_lvl)
+            approx = b_lvl - sigma ** 2
 
             from src.censoring.baselines import fit_b2
             b2 = fit_b2(d, cfg)["a_hat"]
@@ -99,6 +109,11 @@ def main() -> None:
                 "ci_lo": round(float(lo), 6), "ci_hi": round(float(hi), 6),
                 "ci_excludes_one": bool(hi < 1.0 or lo > 1.0),
                 "mean_y_uncensored": round(float(ym), 6),
+                "b_level_bias": round(b_lvl, 6),
+                "sigma_rel_error": round(sigma, 6),
+                "jensen_term_sigma_sq": round(sigma ** 2, 6),
+                "approx_b_minus_sigma_sq": round(approx, 6),
+                "decomp_abs_error": round(abs(approx - float(ym)), 6),
                 "y_ci_lo": round(float(ylo), 6), "y_ci_hi": round(float(yhi), 6),
                 "y_ci_excludes_zero": bool(yhi < 0.0 or ylo > 0.0),
                 "sum_ratio": round(float(sm), 6),
@@ -133,6 +148,17 @@ def main() -> None:
     print(f"\nshared beats raw forecast in {int((sh < f_).sum())}/{len(sh)} cells; "
           f"B2's edge over shared: mean {float((sh - b2_).mean()):,.1f} MW, "
           f"range [{float((sh - b2_).min()):,.1f}, {float((sh - b2_).max()):,.1f}]")
+    bb, ss, ap = arr("b_level_bias"), arr("sigma_rel_error"), arr("approx_b_minus_sigma_sq")
+    ym_ = arr("mean_y_uncensored")
+    print(f"\n{'DECOMPOSITION  offset ~ b - sigma^2':<44}{'mean':>10}{'min':>10}{'max':>10}")
+    print("-" * 74)
+    for lab, v in (("b, level bias (correctable)", bb),
+                   ("sigma, relative-error spread", ss),
+                   ("sigma^2, Jensen term (NOT correctable)", ss ** 2),
+                   ("b - sigma^2, predicted offset", ap),
+                   ("measured mean(1 - G/A_hat)", ym_),
+                   ("|predicted - measured|", np.abs(ap - ym_))):
+        print(f"{lab:<44}{v.mean():>10.5f}{v.min():>10.5f}{v.max():>10.5f}")
     yv = arr("mean_y_uncensored")
     n_y = sum(1 for r in rows if r["y_ci_excludes_zero"])
     print(f"\nOFFSET THAT PROPAGATES: mean(1 - G/A_hat) on UNCENSORED QHs "

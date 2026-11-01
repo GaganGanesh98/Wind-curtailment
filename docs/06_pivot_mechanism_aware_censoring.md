@@ -857,3 +857,79 @@ cross-fitting exposes that, so the fitted factor added more variance than it rem
    on. `assert_stage_a_beats_forecast()` now raises per cell if stage A's held-out MAE
    exceeds the raw forecast's. That single assertion would have caught this on the
    first run instead of two amendments later.
+
+### Pre-registered interpretation note — the uncensored offset, 1 November 2026
+
+**Recorded before any T-B or T-D result exists.** Nothing here changes a criterion,
+and it is placed in this file rather than in `docs/09` so the freeze on that document
+holds.
+
+#### The decomposition, verified numerically
+
+Write `A_hat/A = (1 + b)(1 + ε)` with `E[ε] = 0`. Then `b = mean(A_hat/A) − 1`,
+`σ = sd(A_hat/A)/(1 + b)`, and a second-order expansion of
+`E[A/A_hat] = E[1/((1+b)(1+ε))] ≈ (1 + σ²)/(1 + b)` gives
+
+    mean(1 − G/A_hat)  ≈  b − σ²      ( = −(σ² − b) )
+
+the **level bias minus the Jensen term**. Measured over 9 cells, 3 rates × 3 seeds at
+γ = 0, on uncensored quarter-hours where `G = A` exactly
+(`results/20_stage_a_diagnostics.csv`):
+
+| term | mean | range |
+|---|---|---|
+| `b` — level bias, **correctable by recalibration** | **+0.01069** | [0.00893, 0.01355] |
+| `σ` — relative-error spread | **0.16118** | [0.15607, 0.16724] |
+| `σ²` — Jensen term, **NOT correctable by recalibration** | **+0.02599** | [0.02436, 0.02797] |
+| predicted offset `b − σ²` | −0.01530 | [−0.01678, −0.01354] |
+| **measured offset** | **−0.01194** | [−0.01379, −0.00938] |
+| \|predicted − measured\| | 0.00336 | [0.00259, 0.00429] |
+
+**Both parts confirmed; the accounting is approximate, not exact.** `b = +1.07%` and
+`σ = 16.1%` (so `σ² = +2.60%`). The second-order expansion **over-predicts the offset
+by 0.34 pp, about 28% of the measured value**, because σ = 16% is not small enough for
+the third-order term to vanish and the relative-error distribution is skewed. The
+mechanism is established; the decomposition should be quoted as an explanation, not as
+an exact budget.
+
+**A consequence worth stating in advance: recalibrating the level would make the
+offset WORSE.** Removing `b` leaves `−σ²`, roughly **−2.6 pp** against the −1.19 pp
+measured now — the level bias is currently *cancelling* part of the Jensen term. So a
+naive "fix the bias" recalibration would roughly double the offset, not remove it.
+
+#### Three predictions, stated before the results
+
+**(i) T-D(i)'s placebo may FAIL structurally, not because stage A is wrong.** The
+placebo is `|mean(1 − G/A_hat)| < 1 pp` on held-out price > 5 €/MWh quarter-hours —
+exactly the quantity above, which measures **1.194 pp** in E1. **The criterion is NOT
+changed.** If it fails, this note is the explanation, and the failure is a property of
+a ratio with a noisy denominator rather than evidence that stage A is mis-specified.
+
+**(ii) The offset grows as σ², so T2 will carry a larger one.** T2 has no D-1 weather
+vintage (`docs/08` §9.2), and weather correlates 0.915 with true A in E1, so σ for
+T2's stage A must be larger and the offset grows with its square. **σ for T2's stage A
+is to be quantified when that stage A exists**, and the offset re-derived from it
+rather than carried over from E1.
+
+**(iii) Residual-based ĉ inherits this; M2's structural ĉ does not.** Any
+`ĉ = 1 − G/A_hat` carries the offset directly, and Hirth's `max(0, A_hat − G)` carries
+it *and* clips at zero, which rectifies the negative part rather than cancelling it.
+M2's structural `ĉ = Σ w·s·r` is built from exposure and a response on the simplex and
+has no such term. **T-A already reports both forms, so the gap between them is the
+quantitative test of this prediction** and is to be reported beside this note.
+
+#### T-B sensitivity arm — reported, decides nothing
+
+Every method is refitted on `y` and on `y − offset_hat`, where `offset_hat` is
+`mean(1 − G/A_hat)` measured on **that cell's uncensored quarter-hours only** — so it
+uses no censored information and cannot leak the answer. Same cells, same seeds.
+**Report whether the T-B verdict differs between the two.** It decides nothing; the
+pre-registered T-B verdict stands on the unadjusted `y`.
+
+**Rationale.** A negative offset interacts **asymmetrically** with the two sides of
+the comparison. M2's `p_k` lies on the simplex, so its response cannot go negative and
+a negative offset in `y` must be absorbed as a smaller fitted response or pushed into
+the never-respond atom; B3's binned mean is unconstrained and can simply return a
+negative bin. At a 10% censoring rate the offset is **20.0% of mean `c_true`** (0.0598),
+10.0% at 20% and 5.0% at 40%, so the asymmetry bites hardest exactly where T-B is
+hardest and where the data-efficiency claim is being tested.
