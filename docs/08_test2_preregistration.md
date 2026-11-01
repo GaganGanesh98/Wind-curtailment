@@ -431,3 +431,28 @@ the 21 months 2024-01 … 2025-09**, covering the 6H / 4H / 3H / 1H rule version
 checked (2025-10 … 2026-09, 61 comparisons) passed with no mismatch, which is what
 makes a later mismatch interpretable as a statement about the data rather than about
 the trigger logic.
+
+---
+
+### Dated notes, 1 November 2026 — after the panel rebuild. Nothing changed.
+
+Both decided by the supervisor after Stage 1's counts. **Sections 1–6 and Amendments
+1–2 are unaltered**; these record why, against figures that would otherwise invite a
+change.
+
+**Amendment 1's secondary verdict is KEPT, and it has become uninformative.** With the
+training history extended to 2024-01-01, the ≥ 20 training-event-day rule now selects
+**18 of 18 test months**, so the secondary is identical to the primary and separates
+nothing. It was built to tell "the method does not work" apart from "the method was
+never given enough data"; **that the distinction dissolved is itself the finding** —
+the thin-training-window problem is gone. The weakest test month now carries 844
+negative-price quarter-hours on 39 event-days, where 2026-03 previously had 10 on a
+single day (`results/24_test2_counts_rebuilt.csv`). It is still reported.
+
+**The October 2025 exclusion is KEPT as written, and its stated premise no longer
+holds.** Section 1 excludes those quarter-hours because "the 2025 monthly market value
+is missing". That is now false: `Monatsmarktwerte_2025.csv` is on disk and validated
+(`results/18_market_value_validation.csv`). The exclusion is kept regardless, because
+sections 1–6 are binding and a premise becoming false is not a licence to rewrite
+them. **The test set is therefore 17 months, not 18.** The cost is 199 of 4,871
+negative-price quarter-hours, about **4%**.
