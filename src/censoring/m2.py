@@ -139,7 +139,8 @@ class StageA:
 
 def fit_stage_a(forecast: np.ndarray, g_obs: np.ndarray, price: np.ndarray,
                 hour: np.ndarray, dates: np.ndarray,
-                safe_floor: float = 5.0, seed: int = SEED) -> StageA:
+                safe_floor: float = 5.0, seed: int = SEED,
+                smear: bool = False) -> StageA:
     """Cross-fitted log A = log F + g(x), fitted on price > safe_floor only."""
     f = np.asarray(forecast, dtype=float)
     g = np.asarray(g_obs, dtype=float)
@@ -157,7 +158,20 @@ def fit_stage_a(forecast: np.ndarray, g_obs: np.ndarray, price: np.ndarray,
         else:
             beta, *_ = np.linalg.lstsq(X[train], target[train], rcond=None)
         held = folds == k
-        a_hat[held] = f[held] * np.exp(X[held] @ beta)
+        # Duan smearing (Amendment 6 A6.4): OLS on log(G/F) then exp() estimates the
+        # GEOMETRIC mean, biased low for a right-skewed quantity -- which is why the
+        # uncorrected version scored worse than the raw forecast. The factor is
+        # computed on the TRAINING folds only, so it leaks nothing into the held-out
+        # fold.
+        # Duan smearing is OPT-IN and OFF by default. Measured on cell
+        # r10_g0.0_step_s42 it makes MAE WORSE (1,390.7 against 1,367.6 unsmeared),
+        # because exp(OLS on logs) already estimates the conditional MEDIAN and the
+        # median is what minimises MAE for a right-skewed quantity; smearing shifts
+        # the prediction up towards the MEAN, away from the MAE optimum. It is correct
+        # when a mean is wanted and wrong here. See docs/06's methodology note.
+        factor = (duan_smearing_factor(target[train] - X[train] @ beta)
+                  if (smear and train.any()) else 1.0)
+        a_hat[held] = f[held] * np.exp(X[held] @ beta) * factor
 
     resid = np.where(usable, np.log(np.maximum(g, 1e-9) / np.maximum(a_hat, 1e-9)),
                      np.nan)
@@ -546,3 +560,118 @@ def fit_m2(data, depth_grid: np.ndarray, ablation: M2Ablation | None = None,
         "stage_a_n_fit": sa.n_fit, "omega": sa.omega,
         "r_hat": response_curve(p, knots, block_shares, depth_grid),
     }
+
+
+# ------------------------------------------------- Amendment 6: shared stage A
+
+
+def hour_fourier_features(hour: np.ndarray, dates: np.ndarray) -> dict[str, np.ndarray]:
+    """Hour-of-day Fourier (24 h, 12 h) x season, as named columns for `_fit_plain`.
+
+    The intercept column of `stage_a_basis` is dropped: the network carries its own
+    bias and a constant column would be redundant.
+    """
+    X = stage_a_basis(hour, dates)
+    names = ([f"season_{s}" for s in (1, 2, 3)]
+             + [f"fourier{j}_season{s}" for s in range(4) for j in range(4)])
+    return {n: X[:, i + 1] for i, n in enumerate(names)}
+
+
+def assert_stage_a_beats_forecast(a_hat: np.ndarray, forecast: np.ndarray,
+                                  target: np.ndarray, censored: np.ndarray,
+                                  label: str = "shared stage A") -> dict:
+    """Amendment 6 A6.3: a stage A worse than the raw forecast is a hard failure.
+
+    This is the check that would have caught `fit_stage_a` scoring worse than doing
+    nothing (MAE 1,367.6 against F's 1,358.3 on cell r10_g0.0_step_s42). It raises
+    rather than warns, because a warning in a 135-cell run is a line nobody reads.
+    """
+    out = {}
+    for name, m in (("all", np.ones(target.shape, dtype=bool)), ("censored", censored)):
+        if not m.any():
+            continue
+        out[f"mae_{name}"] = float(np.abs(a_hat[m] - target[m]).mean())
+        out[f"mae_{name}_forecast"] = float(np.abs(forecast[m] - target[m]).mean())
+    bad = [n for n in ("all", "censored")
+           if f"mae_{n}" in out and out[f"mae_{n}"] > out[f"mae_{n}_forecast"]]
+    out["passes"] = not bad
+    if bad:
+        detail = ", ".join(f"{n}: {out[f'mae_{n}']:,.1f} vs F {out[f'mae_{n}_forecast']:,.1f} MW"
+                           for n in bad)
+        raise AssertionError(
+            f"{label} is WORSE than the raw day-ahead forecast on {detail}. "
+            "A stage A that loses to doing nothing cannot be shared across methods: "
+            "every response model would then be explaining its error (Amendment 6 A6.3)."
+        )
+    return out
+
+
+def fit_shared_stage_a(data, cfg=None, n_folds: int = N_FOLDS,
+                       seed: int = SEED, check: bool = True) -> StageA:
+    """Amendment 6 A6.1-A6.2: ONE stage A, shared by M2, B3-CV, B3@8, B3-H and B6.
+
+    `_fit_plain`'s estimator and features — including `weather_ms` — **plus** hour-of-day
+    Fourier x season, which is what Amendment 3's 0.1 asks for: hour terms *added to*
+    every method's stage A, not an OLS substituted for it.
+
+    Cross-fitted over the same 5 event-day folds as `fit_stage_a`, fixed assignment,
+    seed 42. A train/val split would not do: the T-D(i) placebo needs the price > 5
+    band genuinely out-of-sample, and `_fit_plain` selects its early stopping on the
+    validation half, so a quarter-hour in that half is not held out in any useful
+    sense. Passing `train_subset = safe & (fold != k)` keeps the held-out fold out of
+    *both* the training and the validation mask, which `_fit_plain` enforces.
+
+    **B2 never consumes this.** It is the Jorgensen deletion baseline fitted on its own
+    deletion sample; rewiring it would make it a different method and void the no-harm
+    claim (Amendment 5 A5.2).
+    """
+    from src.censoring.baselines import _fit_plain
+
+    hour = getattr(data, "real_hour", None)
+    if hour is None:
+        raise ValueError("Shared stage A needs the real hour-of-day; data has none.")
+    dates = np.asarray(data.real_berlin_date)
+    extra = hour_fourier_features(hour, dates)
+    folds = eventday_folds(dates, n_folds, seed)
+    safe = data.price_eur_mwh > data.config.safe_price_floor
+
+    a_hat = np.empty(data.forecast_mw.shape, dtype=float)
+    for k in range(n_folds):
+        fit = _fit_plain(data, data.g_obs_mw, f"stage_a_fold{k}",
+                         train_subset=safe & (folds != k), cfg=cfg,
+                         extra_features=extra)
+        held = folds == k
+        a_hat[held] = np.asarray(fit["a_hat"], dtype=float)[held]
+
+    resid = np.where(safe & (data.g_obs_mw > 0) & (a_hat > 0),
+                     np.log(np.maximum(data.g_obs_mw, 1e-9)
+                            / np.maximum(a_hat, 1e-9)), np.nan)
+    sa = StageA(a_hat=a_hat, residual_log=resid,
+                omega=weights_from_residuals(a_hat, resid, hour),
+                folds=folds, n_fit=int(safe.sum()))
+    if check:
+        assert_stage_a_beats_forecast(a_hat, data.forecast_mw, data.a_true_mw,
+                                      data.censored)
+    return sa
+
+
+# ------------------------------------------------- Amendment 6 A6.4: Duan smearing
+
+
+def duan_smearing_factor(log_residuals: np.ndarray) -> float:
+    """mean(exp(residual)) — Duan (1983), for retransforming a log-space fit.
+
+    Fitting E[log Y] by OLS and exponentiating estimates the GEOMETRIC mean, which for
+    a right-skewed quantity is below the arithmetic mean. The smearing factor is the
+    non-parametric correction: E[Y|x] ~ exp(x'b) * mean(exp(e_i)).
+
+    **Scope.** This applies only where a log-space fit is exponentiated to estimate a
+    level — in this codebase, `fit_stage_a` alone. It must NOT be applied to the
+    `F * exp(g(x))` heads in `model.py` and `baselines.py`: those are trained by
+    pinball loss on observed G **in levels** (`model.py:562`), so `exp` there is a link
+    function the optimiser already accounts for, and smearing them would introduce the
+    very bias it is meant to remove.
+    """
+    r = np.asarray(log_residuals, dtype=float)
+    r = r[np.isfinite(r)]
+    return float(np.exp(r).mean()) if r.size else 1.0

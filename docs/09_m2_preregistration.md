@@ -788,3 +788,112 @@ weather. Three options, in my order of preference:
 nothing" does not hold:** M2's stage A is ~155 MW worse than B2's on censored
 quarter-hours in this cell, so (c) would register a real loss caused by the feature
 set. That is the one part of the decision that should not be left to the run.
+
+---
+
+## Amendment 6 — shared stage A is the torch head plus hour Fourier
+
+**Supervisor's decision: Option 1 with three conditions. 1 November 2026, before any
+E1 v2 number.**
+
+### A6.1–A6.2 The design, and why it is cross-fitted
+
+> Shared stage A = the torch head (_fit_plain's estimator and features, incl.
+> weather_ms) PLUS hour-of-day Fourier (24h, 12h) x season. One array per cell,
+> consumed by M2, B3-CV, B3@8, B3-H, B6. B2 keeps its own fit on its own deletion
+> sample.
+>
+> Cross-fit it over fit_stage_a's 5 event-day folds, fixed assignment, seed 42 — the
+> T-D(i) placebo needs the >5 band genuinely out-of-sample; a train/val split does not
+> give that.
+
+Implemented as `fit_shared_stage_a()`. `_fit_plain`'s `train_subset` restricts **both**
+its training and its validation mask, so passing `safe & (fold != k)` keeps the
+held-out fold out of fitting *and* out of early stopping — verified in the code, which
+matters because early stopping on a quarter-hour makes it not held out in any useful
+sense.
+
+**Measured on cell `r10_g0.0_step_s42`** (MAE against true A, MW):
+
+| estimator | all QH | censored QH |
+|---|---|---|
+| raw forecast F — the bar to beat | 1,358.3 | 1,387.4 |
+| `fit_stage_a` (OLS + hour, no weather) | 1,367.6 | 1,412.3 |
+| **shared stage A — torch + weather + hour, 5-fold cross-fitted** | **1,238.1** | **1,287.0** |
+| B2's own fit (not shared, not cross-fitted) | 1,212.6 | 1,256.3 |
+
+Option 1 works: the shared array beats the raw forecast by 120 MW, where the OLS lost
+to it. **Cost: 5 cross-fitted torch fits, ~23 s per cell.** It depends only on the
+cell, not on T-B's `n_event_days` subsample (Amendment 3 A3.2 item 2 keeps stage A on
+its full sample), so it is fitted **once per cell and reused across all four n-levels
+and all five methods**.
+
+B2's own fit is ~25 MW better than the shared array. That is the honest price of
+cross-fitting: B2 is fitted on a train/val split and its `a_hat` is partly in-sample,
+while every value in the shared array is held out. The right trade for a placebo.
+
+### A6.3 The hard test
+
+> HARD TEST (fail loudly, not a warning): shared stage A's held-out MAE <= raw forecast
+> F's MAE, on all QHs and on censored QHs. Assert per cell.
+
+`assert_stage_a_beats_forecast()` raises `AssertionError` naming the failing stratum
+and both MAEs. It runs per cell inside `fit_shared_stage_a`. A warning in a 135-cell
+run is a line nobody reads.
+
+### A6.4 Retransformation — and a correction to my own diagnosis
+
+> Retransformation: wherever a log-space fit is exponentiated anywhere in the codebase
+> — including T2's F x exp(g(calendar)) latent head — apply Duan smearing or fit in
+> levels.
+
+Two findings, both against the code rather than assumed.
+
+**(a) The scope is narrower than stated: only `fit_stage_a` was ever affected.** The
+`F * exp(g(x))` heads in `model.py` and `baselines.py` are trained by `pinball_loss`
+on observed **G in levels** (`model.py:562`); `torch.log` appears in those modules only
+in inverse-softplus parameter *initialisation*, never on a target. So `exp` there is a
+link function the optimiser already accounts for, and **applying smearing to them
+would introduce the very bias it is meant to remove.** `duan_smearing_factor`'s
+docstring says so explicitly.
+
+**(b) Smearing makes `fit_stage_a` WORSE, so my A5.4 diagnosis was wrong.** Measured:
+**1,390.7 MW smeared against 1,367.6 unsmeared** (all QH). The reason is that
+`exp(OLS on logs)` estimates the conditional **median**, and the median is what
+minimises **MAE** for a right-skewed quantity; smearing shifts the prediction towards
+the **mean**, away from the MAE optimum. The retransformation bias is real and the
+correction is correct *for estimating a mean* — it is simply the wrong target here.
+
+So A5.4's claim that the log-space bias is "the likely cause" of `fit_stage_a` losing
+to the raw forecast is **withdrawn**. The actual cause is plainer: a calendar-only
+multiplicative model has very little signal, and cross-fitting exposes it, so
+`F * exp(ĝ)` adds more variance than it removes and lands ~9 MW (0.7%) above F.
+Option 1 resolves this by restoring weather and a non-linear estimator, not by
+retransformation.
+
+`duan_smearing_factor()` is kept, tested against a log-normal with a known mean
+(naive estimator biased low by a factor of ~1.38 at σ = 0.8; smeared recovers the
+truth to 2%), and `fit_stage_a` gains a `smear` flag that is **off by default**, pinned
+by a test.
+
+### A6.5 Limitation: E1's weather proxy has no T2 counterpart
+
+> Record as a limitation: E1's stage A uses the weather proxy (corr 0.915 with true A);
+> T2 has no D-1 weather vintage. Equal across methods, but it caps what E1 predicts
+> about Test 2.
+
+Recorded. E1's shared stage A is materially better than anything T2 can have, because
+T2's allow-list permits `weather_ms_icon_d1` and no such vintage exists in this repo
+(Amendment 3's gap list, and `docs/08` §9.2). The advantage is **equal across methods**
+so it does not bias any comparison, but **E1's absolute recovery quality is an
+optimistic bound on Test 2's**, and T-B's result should not be read as predicting T-E's.
+
+### A6.6 The committed v1.8 gate is unaffected
+
+> Confirm in the minute that the committed v1.8 gate is unaffected (every method there
+> used _fit_plain; none used fit_stage_a).
+
+**Confirmed against the code.** `fit_stage_a` is defined in `src/censoring/m2.py` and
+appears nowhere else; `m2.py` did not exist when the 81-cell grid ran. The grid's
+`fit_all` calls `fit_m1` and `bl.ALL_BASELINES`, all of which route through
+`_fit_plain`. The v1.8 verdict in `results/13_gate_verdict.csv` stands untouched.

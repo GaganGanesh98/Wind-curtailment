@@ -820,3 +820,40 @@ EEG rules imply, where Hirth fits one pooled curve. The limitation is his stated
 choice, not an oversight, and the contribution here is to test whether the cohort
 structure is recoverable at all — which `docs/09` section 4.4 shows is identified in
 only 18 of 33 months.
+
+### Methodology note — retransformation bias, and what it did and did not cause
+
+Recorded 1 November 2026 after a stage-A design error, because the mistake is a
+standard one and the correction is not quite the textbook one.
+
+**The bias is real.** Fitting `log Y = x'b + e` by OLS and reporting `exp(x'b)`
+estimates the conditional **geometric mean**, not the arithmetic mean. For a
+right-skewed quantity the geometric mean is lower, so the naive retransformation is
+biased low. Duan's (1983) smearing factor — `mean(exp(e_i))` over the training
+residuals — is the non-parametric correction. Verified here on a log-normal with a
+known mean: at σ = 0.8 the naive estimator is low by a factor of about 1.38, and
+smearing recovers the truth to within 2% (`tests/test_m2.py`).
+
+**But it was not the cause of the failure, and correcting it made things worse.** A
+stage-A model `Â = F · exp(ĝ(calendar))` fitted this way scored **worse than the raw
+day-ahead forecast** (MAE 1,367.6 against 1,358.3 MW on cell `r10_g0.0_step_s42`), and
+applying smearing moved it further away, to 1,390.7. The reason is the loss function:
+`exp(OLS on logs)` estimates the conditional **median**, and the **median minimises
+MAE** for a skewed quantity, while the mean does not. Smearing corrects towards the
+mean and therefore away from the MAE optimum. The real cause of the failure was much
+plainer — a calendar-only multiplicative model carries little signal, and honest
+cross-fitting exposes that, so the fitted factor added more variance than it removed.
+
+**Three practical rules follow, and they are now in the code.**
+
+1. Apply smearing only when the target is a **mean**. Under MAE, the unsmeared
+   median-like predictor is the better estimator, not the worse one.
+2. Do **not** apply it to a multiplicative head trained in levels. The
+   `F · exp(g(x))` heads in `src/censoring/model.py` and `src/censoring/baselines.py`
+   are fitted by pinball loss on observed G in levels, so `exp` is a link function the
+   optimiser already accounts for; smearing them would **introduce** the bias it is
+   meant to remove.
+3. Always test a latent model against the trivial baseline it is supposed to improve
+   on. `assert_stage_a_beats_forecast()` now raises per cell if stage A's held-out MAE
+   exceeds the raw forecast's. That single assertion would have caught this on the
+   first run instead of two amendments later.

@@ -365,3 +365,78 @@ def test_recovery_report_shows_whether_the_shared_mask_binds_harder():
     assert rep["fallback_share_own"]["M2"] == pytest.approx(0.25)
     assert rep["fallback_share_own"]["B3"] == pytest.approx(0.25)
     assert rep["shared_binds_harder_than_any_own"] is True
+
+
+# --------------------------- Amendment 6: retransformation, and the hard stage-A test
+
+
+def test_duan_smearing_recovers_the_mean_of_a_lognormal():
+    """exp(OLS on logs) estimates the GEOMETRIC mean; smearing recovers the arithmetic.
+
+    For Y = exp(mu + s*Z): geometric mean exp(mu), arithmetic mean exp(mu + s^2/2).
+    With s = 0.8 the naive estimator is low by a factor exp(0.32) ~ 1.38, which is the
+    size of the bias that made fit_stage_a lose to the raw forecast.
+    """
+    from src.censoring.m2 import duan_smearing_factor
+
+    rng = np.random.default_rng(0)
+    mu, sigma, n = 2.0, 0.8, 400_000
+    y = np.exp(mu + sigma * rng.normal(size=n))
+
+    naive = np.exp(np.log(y).mean())
+    smeared = naive * duan_smearing_factor(np.log(y) - np.log(y).mean())
+    truth = y.mean()
+
+    assert naive == pytest.approx(np.exp(mu), rel=0.02)          # geometric mean
+    assert naive < 0.8 * truth                                    # materially biased low
+    assert smeared == pytest.approx(truth, rel=0.02)              # corrected
+
+
+def test_smearing_factor_is_one_when_residuals_vanish():
+    from src.censoring.m2 import duan_smearing_factor
+
+    assert duan_smearing_factor(np.zeros(100)) == pytest.approx(1.0)
+    assert duan_smearing_factor(np.array([])) == 1.0
+
+
+def test_stage_a_hard_check_raises_when_worse_than_the_forecast():
+    """A6.3: must fail loudly. A warning in a 135-cell run is a line nobody reads."""
+    from src.censoring.m2 import assert_stage_a_beats_forecast
+
+    n = 200
+    a_true = np.full(n, 1000.0)
+    forecast = a_true + 10.0                       # 10 MW out
+    censored = np.zeros(n, dtype=bool); censored[:50] = True
+
+    good = a_true + 2.0
+    rep = assert_stage_a_beats_forecast(good, forecast, a_true, censored)
+    assert rep["passes"] and rep["mae_all"] < rep["mae_all_forecast"]
+
+    bad = a_true + 50.0                            # worse than doing nothing
+    with pytest.raises(AssertionError, match="WORSE than the raw day-ahead forecast"):
+        assert_stage_a_beats_forecast(bad, forecast, a_true, censored)
+
+
+def test_hour_fourier_features_are_named_and_finite():
+    from src.censoring.m2 import hour_fourier_features
+
+    hour = np.arange(960) % 24
+    dates = np.repeat([f"2026-{m:02d}-15" for m in range(1, 13)], 80)
+    feats = hour_fourier_features(hour, dates)
+    assert len(feats) == 19                        # 3 season + 16 fourier x season
+    assert all(np.isfinite(v).all() for v in feats.values())
+    assert "intercept" not in feats                # the net carries its own bias
+
+
+def test_smearing_is_off_by_default_because_it_worsens_mae():
+    """Correct for a mean, wrong for an MAE-scored predictor. Pinned so it stays off.
+
+    exp(OLS on logs) estimates the conditional MEDIAN, which is the MAE optimum for a
+    right-skewed quantity. Smearing shifts it towards the MEAN and away from that
+    optimum: measured 1,390.7 MW against 1,367.6 unsmeared on cell r10_g0.0_step_s42.
+    """
+    import inspect
+
+    from src.censoring.m2 import fit_stage_a
+
+    assert inspect.signature(fit_stage_a).parameters["smear"].default is False
