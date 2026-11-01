@@ -376,3 +376,23 @@ with vs without run length).
 | Open-Meteo Previous Runs start date for DWD models | spec §3a | Open-Meteo docs / API probe |
 | Open-Meteo licence | spec §3a | Open-Meteo terms page |
 | Google Scholar and IEEE Xplore novelty sweep | `02_evidence_base.md` search caveat | Still to do; Semantic Scholar/OpenAlex and a broad web sweep are done |
+
+20. **Every number cites its source; every comparison states its inference.** Standing
+    rule, set 1 Nov 2026 after the noise audit. Three parts, all mandatory in any
+    report, commit message, docstring or document:
+    - **Provenance.** Every number names the file it came from and the row or column
+      that holds it — `results/19_b3_bins_multiseed.csv`, row `logistic/8 bins`, not
+      "about 20x". A number with no citable source is not reportable.
+    - **Inference.** Every comparison either states its confidence interval (or exact
+      test and p-value), or carries the literal label **"point estimate, no
+      inference"**. There is no third option, and "significant" without an interval is
+      never acceptable.
+    - **No provisional subsets.** Nothing is claimed from a partial run. A figure from
+      an incomplete grid is labelled PROVISIONAL and may be used to check that code
+      works, never to support a statement about results.
+
+    Why: a single-seed diagnostic was quoted as "47.9x at 8 bins, 2.7x at 64" and
+    carried into the spec minute as if it were an estimate. Recomputed over nine cells
+    the same quantities are 20.71x (range 14.42-26.72) and 1.17x (range 0.79-1.52), and
+    one of the accompanying claims was simply false. The cost of that error was paid in
+    a written minute that had to be corrected; this rule is what stops it recurring.

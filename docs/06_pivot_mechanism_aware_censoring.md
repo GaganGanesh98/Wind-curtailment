@@ -623,7 +623,7 @@ reviewer discipline.
   0.99+ — so outside curtailment the comparison is close to self-referential. Only
   the negative-price quarter-hours are informative, which is what the check is for.
 
-- **E2 — real data (task T2 unless stated).** 15-minute panel, Oct 2025 – Oct 2026, four control areas plus DE. Rolling origin by month, 7-day embargo, event-day blocks. Metrics on negative QHs and overall: MAE, pinball, coverage, bias by price band; Diebold-Mariano with event-day block bootstrap. 50Hertz and Amprion are primary (cleanest signal in v3).
+- **E2 — real data (task T2 unless stated).** 15-minute panel, Oct 2025 – Oct 2026, four control areas plus DE. Rolling origin by month, 7-day embargo, event-day blocks. Metrics on negative QHs and overall: MAE, pinball, coverage, bias by price band; Diebold-Mariano with event-day block bootstrap. 50Hertz and Amprion are primary (cleanest signal in v3). **TenneT is NOT significant in the kill test** and must be reported as such wherever area results appear: mean day-ahead error -325.9 MW, 95% event-day CI [-838.3, +137.6], `ci_excludes_zero=False`, -3.6% of forecast (`results/02_overall_negative_qh_bias.csv`, row "TenneT DE"). It is the one control area where the kill test found no significant negative-price bias.
   **Order (v1.8):** DE first, then 50Hertz — which is unaffected by the split-state
   control-area proxy — then the remaining areas only after the Netzanschlusspunkte
   fix lands.
@@ -720,3 +720,63 @@ in the changelog and in §7. **No further revision after the full grid has been 
 ## 12. Repo changes
 
 Implemented by Claude Code from `CLAUDE_CODE_PROMPT.md`.
+
+  **Noise-audit minute, 1 November 2026. No criterion, threshold or verdict changes.**
+  Four corrections to how the week-6 gate is inferred and reported, decided **before
+  the 81 cells were scored**.
+
+  **(1) Criterion (a) now has a stated inference procedure.** The pre-registered
+  statistic — integrated |r̂ − r\*| over the uniform depth grid — is a functional of a
+  fitted curve and admits no event-day bootstrap CI without refitting the model on each
+  resample. It is therefore judged, **per shape, by an exact two-sided sign test over
+  the 9 paired cells** (3 rates × 3 seeds), with **pass requiring M1 lower in at least
+  8 of 9** (exact two-sided p = 0.0391 at 8/9, p = 0.0039 at 9/9). All nine paired
+  differences are reported. The criterion itself is unchanged; only its inference is
+  now specified instead of improvised. The per-quarter-hour `fleet_r_err` figure is
+  **a substitute statistic, supplementary only**, and cannot decide (a).
+
+  **(2) Design finding (iii) is CORRECTED. Its figures came from one seed and two of
+  its three claims were wrong.** Recomputed over seeds 42–44 at γ = 0 at all three
+  censoring rates — 9 cells per shape — by rebinning the stored per-quarter-hour
+  predictions with no refitting (`results/19_b3_bins_multiseed.csv`):
+
+  | shape | bins | B3 ÷ M1, mean | range | M1 lower in |
+  |---|---|---|---|---|
+  | logistic | 8 | **20.71** | [14.42, 26.72] | 9/9 |
+  | logistic | 64 | **1.17** | [0.79, 1.52] | 8/9 |
+  | step | 4 | 1.48 | [0.75, 2.12] | **6/9** |
+  | step | 8 | 1.11 | [0.65, 1.44] | **5/9** |
+  | step | 16 | 0.85 | [0.51, 1.15] | 4/9 |
+  | half | 8 | 0.47 | [0.18, 1.29] | 1/9 |
+  | half | 64 | 0.65 | [0.24, 1.47] | 2/9 |
+
+  - The superseded figures **47.9× at 8 bins and 2.7× at 64 are withdrawn.** They were
+    a single seed at a single rate; the correct multi-seed means are **20.71×** and
+    **1.17×**, and the 64-bin range **crosses 1.0**, so at 64 bins B3 and M1 are
+    **equivalent on logistic**, not 2.7× apart. Do not quote the old numbers.
+  - The claim that **"B3 is the better estimator on step and half at every bin count"
+    is FALSE for step at the coarse end**: M1 is lower in 6 of 9 cells at 4 bins and
+    5 of 9 at 8 bins. B3 is better on step only from 16 bins upward. The claim holds
+    for `half` at every bin count tested.
+  - What survives unchanged: criterion (a) is strongly sensitive to a bin count that is
+    **my choice and not Hirth's** (`HIRTH_FIG12_MARGIN_EDGES_EUR_MWH` is still `None`),
+    and the sensitivity runs the full distance from a 20× gap to equivalence.
+
+  **(3) 4a-proper's exploratory tests are Holm-adjusted, and the > 150 band does not
+  survive.** The script ran **94 exploratory tests** (band × stratum × treatment ×
+  area) besides the one pre-registered contrast. 27 are significant unadjusted and
+  **8 after Holm** (`results/16_4a_proper_placebo.csv`, column `p_holm`). **Every one
+  of the 8 survivors is on the `add_back` treatment** — the over-inclusive one that
+  biases low bands upward, so those are the least trustworthy of the three. The
+  earlier statement that the **> 150** band "is significant in both areas with the
+  same sign" is **corrected to NOT ROBUST after adjustment**: on `raw` its Holm p is
+  **0.332** (DE) and **1.000** (50Hertz); on `exclude`, 1.000 in both. The
+  pre-registered contrast is unadjusted by design, being a single pre-specified test,
+  and returns p = 0.2560 (DE) and p = 0.6048 (50Hertz) — the NO verdict stands and is
+  not marginal.
+
+  **(4) Wording.** The agreement between this project's DE onshore > 5 placebo
+  (−0.35%) and Hirth's (−0.37%) is **consistent**, not a validation of either; see
+  `docs/09_m2_preregistration.md` Amendment 1. And **TenneT is not significant in the
+  kill test** — it is now stated wherever area results are listed, here and in
+  `docs/08`.

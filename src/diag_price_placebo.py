@@ -174,8 +174,25 @@ def fit_with_eventday_bootstrap(X: np.ndarray, y: np.ndarray, days: np.ndarray,
             singular += 1
 
     lo, hi = np.percentile(boot, [2.5, 97.5], axis=0)
-    return {"beta": beta, "lo": lo, "hi": hi, "n_days": n_days,
+    # Two-sided bootstrap p-value per coefficient, floored at 1/n_boot because a
+    # bootstrap cannot resolve a p-value finer than its own resolution.
+    frac_le = (boot <= 0).mean(axis=0)
+    frac_ge = (boot >= 0).mean(axis=0)
+    pval = np.clip(2.0 * np.minimum(frac_le, frac_ge), 1.0 / n_boot, 1.0)
+    return {"beta": beta, "lo": lo, "hi": hi, "p": pval, "n_days": n_days,
             "n_obs": int(X.shape[0]), "singular_draws": singular}
+
+
+def holm(pvals: list[float]) -> list[float]:
+    """Holm-Bonferroni step-down adjusted p-values, order preserved."""
+    m = len(pvals)
+    order = sorted(range(m), key=lambda i: pvals[i])
+    adj = [0.0] * m
+    running = 0.0
+    for rank, i in enumerate(order):
+        running = max(running, (m - rank) * pvals[i])
+        adj[i] = min(1.0, running)
+    return adj
 
 
 # ------------------------------------------------------------------- data loading
@@ -239,22 +256,29 @@ def report(df: pl.DataFrame, label: str, n_knots: int, rows: list[dict],
           + (f"   [{res['singular_draws']} singular draws]"
              if res["singular_draws"] else ""))
     print(f"    {'band (vs ' + REFERENCE + ')':<22}{'coef':>10}{'95% CI':>22}"
-          f"{'excl 0':>8}{'n QH':>8}")
+          f"{'excl 0':>8}{'n QH':>8}{'p raw':>10}  role")
     out = {}
     for lbl, _, _ in BANDS:
         if lbl == REFERENCE:
             continue
         j = names.index(f"band_{lbl}")
         b, lo, hi = res["beta"][j], res["lo"][j], res["hi"][j]
+        pv = float(res["p"][j])
         excl = (lo > 0 and hi > 0) or (lo < 0 and hi < 0)
         n_b = int((df["band"].to_numpy() == lbl).sum())
+        # The ONE pre-registered test: the CONTRAST band, 'exclude' treatment, all F.
+        confirmatory = (lbl == CONTRAST and treatment == "exclude"
+                        and stratum == "all F")
+        role = "PRE-REGISTERED" if confirmatory else "exploratory"
         print(f"    {lbl:<22}{b:>+10.5f}{f'[{lo:+.5f}, {hi:+.5f}]':>22}"
-              f"{str(excl):>8}{n_b:>8,}")
-        out[lbl] = {"coef": float(b), "lo": float(lo), "hi": float(hi), "excl": excl}
+              f"{str(excl):>8}{n_b:>8,}{pv:>10.4f}  {role}")
+        out[lbl] = {"coef": float(b), "lo": float(lo), "hi": float(hi),
+                    "excl": excl, "p": pv}
         rows.append({"area": area, "treatment": treatment, "stratum": stratum,
                      "band": lbl, "reference": REFERENCE, "coef": round(float(b), 6),
                      "ci_lo": round(float(lo), 6), "ci_hi": round(float(hi), 6),
-                     "ci_excludes_zero": excl, "n_qh_band": n_b,
+                     "ci_excludes_zero": excl, "p_raw": round(pv, 6),
+                     "p_holm": "", "role": role, "n_qh_band": n_b,
                      "n_qh_fit": res["n_obs"], "n_days_fit": res["n_days"]})
     return out
 
@@ -317,8 +341,42 @@ def main() -> None:
     rows.append({"area": "VERDICT", "treatment": "exclude", "stratum": "all F",
                  "band": CONTRAST, "reference": REFERENCE, "coef": "",
                  "ci_lo": "", "ci_hi": "",
-                 "ci_excludes_zero": "YES" if same else "NO", "n_qh_band": "",
+                 "ci_excludes_zero": "YES" if same else "NO", "p_raw": "",
+                 "p_holm": "", "role": "PRE-REGISTERED VERDICT", "n_qh_band": "",
                  "n_qh_fit": "", "n_days_fit": ""})
+
+    # ---- Holm adjustment over the EXPLORATORY family (noise-audit item 3) ----
+    expl = [r for r in rows if r.get("role") == "exploratory"]
+    if expl:
+        adj = holm([float(r["p_raw"]) for r in expl])
+        for r, a in zip(expl, adj):
+            r["p_holm"] = round(a, 6)
+        n_raw = sum(1 for r in expl if float(r["p_raw"]) < 0.05)
+        n_adj = sum(1 for r in expl if float(r["p_holm"]) < 0.05)
+        print(f"\n{'=' * 92}\nMULTIPLE TESTING (noise-audit item 3)\n{'=' * 92}")
+        print(f"  Exploratory family: {len(expl)} tests "
+              f"(band x stratum x treatment x area, excluding the pre-registered one).")
+        print(f"  Significant at 0.05 unadjusted: {n_raw}.  After Holm: {n_adj}.")
+        surv = sorted((r for r in expl if float(r["p_holm"]) < 0.05),
+                      key=lambda r: float(r["p_holm"]))
+        if surv:
+            print(f"\n  {'area':<10}{'treatment':<10}{'stratum':<9}{'band':<11}"
+                  f"{'coef':>10}{'p raw':>10}{'p Holm':>10}")
+            for r in surv[:25]:
+                print(f"  {r['area']:<10}{r['treatment']:<10}{r['stratum']:<9}"
+                      f"{r['band']:<11}{float(r['coef']):>+10.5f}"
+                      f"{float(r['p_raw']):>10.4f}{float(r['p_holm']):>10.4f}")
+        else:
+            print("  Nothing in the exploratory family survives Holm adjustment.")
+        for band in ("> 150", "(20,50]"):
+            fam = [r for r in expl if r["band"] == band]
+            if not fam:
+                continue
+            kept = [r for r in fam if float(r["p_holm"]) < 0.05]
+            print(f"\n  {band} band: {len(kept)} of {len(fam)} exploratory tests "
+                  f"survive Holm -> "
+                  + ("NOT ROBUST after adjustment" if not kept
+                     else f"{len(kept)} robust"))
 
     OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
     with open(OUT_CSV, "w", newline="", encoding="utf-8") as fh:

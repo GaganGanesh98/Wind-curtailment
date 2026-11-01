@@ -30,7 +30,7 @@ alternatives where it matters — in negative-price quarter-hours?**
   value is missing, so θ cannot be formed for them. 199 quarter-hours on 7 event-days
   are dropped. Labelled in every output.
 
-**Areas.** DE is primary and 50Hertz secondary, following spec v1.8's E2 order.
+**Areas.** DE is primary and 50Hertz secondary, following spec v1.8's E2 order. **TenneT is NOT significant in the kill test** and must be reported as such wherever area results appear: mean day-ahead error -325.9 MW, 95% event-day CI [-838.3, +137.6], `ci_excludes_zero=False`, -3.6% of forecast (`results/02_overall_negative_qh_bias.csv`, row "TenneT DE"). It is the one control area where the kill test found no significant negative-price bias.
 Amprion, TenneT and TransnetBW are out of scope here: spec v1.8 holds them back until
 the Netzanschlusspunkte fix lands, and this pre-registration does not override that.
 

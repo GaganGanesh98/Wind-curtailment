@@ -193,9 +193,26 @@ def c_abs_err(c: dict, name: str) -> np.ndarray:
 
 
 def criterion_a(cells: list[dict], rows: list[dict]) -> dict:
-    """Per r* shape, at gamma = 0. Both response statistics."""
+    """Per r* shape, at gamma = 0.
+
+    Inference, decided 1 Nov 2026 before the 81 cells were scored (noise-audit
+    minute, no criterion change): the pre-registered statistic -- integrated
+    |r-hat - r*| over the uniform depth grid -- is a functional of a fitted curve and
+    has no event-day bootstrap CI without refitting. It is therefore judged by an
+    **exact two-sided sign test over the 9 paired cells** of each shape (3 rates x 3
+    seeds), and **pass requires M1 lower in at least 8 of 9** (p = 0.0391 at 8/9,
+    p = 0.0039 at 9/9). The nine paired differences are reported in full.
+
+    The per-quarter-hour `fleet_r_err` figure is a **SUBSTITUTE STATISTIC** and is
+    supplementary only. It is not the pre-registered quantity and cannot decide (a).
+    """
+    from scipy.stats import binomtest
+
     verdicts = {}
     print(f"\n{'=' * 78}\nCRITERION (a)  {CRITERIA['a']}\n{'=' * 78}")
+    print("  Inference: exact two-sided sign test over the 9 paired cells per shape.")
+    print("  PASS requires M1 lower in >= 8 of 9.  fleet_r_err is a SUBSTITUTE")
+    print("  statistic, reported for context only and not decisive.")
     for shape in SHAPES:
         sub = [c for c in cells
                if float(c["gamma"]) == 0.0 and str(c["r_shape"]) == shape]
@@ -218,41 +235,66 @@ def criterion_a(cells: list[dict], rows: list[dict]) -> dict:
         e_m1, e_b3, days = pool(sub, build)
         p = paired_difference(e_m1, e_b3, np.ones(e_m1.shape, dtype=bool), days)
 
-        agree = (np.median(m1_pre - b3_pre) < 0) == (p["diff"] < 0)
-        verdicts[shape] = bool(p["a_better"])
+        diffs = m1_pre - b3_pre
+        n_cells = len(sub)
+        n_lower = int((diffs < 0).sum())
+        n_tied = int((diffs == 0).sum())
+        n_eff = n_cells - n_tied
+        bt = binomtest(n_lower, n_eff, 0.5, alternative="two-sided") if n_eff else None
+        pval = float(bt.pvalue) if bt is not None else float("nan")
+        passed = n_lower >= 8 and n_cells == 9
+
+        agree = (np.median(diffs) < 0) == (p["diff"] < 0)
+        verdicts[shape] = bool(passed)
         rates = sorted({float(c["censoring_rate"]) for c in sub})
         seeds = sorted({int(c["seed"]) for c in sub})
-        print(f"\n  {shape}  ({len(sub)} cells: rates "
+        print(f"\n  {shape}  ({n_cells} cells: rates "
               f"{[f'{r:.0%}' for r in rates]} x seeds {seeds})")
-        print(f"    int_abs_r   (pre-registered, uniform grid, no CI)")
-        print(f"      M1 median {np.median(m1_pre):.4f}   B3 median "
-              f"{np.median(b3_pre):.4f}   M1 lower in {n_better}/{len(sub)} cells"
-              f"   median paired diff {np.median(m1_pre - b3_pre):+.4f}")
-        print(f"    fleet_r_err (companion, per-QH, paired event-day bootstrap)")
-        print(f"      M1 {np.nanmean(e_m1):.4f}   B3 {np.nanmean(e_b3):.4f}   "
-              f"diff {p['diff']:+.4f}  95% CI [{p['lo']:+.4f}, {p['hi']:+.4f}]"
-              f"   n={p['n_qh']:,} QH in {p['n_days']} days")
-        print(f"      -> M1 significantly better: {p['a_better']}"
-              f"   (directions agree: {agree})")
+        print(f"    PRE-REGISTERED STATISTIC: integrated |r-hat - r*|, uniform grid")
+        print(f"      {'rate':>6}{'seed':>6}{'M1':>10}{'B3':>10}{'M1-B3':>11}"
+              f"{'M1 lower':>10}")
+        for c, d in sorted(zip(sub, diffs),
+                           key=lambda cd: (float(cd[0]["censoring_rate"]),
+                                           int(cd[0]["seed"]))):
+            m1v = integrated_response_error(c["r_curve_M1"], c["r_curve_true"],
+                                            c["depth_grid"])
+            b3v = integrated_response_error(c["r_curve_B3"], c["r_curve_true"],
+                                            c["depth_grid"])
+            print(f"      {float(c['censoring_rate']):>6.0%}{int(c['seed']):>6}"
+                  f"{m1v:>10.5f}{b3v:>10.5f}{d:>+11.5f}{str(bool(d < 0)):>10}")
+        print(f"      sign test: M1 lower in {n_lower}/{n_eff}"
+              + (f" ({n_tied} tied, excluded)" if n_tied else "")
+              + f"   exact two-sided p = {pval:.4f}")
+        print(f"      -> (a) on {shape}: {'PASS' if passed else 'FAIL'} "
+              f"(needs >= 8 of 9)")
+        print(f"    SUBSTITUTE STATISTIC (supplementary, NOT pre-registered, "
+              f"cannot decide)")
+        print(f"      fleet_r_err  M1 {np.nanmean(e_m1):.4f}  B3 "
+              f"{np.nanmean(e_b3):.4f}  diff {p['diff']:+.4f}  "
+              f"95% CI [{p['lo']:+.4f}, {p['hi']:+.4f}]  n={p['n_qh']:,} QH / "
+              f"{p['n_days']} days   same direction: {agree}")
         rows += [
             {"criterion": "a", "stratum": f"shape={shape}", "rival": "B3",
-             "statistic": "int_abs_r (pre-registered, uniform grid)",
+             "statistic": "int_abs_r (PRE-REGISTERED, uniform grid, sign test)",
              "m1_value": round(float(np.median(m1_pre)), 6),
              "rival_value": round(float(np.median(b3_pre)), 6),
-             "paired_diff": round(float(np.median(m1_pre - b3_pre)), 6),
-             "ci_lo": "", "ci_hi": "", "significant": "",
-             "m1_better": n_better == len(sub),
-             "n_qh": "", "n_days": "", "n_cells": len(sub),
-             "note": f"M1 lower in {n_better}/{len(sub)} cells; no CI defined"},
+             "paired_diff": round(float(np.median(diffs)), 6),
+             "ci_lo": "", "ci_hi": "", "significant": pval < 0.05,
+             "m1_better": passed,
+             "n_qh": "", "n_days": "", "n_cells": n_cells,
+             "note": f"sign test M1 lower in {n_lower}/{n_eff}, exact two-sided "
+                     f"p={pval:.4f}; pass needs >=8/9; medians shown, per-cell "
+                     f"differences printed"},
             {"criterion": "a", "stratum": f"shape={shape}", "rival": "B3",
-             "statistic": "fleet_r_err (companion, per-QH)",
+             "statistic": "fleet_r_err (SUBSTITUTE, supplementary only)",
              "m1_value": round(float(np.nanmean(e_m1)), 6),
              "rival_value": round(float(np.nanmean(e_b3)), 6),
              "paired_diff": round(p["diff"], 6),
              "ci_lo": round(p["lo"], 6), "ci_hi": round(p["hi"], 6),
              "significant": p["significant"], "m1_better": p["a_better"],
-             "n_qh": p["n_qh"], "n_days": p["n_days"], "n_cells": len(sub),
-             "note": f"directions agree with pre-registered: {agree}"},
+             "n_qh": p["n_qh"], "n_days": p["n_days"], "n_cells": n_cells,
+             "note": "NOT the pre-registered statistic; cannot decide (a); "
+                     f"same direction as pre-registered: {agree}"},
         ]
     return verdicts
 

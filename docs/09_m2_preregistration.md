@@ -329,9 +329,14 @@ Supersedes section 4.2's scheme.
 
   **An agreement worth recording.** Hirth's above-5 placebo is **−0.37%**; this
   project's DE onshore > 5 figure is **−0.35%** (G/F 1.0035). Two different datasets,
-  two different methods, 0.02 percentage points apart. That is a meaningful external
-  check on the placebo band itself, and it sets the scale for what "≈ 0" should mean:
-  the pre-registered 1-percentage-point bound is loose by comparison, not tight.
+  two different methods, 0.02 percentage points apart. The two figures are
+  **consistent**. That is the whole of the claim: it is **not a validation** of
+  either, since neither is a measurement of the other and agreement between two
+  descriptive statistics on overlapping data cannot validate a method. What it does
+  usefully is set the scale for what "≈ 0" should mean on this band, which makes the
+  pre-registered 1-percentage-point bound loose rather than tight.
+  *(Wording corrected 1 Nov 2026 per the noise-audit minute: "validation"/"external
+  check" replaced by "consistent".)*
 
 ### A1.3 Framing: what M2 claims
 
