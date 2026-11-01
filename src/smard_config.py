@@ -20,7 +20,13 @@ SEED = 42
 N_BOOT = 5_000
 
 # Analysis period, defined in Berlin local time (inclusive of both endpoints).
-PERIOD_START_BERLIN = datetime(2025, 10, 1, 0, 0, tzinfo=BERLIN)
+# Extended to 2024-01-01 on 1 Nov 2026 (Stage 1.1) for the Test 2 training history
+# and E1 v2's base panel (docs/08 Amendment 2, docs/09 Amendment 3 section 0.1).
+# Before 2025-10-01 the day-ahead price is HOURLY: SMARD serves it at quarter-hour
+# resolution as the hourly value repeated four times (verified: 168 of 168 hours in a
+# 2024 sample week have four identical quarter-hour prices, zero nulls), which is
+# exactly what EEG section 100(45) requires for the section 51 clock in that period.
+PERIOD_START_BERLIN = datetime(2024, 1, 1, 0, 0, tzinfo=BERLIN)
 PERIOD_END_BERLIN = datetime(2026, 10, 28, 23, 45, tzinfo=BERLIN)
 
 # SMARD region codes, exactly as the chart configuration spells them.
