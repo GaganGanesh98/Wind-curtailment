@@ -356,3 +356,158 @@ Supersedes section 4.2's scheme.
 
   On 2026 alone the cohort claim rests on **April 2026 only**. Any cohort-level
   statement must name the months that identify it.
+
+---
+
+## Amendment 3 — M2 full test, pre-registered 1 November 2026
+
+**Committed before ANY M2 number exists.** Supersedes the earlier sequencing.
+Hard rule 20 applies to every report arising from it. Sections 0.1–0.4 below are the
+supervisor's decisions **verbatim**; sections A3.1–A3.3 are the sign-test thresholds
+the decisions require to be stated, and the gaps I must fill to run them.
+
+### 0.1 E1 v2 base
+
+> E1 v2 base: built on the REBUILT panel (Stage 1), price > 5 EUR/MWh QHs as true A, as
+> before. Seeds 45–49 (disjoint from 42–44). Rates {10,20,40}%, gamma {0,0.5,1}, shapes
+> {step,logistic,half}. Hour-of-day Fourier (24h,12h) x season in EVERY method's stage A.
+
+### 0.2 Methods
+
+> Methods: M2 (HRD); M2-noPool (lambda=0); M2-noAtom (no z>0 atom); B3-CV (bins chosen
+> by inner event-day CV from {4,8,16,32,64}, training data only); B3@8 (Hirth-like);
+> B6 (LightGBM on depth z, cohort exposure shares, hour Fourier; monotone increasing in
+> z; hyperparameters by the same inner CV; target derived c_hat = 1 - G/A_hat); B2
+> (deletion). M1 is NOT refitted (retired after the v1.8 FAIL; quoted from results/12
+> where relevant). Same inner-CV folds and budget for M2's lambda, B3-CV's bins and
+> B6's hyperparameters.
+
+### 0.3 Tests and verdicts
+
+> Tests and verdicts (exact two-sided sign tests over paired cells; state the pass
+> threshold count for each n in the doc):
+>
+> **T-A**  Main grid, criteria (a)(b)(c) as already pre-registered in docs/09, plus the
+> like-for-like ex-post recovery comparison (Amendment 2). Report only; NOT the decision.
+>
+> **T-B  DECISIVE — sample-size arm.** Subsample censored episodes by whole event-day to
+> n_event_days in {20, 50, 100, all}, nested, fixed by seed. Metric: integrated
+> |r_hat - r*|. Primary: n=50. Cells per shape = rates x gamma x seeds = 45.
+> PASS = M2 lower than B3-CV in >= threshold of 45 cells on logistic AND step, AND M2
+> not significantly worse than B3-CV on half, AND M2 lower than B6 in >= threshold of 45
+> cells on logistic AND step. Secondary: n=20 and n=100, same rule, reported. Component
+> attribution: same comparisons for M2-noPool and M2-noAtom vs B3-CV.
+>
+> **T-C**  Robustness (reported, not pass/fail), at n=50 and n=all, seeds 45–47 only:
+> (i) theta misspecification: generate with AW main, fit with AW low/high/stress;
+> (ii) heterogeneous r* across cohorts (heterogeneous_r=True): per-cohort error where the
+> rank condition holds; does pooling bias them?
+> (iii) A-bias injection: multiply A_hat by 0.97 and 1.03 before stage r; r_hat error change.
+>
+> **T-D**  Real-data structural checks (T1, ex post; no forecasting), DE primary, 50Hertz
+> secondary, full 2024-01..2026-09 panel:
+> (i) cross-fitted placebo: derived c_hat on held-out price > 5 QHs — pass if CI contains
+> 0 and |mean| < 1 pp (as Amendment 1);
+> (ii) 0–5 band consistency vs 4a contrast (DE 2.80%, 50Hertz 3.21%);
+> (iii) identification: rank of X and identifying months; cohort curves only where identified;
+> (iv) r_hat stability across AW low/main/high (spec §3's primary real-data identification
+> check): report max |delta r_hat| on the fleet curve;
+> (v) fleet curtailment rate by Hirth Table 3 price bands vs Hirth's values (p.14) —
+> plausibility only, "consistent / not consistent", no pass/fail.
+>
+> **T-E**  Test 2 (real-data day-ahead forecast) — Amendment 3 to docs/08: M2 primary
+> (G_hat = A_hat_stageA x (1 - c_hat)), M1 reported if cheap else omitted with a note;
+> B0, B3-G, B5 as registered; same WIN/TIE/LOSS rule. Redispatch stratifier marked
+> "unavailable" for 2024-01..2025-09 if the file is still missing; it never enters as a
+> feature.
+
+### 0.4 Decision mapping
+
+> Decision mapping (binding; reproduce in the final report):
+> - **T-B FAIL** -> STOP. Data-efficiency claim withdrawn. Do not run T-E.
+>   Recommendation to student: end this topic.
+> - **T-B PASS, T-D(i) placebo FAIL** -> STOP before T-E; stage A is not trustworthy on
+>   real data.
+> - **T-B PASS, T-D(i) PASS, T-E PASS** -> CONTINUE: this is the thesis.
+> - **T-B PASS, T-D(i) PASS, T-E TIE/FAIL** -> SUPERVISOR DECISION; synthetic
+>   contribution stands, real-data payoff weak.
+>
+> T-A, T-C and T-D(ii)-(v) inform the write-up and never change the decision.
+
+---
+
+### A3.1 Sign-test pass thresholds, as 0.3 requires
+
+Exact two-sided sign test against p = 0.5 at α = 0.05. The threshold k is the smallest
+count whose exact two-sided p-value is below 0.05; the count one below it is shown so
+the margin is visible and cannot be nudged later.
+
+| n paired cells | pass threshold k | exact p at k | exact p at k−1 | where used |
+|---|---|---|---|---|
+| **45** | **30 of 45** | 0.0357 | 0.0725 | **T-B, per shape** (3 rates × 3 γ × 5 seeds) |
+| 27 | 20 of 27 | 0.0192 | 0.0522 | T-C, per shape (3 rates × 3 γ × 3 seeds) |
+| 9 | 8 of 9 | 0.0391 | 0.1797 | v1.8 gate (a), unchanged, for reference |
+
+**Non-inferiority, "M2 not significantly worse than B3-CV on half" (n = 45).** B3-CV is
+significantly better exactly when M2 is lower in **≤ 15 of 45** (p = 0.0357). So the
+condition is satisfied when **M2 is lower in ≥ 16 of 45**. This is deliberately a weak
+requirement — it is a non-inferiority clause, not a win — and it must not be reported
+as evidence that M2 and B3-CV are equivalent on `half`.
+
+### A3.2 Gaps in 0.1–0.4 that must be filled to run them, fixed here and now
+
+Each of these is needed before a single number exists, and none is a change to a
+criterion or a threshold.
+
+1. **B6 produces ĉ, not r̂ — so T-B's metric is undefined for it as written.** T-B scores
+   integrated |r̂ − r\*|, and 0.2 gives B6 the target `derived c_hat`. A response must be
+   read off B6's fitted surface. **Pre-registered definition: r̂_B6(z) = B6's prediction
+   at depth z with the cohort exposure shares set to full exposure (so Σ_k w_k s_k = 1)
+   and the hour Fourier terms at their training-sample means.** At that point ĉ ≡ r by
+   the observation model, so this reads the response at the only place the two coincide.
+   It is an extrapolation of B6 to a region it may not have seen, which is a property of
+   comparing a ĉ-model against an r-metric, and is reported as such.
+2. **T-B isolates data efficiency only if stage A keeps its full sample.**
+   **Pre-registered: the event-day subsample restricts the CENSORED episodes available
+   to stage r; stage A keeps the full price > 5 €/MWh sample in every arm.** Subsampling
+   both would confound response data-efficiency with latent-model degradation, and T-B's
+   whole purpose is the former.
+3. **"all" is not a constant n across cells.** The number of censored event-days depends
+   on the censoring rate, so `n = all` differs cell by cell. **Pre-registered: `all`
+   means every censored event-day in that cell, and the per-cell count is reported
+   beside every `all` result.** Nesting is by a seed-fixed permutation of the cell's
+   censored event-days, so n=20 ⊂ n=50 ⊂ n=100 ⊂ all by construction.
+4. **M1 cannot be a paired comparator in E1 v2.** It was fitted on seeds 42–44 on the
+   **pre-rebuild** panel. No E1 v2 cell matches an M1 cell, so quoting `results/12` is
+   **context only** — never a paired difference, never a sign test. Stated because 0.2's
+   "quoted from results/12 where relevant" could otherwise be read as licensing a
+   comparison.
+5. **The shared inner-CV budget is the main runtime risk.** 0.2 requires the same folds
+   and budget for M2's λ, B3-CV's bins and B6's hyperparameters. M2's λ grid is 14
+   values × 5 folds = **70 QP solves per fit**, against 5 bin options for B3-CV. Stage
+   2.1 must estimate this before launching. **If the λ CV dominates, the only honest
+   responses are a coarser λ grid pre-registered now, or a longer run — not a quiet
+   reduction after seeing the clock.**
+6. **Criterion (c)'s open interpretation sits inside T-A, which does not decide.** The
+   question flagged on commit `05485aa` — whether (c) is scored on stage-A Â (where M2
+   and B2 are bit-identical and the test is vacuous) or on the structural recovery — is
+   therefore not decision-critical here. **T-A reports both**, labelled, and the
+   decision rests on T-B and T-D(i) per 0.4.
+7. **T-D(iv)'s stability check has power only in the identifying months.** With MP = 0
+   the threshold is θ = 0 regardless of AW, so varying AW low/main/high changes nothing
+   in 23 of 33 months (section 4.4). **Pre-registered: max |Δr̂| is reported both over
+   the whole panel and restricted to the 18 identifying months**, since the whole-panel
+   figure is diluted by months where the check is vacuous by construction.
+8. **T-D(v)'s comparison is not like-for-like in period or resolution.** Hirth's Table 3
+   (p. 14) pools **2022 to August 2026** on **hourly** bands; this panel is
+   2024-01 … 2026-09 quarter-hours. 0.3 already restricts it to "consistent / not
+   consistent" with no pass/fail; the period and resolution mismatch is stated with the
+   result so the comparison is not over-read.
+
+### A3.3 What would make this amendment invalid
+
+- Any change to 0.1–0.4, or to A3.1's thresholds, after this commit.
+- Any criterion, grid, seed or threshold modified after Stage 0 (0.4 and Stage 2.4).
+- A bug fixed without re-running the affected cells **in full** and recording the bug
+  and the fix in a dated minute.
+- Any number reported from a provisional or partial run (hard rule 20).
