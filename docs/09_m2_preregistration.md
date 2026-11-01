@@ -376,9 +376,20 @@ the structural recovery**
 
     A_hat_recovered = G_t / (1 - c_hat_t)
 
-not stage A's prediction. Scored on stage A the criterion is vacuous: stage A is
-shared by every method and B2 (deletion) *is* a fit on the uncensored sample, so M2
-and B2 would be bit-identical and the test would tie by construction.
+not stage A's prediction.
+
+**The original rationale for this is WITHDRAWN (1 Nov 2026).** It read: "Scored on
+stage A the criterion is vacuous: stage A is shared by every method and B2 (deletion)
+*is* a fit on the uncensored sample, so M2 and B2 would be bit-identical and the test
+would tie by construction." **That premise is false.** `fit_b2` and `fit_b3` call
+`_fit_plain` (torch quantile head, forecast + weather, train/val split); `fit_m2`
+calls `fit_stage_a` (cross-fitted OLS on log(G/F), hour Fourier, no weather). Measured
+on cell `r10_g0.0_step_s42`, M2's stage A and B2's differ by **643.5 MW on average,
+7,584.4 MW at most**. See Amendment 5.
+
+The structural recovery is still worth scoring — it is the quantity carrying M2's
+claim — but **not for the reason given**, and criterion (c) now reports both forms
+(Amendment 5 A5.3).
 
 ### A2.2 Ex post only
 
@@ -691,3 +702,89 @@ T-D(vii) is a precondition, not a diagnostic: **no DE-level aggregate may use th
 projection until TenneT's 0.839 baseline is explained or TenneT is excluded and the
 exclusion stated.** TenneT is 30.4 GW, so a silent 16% level bias there would
 contaminate any fleet-level validation built on the projection.
+
+---
+
+## Amendment 5 — the stage-A design, pre-registered explicitly
+
+**Supervisor's decision, 1 November 2026, before any E1 v2 or M2 number.** Prompted by
+a false claim of mine in Amendment 2 and in `m2.py`, now withdrawn.
+
+### A5.1 The finding that forced this, confirmed against the code
+
+**CONFIRMED, not assumed.** `fit_b2` and `fit_b3` both call `_fit_plain` — a torch
+quantile head on `build_latent_features` (forecast plus `weather_ms`, no hour terms,
+fitted on a train/val event-day split). `fit_m2` calls `fit_stage_a` — cross-fitted
+OLS on log(G/F) with hour Fourier × season and no weather. Three differences:
+estimator, feature set, fitting scheme.
+
+Measured on cell `r10_g0.0_step_s42` (`data/processed/e1_gate_artifacts/`):
+
+| comparison | identical | mean abs diff | max abs diff |
+|---|---|---|---|
+| M2 stage-A vs B2 â | **no** | **643.5 MW** | 7,584.4 MW |
+| M2 stage-A vs B3 â | no | 636.1 MW | 6,144.9 MW |
+| B2 â vs B3 â | no | 71.9 MW | 2,329.0 MW |
+
+### A5.2 The design
+
+- **ONE shared stage-A array per cell**, from `fit_stage_a`, consumed by **M2, B3-CV,
+  B3@8, B3-H and B6**. Rationale: these are compared on their **response** model, so
+  holding Â fixed isolates it.
+- **B2 keeps its own fit.** It is the Jørgensen deletion baseline; rewiring it makes it
+  a different method and voids the no-harm claim.
+- **Tests:** assert the shared array is bit-identical across M2/B3-CV/B3@8/B3-H/B6 in
+  every cell; assert B2 does **not** consume it. Fail loudly, not silently.
+- **Exact-tie property (Amendment 2 A2.3a):** holds **within the M2-vs-B3/B6 family**,
+  which shares Â. It does **not** hold for **M2 vs B2**. A2.3a's conditional wording is
+  replaced by this statement of fact.
+
+### A5.3 Criterion (c) reports both forms
+
+Criterion (c) reports **both**: the **stage-A Â form, which is the original
+pre-registered one and DECIDES**, and the structural recovery alongside. If stage A
+does tie, the original reads ≈ 0 and costs nothing; if it does not, a real test is
+preserved. **No further rewrites of (c).**
+
+### A5.4 A second finding the supervisor should see before E1 v2 runs
+
+Measuring stage-A variants on the same cell against the true A, cross-fitted
+identically (all-QH MAE / censored-QH MAE, in MW):
+
+| stage-A variant | MAE all QH | MAE censored |
+|---|---|---|
+| **raw forecast F — no model at all** | **1,358.3** | **1,387.4** |
+| hour Fourier × season — `fit_stage_a` as written | 1,367.6 | 1,412.3 |
+| hour Fourier × season + weather (linear + quadratic) | 1,394.5 | 1,435.8 |
+| B2's torch head (forecast + weather) | **1,212.6** | 1,256.3 |
+
+**`fit_stage_a` is worse than the raw day-ahead forecast**, and adding weather to it
+linearly makes it worse again. The likely cause is the multiplicative form: fitting
+`log(G/F)` by OLS and exponentiating gives a median-like predictor of a skewed
+quantity, which is biased for the mean, and a linear-in-log weather term is the wrong
+functional form for a variable the torch head maps non-linearly (its correlation with
+true A here is 0.915).
+
+**Why this matters and why it does not invalidate T-B.** `y = 1 − G/Â` inherits stage
+A's error, so a weak Â adds noise the response model must explain. But under A5.2 the
+*same* Â is shared by M2, B3-CV, B3@8, B3-H and B6, so T-B's comparison is handicapped
+**equally for all of them** and remains valid. It is the absolute quality of the
+recovered response, and criterion (c) against B2, that suffer.
+
+**Open question for the supervisor, not decided here.** Amendment 3's 0.1 says
+"Hour-of-day Fourier (24h,12h) × season in EVERY method's stage A" — which reads as
+*adding* hour terms to the existing stage A, not *replacing* it with an OLS that drops
+weather. Three options, in my order of preference:
+
+1. **Shared stage A = the torch head + hour Fourier** (what 0.1 literally asks for).
+   At least as good as B2's, and (c) then tests the response model rather than the
+   feature set.
+2. Keep `fit_stage_a` but correct the log-space retransformation bias (a Duan smearing
+   factor), which should recover at least the raw-forecast baseline.
+3. Keep it as written and accept that (c) will fail for a reason unrelated to the
+   response model — recording that reason prominently.
+
+**Under option 3, A5.3's expectation that the stage-A form of (c) "reads ≈ 0 and costs
+nothing" does not hold:** M2's stage A is ~155 MW worse than B2's on censored
+quarter-hours in this cell, so (c) would register a real loss caused by the feature
+set. That is the one part of the decision that should not be left to the run.

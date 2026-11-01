@@ -47,23 +47,32 @@ What A-hat means for M2, and a problem with criterion (c)
 ---------------------------------------------------------
 Two different A-estimates exist here and they are not interchangeable:
 
-* `a_hat_stage_a` — stage A's prediction. **Identical for every method**, because
-  stage A is shared, and identical to B2 (deletion *is* a fit on the uncensored
-  sample).
+* `a_hat_stage_a` — stage A's prediction from `fit_stage_a`.
+
+  **CORRECTION, 1 Nov 2026.** An earlier version of this docstring claimed this array
+  was "identical for every method, because stage A is shared, and identical to B2
+  (deletion *is* a fit on the uncensored sample)". **That was false.** `fit_b2` and
+  `fit_b3` both call `_fit_plain`, a torch quantile head on `build_latent_features`
+  (forecast plus weather, no hour terms, train/val split); `fit_m2` calls
+  `fit_stage_a`, cross-fitted OLS on log(G/F) with hour Fourier and no weather.
+  Different estimator, different features, different fitting scheme. Measured on cell
+  `r10_g0.0_step_s42`: M2's stage A differs from B2's by **643.5 MW on average**
+  (max 7,584.4). Amendment 5 pre-registers the shared-array design that makes the
+  claim true for the M2/B3/B6 family — and explicitly NOT for B2.
+
 * `a_hat` — the **structural recovery** `G_t / (1 - c_hat_t)`, which uses the observed
   generation together with the estimated response. This does not collapse to
   `a_hat_stage_a`: `c_hat = Xp` is the *fitted* shortfall, not the raw `y`, so
   `G/(1 - c_hat) = A_hat_stageA * (1 - y)/(1 - c_hat)`, which equals the stage-A value
-  only where the response model fits `y` exactly.
+  only where the response model fits `y` exactly. Scored under Amendment 2's shared
+  stability fallback, not per-method exclusion.
 
-**This matters for pre-registered criterion (c)** ("M2's censored-quarter-hour MAE not
-significantly worse than B2"). Scored on `a_hat_stage_a` the criterion is **vacuous**:
-M2 and B2 would be bit-identical and the comparison would tie by construction, testing
-nothing. Scored on the structural recovery it is a real test, and it is the quantity
-that carries M2's actual claim. **`a_hat` is therefore the structural recovery**, with
-the stage-A value reported alongside under its own name so either can be read. This is
-flagged rather than settled silently: it is an interpretation of (c), and the
-supervisor may want the other one.
+**Criterion (c).** The original rationale for abandoning stage-A scoring — that M2 and
+B2 would be bit-identical and the test would tie by construction — **is unsupported**,
+because they are not bit-identical. Per the supervisor's decision of 1 Nov 2026, (c)
+is reported in **both** forms: the stage-A form, which is the original pre-registered
+one and **decides**, and the structural recovery alongside. The structural recovery
+remains worth scoring; it is simply not justified by the tie argument.
 """
 
 from __future__ import annotations
