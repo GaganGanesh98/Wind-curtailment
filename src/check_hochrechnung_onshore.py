@@ -54,6 +54,36 @@ OFFSET_HOURS = {"CET": 1, "CEST": 2}
 from src.smard_config import PRICE_BANDS  # noqa: E402
 
 
+DST_HOUR = re.compile(r"(\d{4}-\d{2}-\d{2} )(\d{2})[AB](:\d{2})")
+
+
+def parse_local_stamp(s: str) -> datetime:
+    """Parse a Netztransparenz local timestamp, including the DST fall-back hour.
+
+    On the October changeover the repeated hour is written `02A:00` and `02B:00`
+    rather than twice as `02:00`. Stripping the letter is safe and loses nothing,
+    because the row's own `Zeitzone` column carries the disambiguation: the A pass is
+    CEST (UTC+2) and the B pass CET (UTC+1), so the offset applied by the caller maps
+    them to 00:00 and 01:00 UTC respectively -- two distinct instants, in order.
+    Verified on 2026-10-25, the only changeover in this sample (8 rows).
+    """
+    return datetime.strptime(DST_HOUR.sub(r"\1\2\3", s.strip()), "%Y-%m-%d %H:%M")
+
+
+MISSING_TOKENS = {"", "N.A.", "NA", "N/A", "-"}
+
+
+def is_missing(raw: str) -> bool:
+    """Netztransparenz writes an absent value as `N.A.`, not as an empty cell.
+
+    Worth a named helper because the obvious check fails twice over: grepping the
+    file for "NA" finds nothing (the literal is "N.A."), and the German decimal
+    cleanup `.replace(".", "")` silently turns "N.A." into "NA" before the float
+    conversion, so the error message names a string that does not appear in the file.
+    """
+    return raw.strip().upper() in MISSING_TOKENS
+
+
 def load() -> pl.DataFrame:
     """Every file in the directory, converted to UTC. Empty cells are dropped and counted."""
     rows, empty = [], []
@@ -63,11 +93,11 @@ def load() -> pl.DataFrame:
             tz = (rec.get("Zeitzone") or "").strip()
             if tz not in OFFSET_HOURS:
                 raise ValueError(f"Unmapped Zeitzone {tz!r} in {path.name}")
-            t = (datetime.strptime(rec["Zeit"].strip(), "%Y-%m-%d %H:%M")
+            t = (parse_local_stamp(rec["Zeit"])
                  - timedelta(hours=OFFSET_HOURS[tz])).replace(tzinfo=timezone.utc)
             for col, area in TSO_COLUMNS.items():
                 raw = (rec.get(col) or "").strip()
-                if not raw:
+                if is_missing(raw):
                     empty.append(area)
                     continue
                 rows.append({"ts_utc": int(t.timestamp() * 1000), "area": area,

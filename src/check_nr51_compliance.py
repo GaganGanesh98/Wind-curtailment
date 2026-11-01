@@ -37,6 +37,7 @@ fleet; it can show whether the effect is there at all and roughly how large.
 from __future__ import annotations
 
 import csv
+import re
 import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -63,6 +64,36 @@ DIRECT_TSO = {"50Hertz": "50Hertz", "Amprion": "Amprion",
               "TenneT DE": "TenneT", "TransnetBW": "TransnetBW"}
 
 
+DST_HOUR = re.compile(r"(\d{4}-\d{2}-\d{2} )(\d{2})[AB](:\d{2})")
+
+
+def parse_local_stamp(s: str) -> datetime:
+    """Parse a Netztransparenz local timestamp, including the DST fall-back hour.
+
+    On the October changeover the repeated hour is written `02A:00` and `02B:00`
+    rather than twice as `02:00`. Stripping the letter is safe and loses nothing,
+    because the row's own `Zeitzone` column carries the disambiguation: the A pass is
+    CEST (UTC+2) and the B pass CET (UTC+1), so the offset applied by the caller maps
+    them to 00:00 and 01:00 UTC respectively -- two distinct instants, in order.
+    Verified on 2026-10-25, the only changeover in this sample (8 rows).
+    """
+    return datetime.strptime(DST_HOUR.sub(r"\1\2\3", s.strip()), "%Y-%m-%d %H:%M")
+
+
+MISSING_TOKENS = {"", "N.A.", "NA", "N/A", "-"}
+
+
+def is_missing(raw: str) -> bool:
+    """Netztransparenz writes an absent value as `N.A.`, not as an empty cell.
+
+    Worth a named helper because the obvious check fails twice over: grepping the
+    file for "NA" finds nothing (the literal is "N.A."), and the German decimal
+    cleanup `.replace(".", "")` silently turns "N.A." into "NA" before the float
+    conversion, so the error message names a string that does not appear in the file.
+    """
+    return raw.strip().upper() in MISSING_TOKENS
+
+
 def load_projection() -> tuple[pl.DataFrame, dict[str, int]]:
     rows, empty = [], {}
     for path in sorted(HR_DIR.glob("*.csv")):
@@ -71,11 +102,11 @@ def load_projection() -> tuple[pl.DataFrame, dict[str, int]]:
             tz = (rec.get("Zeitzone") or "").strip()
             if tz not in OFFSET_HOURS:
                 raise ValueError(f"Unmapped Zeitzone {tz!r} in {path.name}")
-            t = (datetime.strptime(rec["Zeit"].strip(), "%Y-%m-%d %H:%M")
+            t = (parse_local_stamp(rec["Zeit"])
                  - timedelta(hours=OFFSET_HOURS[tz])).replace(tzinfo=timezone.utc)
             for col, area in TSO_COLUMNS.items():
                 raw = (rec.get(col) or "").strip()
-                if not raw:
+                if is_missing(raw):
                     empty[area] = empty.get(area, 0) + 1
                     continue
                 rows.append({"ts_utc": int(t.timestamp() * 1000), "area": area,
@@ -155,7 +186,13 @@ def main() -> None:
     rd = redispatch_qh(set(j["berlin_date"].to_list()))
     j = (j.join(rd, on=["area", "ts_utc"], how="left")
            .with_columns(pl.col("rd_mw").fill_null(0.0))
-           .with_columns((pl.col("act_onshore_mw") + pl.col("rd_mw")).alias("denom")))
+           .with_columns((pl.col("act_onshore_mw") + pl.col("rd_mw")).alias("denom"))
+           # The bootstrap drops non-finite pairs but the verdict arithmetic below
+           # used raw sums, so a single NaN in the metered actual turned R(pos) into
+           # NaN and the comparison `r_neg > r_pos` into False -- reporting a FAIL
+           # that was a missing value, not a finding. Filter once, here, so every
+           # statistic in this function sees the same rows.
+           .filter(pl.col("hr_mw").is_finite() & pl.col("denom").is_finite()))
     print(f"matched: {j.height:,} rows; redispatch added back in "
           f"{int((j['rd_mw'] > 0).sum()):,} of them")
 
@@ -203,9 +240,11 @@ def main() -> None:
     print("\nVERDICT (pre-registered 31 Oct 2026, before the data was seen)")
     for a, v in verdict.items():
         print(f"  {a:<12}{v}")
-    print("\n  Five event-days is PRELIMINARY. It can show whether the effect is")
-    print("  there at all and roughly how large; it cannot settle Nr. 5.1")
-    print("  compliance for the fleet, which needs the full range.")
+    n_days_total = j["berlin_date"].n_unique()
+    n_neg_days = j.filter(pl.col("price_eur_mwh") < 0)["berlin_date"].n_unique()
+    print(f"\n  Sample: {n_days_total} days, of which {n_neg_days} carry a negative")
+    print("  quarter-hour. A band whose CI is [nan, nan] has fewer than two event-")
+    print("  days and is a point estimate, no inference.")
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     if out:
