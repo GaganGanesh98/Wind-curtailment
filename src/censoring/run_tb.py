@@ -213,13 +213,17 @@ def score_cell(cfg: SyntheticConfig, specs: list[MethodSpec], levels,
             try:
                 fit = spec.fit(data, mask, shared_a)
                 r_hat = spec.curve(fit, data, DEPTH_GRID)
+                # Reporting addition, 1 Nov 2026: the stage-r sample size is already
+                # in n_fit_qh; this adds how many parameters the method spent on it.
+                from src.censoring.tb_methods import free_params
                 row.update(
                     int_abs_r=float(integrated_response_error(r_hat, r_true,
                                                               DEPTH_GRID)),
-                    failed=False, error="",
+                    failed=False, error="", **free_params(fit),
                 )
             except Exception as exc:                       # guard 1
                 row.update(int_abs_r=float("nan"), failed=True,
+                           n_free_params="", param_detail="",
                            error=f"{type(exc).__name__}: {exc}"[:200])
                 traceback.print_exc()
             row["seconds"] = round(time.perf_counter() - t0, 2)
@@ -314,7 +318,8 @@ def run(levels, out_name: str, cells=None, verbose: bool = True) -> list[dict]:
     shared = make_shared_stage_a()
     cells = cells or [(r, g, sh, sd) for r in RATES for g in GAMMAS
                       for sh in SHAPES for sd in SEEDS]
-    writer = Writer(RESULTS_DIR / out_name)
+    writer = Writer(RESULTS_DIR / out_name,
+                    extra_fieldnames=("n_free_params", "param_detail"))
     rows: list[dict] = []
     t_start = time.perf_counter()
     try:

@@ -252,3 +252,39 @@ def build_specs():
         MethodSpec("M2-noPool", make_m2(by["M2-noPool"]), m2_curve),
         MethodSpec("M2-noAtom", make_m2(by["M2-noAtom"]), m2_curve),
     ]
+
+
+# ------------------------------------- free-parameter counts (reporting addition)
+
+
+def free_params(fit: dict) -> dict:
+    """How many free parameters the method actually fitted, per method.
+
+    A reporting addition of 1 Nov 2026, not a criterion. At n = 50 the stage-r sample
+    is about 681 quarter-hours while M2 can carry up to ~620 parameters and B3-CV
+    between 4 and 64, so neither a win nor a loss can be read without this. The point
+    cuts both ways: an M2 win on comparable counts is stronger than it looks, and an
+    M2 win at 620 against 8 is weaker.
+    """
+    out = {"n_free_params": "", "param_detail": ""}
+    if "p" in fit and "knots" in fit:                      # M2 family
+        n_b, n_j = fit["p"].shape
+        out["n_free_params"] = int(n_b * n_j)
+        out["param_detail"] = (f"{n_b} blocks x {n_j} knots; lambda="
+                               f"{fit.get('lambda', '')}")
+    elif "implied_response" in fit:                        # B3 family
+        used = int(fit["implied_response"]["bin_centre"].size)
+        out["n_free_params"] = used
+        out["param_detail"] = (f"{used} non-empty bins of "
+                               f"{fit.get('n_bins', 'n/a')} requested"
+                               + ("; Hirth edges" if fit.get("bin_edges") else
+                                  "; equal-count quantile"))
+    elif "model" in fit:                                   # B6
+        b = fit["model"].booster_
+        n_trees = int(b.num_trees())
+        leaves = int(fit["best_params"].get("num_leaves", 0))
+        out["n_free_params"] = n_trees * leaves
+        out["param_detail"] = (f"{n_trees} trees x <= {leaves} leaves; "
+                               f"min_child_samples="
+                               f"{fit['best_params'].get('min_child_samples')}")
+    return out
