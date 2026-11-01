@@ -63,6 +63,32 @@ def m2_param_count(data, mask, atom: bool) -> tuple[int, str]:
     return len(members) * knots.size, f"{len(members)} blocks x {knots.size} knots"
 
 
+def _verify_against_run(data, mask, sa, cfg, ablation, lam, stored, label):
+    """Refit at the chosen lambda and assert int_abs_r matches what PASS 1 stored.
+
+    Without this the supplementary columns are unverifiable: PASS 1's CSV carries no
+    lambda, so nothing otherwise confirms that the lambda recomputed here is the one
+    PASS 1 actually used. The inner CV has already fitted M2 at every lambda on the
+    grid, so one more fit at the winner is nearly free by comparison -- and if the
+    recomputed lambda were wrong, the refitted int_abs_r would not match.
+
+    A mismatch means the columns must NOT be joined into the verdict.
+    """
+    from src.censoring.m2 import fit_m2
+    from src.censoring.metrics import integrated_response_error
+    from src.censoring.run_synthetic import DEPTH_GRID
+    from src.censoring.tb_methods import m2_curve
+
+    fit = fit_m2(data, np.array([0.0]), ablation=ablation, stage_a=sa,
+                 train_mask=np.asarray(mask, dtype=bool), lam=lam)
+    got = float(integrated_response_error(m2_curve(fit, data, DEPTH_GRID),
+                                          data._r_true_cache, DEPTH_GRID))
+    if stored is None:
+        return got, None, "no stored value"
+    dev = abs(got - stored) / max(abs(stored), 1e-30)
+    return got, dev, ("MATCH" if dev <= 1e-9 else "MISMATCH")
+
+
 def _lambda_for(data, mask, sa, atom: bool) -> float:
     """Re-run M2's inner lambda CV only, without the final solve."""
     from src.censoring.m2 import (
