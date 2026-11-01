@@ -986,3 +986,18 @@ effective dimension is far below the nominal count. B6's figure is
 trees × max-leaves, an upper bound that boosting's shrinkage does not reach. A bin
 count is a third kind of quantity again. **The honest use is the order of magnitude
 against the stage-r observation count, never a like-for-like ratio between methods.**
+
+#### Scheduling correction, 1 November 2026 — the sensitivity arm must run at n = 50
+
+The T-B sensitivity arm (`y` against `y − offset_hat`) was scheduled with PASS 2, at
+n ∈ {20, 100, all}. **As scheduled it could not answer the question it was given.**
+The arm is required to report "whether the T-B **verdict** differs", and the verdict
+is defined at **n = 50** — a level PASS 2 does not run. An arm at 20, 100 and all
+would report differences in metrics at levels where no verdict exists.
+
+**It therefore runs as its own n = 50 pass, after PASS 1**, and the two verdicts are
+compared directly. It is **not** folded into PASS 1: that would double the inner λ
+cross-validation, which is the dominant cost, and push the run past the alternative
+it was chosen to beat. Reported, **gates nothing**, written to its own CSV.
+
+Order from here: PASS 1 → sensitivity arm at n = 50 → PASS 2 → T-A → T-D → verdict.
