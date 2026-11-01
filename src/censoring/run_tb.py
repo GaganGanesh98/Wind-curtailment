@@ -224,6 +224,7 @@ def score_cell(cfg: SyntheticConfig, specs: list[MethodSpec], levels,
             except Exception as exc:                       # guard 1
                 row.update(int_abs_r=float("nan"), failed=True,
                            n_free_params="", param_detail="",
+                           chosen_lambda="", chosen_bins="", at_grid_boundary="",
                            error=f"{type(exc).__name__}: {exc}"[:200])
                 traceback.print_exc()
             row["seconds"] = round(time.perf_counter() - t0, 2)
@@ -275,6 +276,43 @@ def score_verdict(rows: list[dict], n_level, alpha: float = 0.05) -> list[dict]:
     return verdicts
 
 
+def paired_diffs(rows: list[dict], n_level, shape: str, left: str, right: str):
+    """metric(left) - metric(right) over the cells both appear in. Lower favours left."""
+    tag = "all" if n_level is None else n_level
+    def metric(method):
+        out = {}
+        for r in rows:
+            if (r["r_shape"] != shape or r["method"] != method
+                    or str(r["n_event_days_requested"]) != str(tag)):
+                continue
+            failed = str(r["failed"]).lower() in ("true", "1")
+            key = (r["censoring_rate"], r["gamma"], r["seed"])
+            out[key] = float("inf") if failed else float(r["int_abs_r"])
+        return out
+    a, b = metric(left), metric(right)
+    keys = sorted(set(a) & set(b))
+    return np.array([a[k] - b[k] for k in keys], dtype=float), keys
+
+
+def component_attribution(rows: list[dict], n_level, alpha: float = 0.05) -> list[dict]:
+    """Amendment 3 section 0.3 T-B, verbatim: the ABLATIONS against B3-CV.
+
+    The pre-registration reads "Component attribution: same comparisons for M2-noPool
+    and M2-noAtom vs B3-CV" -- the ablation on the LEFT, B3-CV on the right. score_verdict
+    always places M2 on the left, so it answers a different question (does the component
+    help M2?). Both are reported; this is the pre-registered one.
+    """
+    out = []
+    for shape in SHAPES:
+        for left in ("M2-noPool", "M2-noAtom", "M2"):
+            d, keys = paired_diffs(rows, n_level, shape, left, "B3-CV")
+            st = sign_test(d, alpha)
+            out.append(dict(n_event_days=("all" if n_level is None else n_level),
+                            r_shape=shape, left=left, right="B3-CV",
+                            pre_registered=left != "M2", **st))
+    return out
+
+
 def overall(verdicts: list[dict], n_level) -> dict:
     """Amendment 3 section 0.3 T-B, applied verbatim. No other reading is permitted here."""
     tag = "all" if n_level is None else n_level
@@ -319,7 +357,8 @@ def run(levels, out_name: str, cells=None, verbose: bool = True) -> list[dict]:
     cells = cells or [(r, g, sh, sd) for r in RATES for g in GAMMAS
                       for sh in SHAPES for sd in SEEDS]
     writer = Writer(RESULTS_DIR / out_name,
-                    extra_fieldnames=("n_free_params", "param_detail"))
+                    extra_fieldnames=("n_free_params", "param_detail", "chosen_lambda",
+                                      "chosen_bins", "at_grid_boundary"))
     rows: list[dict] = []
     t_start = time.perf_counter()
     try:
@@ -365,6 +404,16 @@ def report(rows: list[dict], levels) -> None:
                   f"{v['threshold']:>5}{v['p_two_sided']:>9.4f}{v['n_ties']:>6}"
                   f"{v['n_m2_failed']:>9}{v['n_rival_failed']:>9}  "
                   f"{mark}{'  (decisive)' if v['decisive'] else ''}")
+        ca = component_attribution(rows, lv)
+        print(f"\n  COMPONENT ATTRIBUTION (Amendment 3 0.3: ablation vs B3-CV, "
+              f"reported, decides nothing)")
+        print(f"    {'shape':<10}{'left':<11}{'vs':<8}{'wins':>6}{'n_eff':>7}"
+              f"{'thr':>5}{'p':>9}  note")
+        for c in ca:
+            print(f"    {c['r_shape']:<10}{c['left']:<11}{c['right']:<8}"
+                  f"{c['wins']:>6}{c['n_effective']:>7}{c['threshold']:>5}"
+                  f"{c['p_two_sided']:>9.4f}  "
+                  f"{'pre-registered' if c['pre_registered'] else 'context'}")
         o = overall(verdicts, lv)
         print(f"\n  Pre-registered rule (Amendment 3 section 0.3 T-B), applied verbatim:")
         for k, val in o["beats_logistic_step"].items():
@@ -382,6 +431,8 @@ def main() -> None:
                     default="primary")
     ap.add_argument("--limit", type=int, default=None,
                     help="run only the first N cells (timing probe only)")
+    ap.add_argument("--report-only", action="store_true",
+                    help="re-report from an existing CSV without refitting anything")
     args = ap.parse_args()
     levels = (N_PRIMARY,) if args.which == "primary" else N_SECONDARY
     out = ("21_tb_primary.csv" if args.which == "primary"
@@ -391,6 +442,14 @@ def main() -> None:
     if args.limit:
         cells = cells[:args.limit]
         out = out.replace(".csv", f"_probe{args.limit}.csv")
+    if args.report_only:
+        import csv as _csv
+        path = RESULTS_DIR / out
+        with open(path, encoding="utf-8") as fh:
+            rows = list(_csv.DictReader(fh))
+        print(f"T-B {args.which}: re-reporting {len(rows):,} rows from {path.name}")
+        report(rows, levels)
+        return
     print(f"T-B {args.which}: {len(cells)} cells, levels={levels}, "
           f"writing results/{out}")
     rows = run(levels, out, cells=cells)

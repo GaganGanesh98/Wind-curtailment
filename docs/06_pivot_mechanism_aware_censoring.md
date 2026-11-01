@@ -933,3 +933,56 @@ the never-respond atom; B3's binned mean is unconstrained and can simply return 
 negative bin. At a 10% censoring rate the offset is **20.0% of mean `c_true`** (0.0598),
 10.0% at 20% and 5.0% at 40%, so the asymmetry bites hardest exactly where T-B is
 hardest and where the data-efficiency claim is being tested.
+
+### T-B note, 1 November 2026 — recorded before PASS 1 landed
+
+Not an amendment and not a criterion change. `docs/09` stays frozen.
+
+#### Limitation at n = 20: both methods sit on their regularisation ceiling
+
+Measured on cell `r10/γ0/step/seed45` before any verdict existed:
+
+| n_event_days | stage-r observations | M2 λ chosen | B3-CV bins chosen |
+|---|---|---|---|
+| 50 | 681 | 0.316 | 4 |
+| **20** | **304** | **100.0 — top of a 14-value grid** | **4 — bottom of {4,8,16,32,64}** |
+
+At n = 20 M2's λ is at the **most-regularised end of its grid** and B3-CV's bin count
+is at **its most-smoothed end**. The pressure is symmetric, so neither method is
+favoured — but the n = 20 secondary is comparing two methods **at their grid limits
+rather than at preferred settings**, and a result there is a statement about the
+grids as much as about the methods.
+
+**Neither grid is widened.** Doing so after seeing which boundary was hit is exactly
+the move pre-registration exists to prevent. Instead the **chosen λ and the chosen bin
+count are recorded per cell** (`chosen_lambda`, `chosen_bins`, `at_grid_boundary` in
+`results/21_tb_*.csv`), so a reader can see every cell where a boundary bound.
+
+Note also that M2 carries **654 free parameters against 304 observations at n = 20** —
+more parameters than data points. That it is estimable at all is the simplex
+constraint plus λ, which is the next point.
+
+#### Prediction, stated before the result
+
+At λ = 100 the pooling penalty dominates the fit and every block is pulled onto the
+common `p_bar`, so **M2 at n = 20 is effectively a single fleet response** rather than
+a hierarchy. Two consequences follow, recorded now so they cannot be claimed
+afterwards:
+
+1. The component attribution should show **pooling carrying almost all of the gain**
+   at n = 20.
+2. **M2-noPool should do badly there** — λ = 0 leaves 654 free parameters on ~304
+   observations with nothing but the simplex to restrain them.
+
+**If M2-noPool instead does WELL at n = 20, the λ cross-validation is not behaving as
+intended, and the result must be investigated before it is believed.** That is a
+falsifiable prediction about the machinery, not about the verdict.
+
+#### The parameter counts are not commensurable across families — permanent caveat
+
+To be attached wherever those counts are reported. M2's parameters lie on simplexes,
+one per block, so each block spends a fixed mass rather than ranging freely and the
+effective dimension is far below the nominal count. B6's figure is
+trees × max-leaves, an upper bound that boosting's shrinkage does not reach. A bin
+count is a third kind of quantity again. **The honest use is the order of magnitude
+against the stage-r observation count, never a like-for-like ratio between methods.**

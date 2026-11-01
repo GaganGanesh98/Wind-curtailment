@@ -13,8 +13,9 @@ The counts are deterministic given the cell, the n-level and the shared stage A,
 this reproduces exactly what the run would have written. It does not refit M2: the
 M2 family's count is `blocks x knots`, which depends only on the data and the mask
 and needs no optimisation. B3-CV's chosen bin count and B6's tree and leaf counts do
-need their inner CV, which needs the shared stage A — that is the cost, about 25 s
-per cell against the run's 254 s.
+need their inner CV, which needs the shared stage A — that is the cost, about 90 s
+per cell against the run's 254 s -- the lambda CV has to run, because "report the
+chosen lambda per cell" cannot be met by guessing it.
 
 **Read the counts across families with care.** A bin count, a simplex-constrained
 knot grid and a boosted ensemble's leaf count are not the same kind of quantity. M2's
@@ -62,6 +63,24 @@ def m2_param_count(data, mask, atom: bool) -> tuple[int, str]:
     return len(members) * knots.size, f"{len(members)} blocks x {knots.size} knots"
 
 
+def _lambda_for(data, mask, sa, atom: bool) -> float:
+    """Re-run M2's inner lambda CV only, without the final solve."""
+    from src.censoring.m2 import (
+        build_design, choose_lambda, knot_grid, pool_blocks,
+    )
+
+    y = 1.0 - data.g_obs_mw / np.maximum(sa.a_hat, 1e-9)
+    knots = knot_grid(data.depth, np.asarray(mask, dtype=bool), with_atom=atom)
+    shares = np.asarray(data.cohorts.shares, dtype=float)
+    _, members = pool_blocks(data.s, data.depth, shares)
+    block_shares = np.array([shares[m].sum() for m in members])
+    X = build_design(data.s, data.depth, shares, knots, members)
+    lam, _ = choose_lambda(X, y, sa.omega, len(members), knots.size, block_shares,
+                           np.asarray(data.real_berlin_date),
+                           np.asarray(mask, dtype=bool))
+    return float(lam)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--pass", dest="which", choices=("primary", "secondary"),
@@ -94,19 +113,33 @@ def main() -> None:
             for name, atom in (("M2", True), ("M2-noPool", True),
                                ("M2-noAtom", False)):
                 n, detail = m2_param_count(data, mask, atom)
+                lam, boundary = "", ""
+                if name == "M2-noPool":
+                    lam, boundary = 0.0, "lambda_min"      # fixed by the ablation
+                else:
+                    # The inner CV must actually run: lambda is a fitted choice, and
+                    # "report the chosen lambda per cell" cannot be met by guessing it.
+                    lam = _lambda_for(data, mask, sa, atom)
+                    boundary = ("lambda_max" if lam >= 100.0 - 1e-9
+                                else "lambda_min" if lam <= 0.0 else "")
                 rows.append(dict(base, method=name, n_free_params=n,
-                                 param_detail=detail))
+                                 param_detail=detail, chosen_lambda=lam,
+                                 chosen_bins="", at_grid_boundary=boundary))
             for name, fn in (("B3-CV", fit_b3_cv), ("B6", fit_b6)):
                 try:
                     fp = free_params(fn(data, mask, sa))
                     rows.append(dict(base, method=name, **fp))
                 except Exception as exc:
                     rows.append(dict(base, method=name, n_free_params="",
-                                     param_detail=f"FAILED {type(exc).__name__}"))
+                                     param_detail=f"FAILED {type(exc).__name__}",
+                                     chosen_lambda="", chosen_bins="",
+                                     at_grid_boundary=""))
             for name, nb, edges in (("B3@8", 8, None),
                                     ("B3-H", 8, "hirth")):
-                rows.append(dict(base, method=name,
-                                 n_free_params="", param_detail="fixed bins; see run"))
+                rows.append(dict(base, method=name, n_free_params="",
+                                 param_detail="fixed bins; see run",
+                                 chosen_lambda="", chosen_bins=nb,
+                                 at_grid_boundary=""))
         el = time.perf_counter() - t0
         print(f"  [{i:>3}/{len(cells)}] rate {rate:.0%} gamma {gamma} {shape:<9} "
               f"seed {seed}   elapsed {el/60:5.1f}m  eta "

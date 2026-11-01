@@ -266,19 +266,31 @@ def free_params(fit: dict) -> dict:
     cuts both ways: an M2 win on comparable counts is stronger than it looks, and an
     M2 win at 620 against 8 is weaker.
     """
-    out = {"n_free_params": "", "param_detail": ""}
+    out = {"n_free_params": "", "param_detail": "",
+           "chosen_lambda": "", "chosen_bins": "", "at_grid_boundary": ""}
     if "p" in fit and "knots" in fit:                      # M2 family
         n_b, n_j = fit["p"].shape
         out["n_free_params"] = int(n_b * n_j)
-        out["param_detail"] = (f"{n_b} blocks x {n_j} knots; lambda="
-                               f"{fit.get('lambda', '')}")
+        lam = fit.get("lambda", "")
+        out["param_detail"] = f"{n_b} blocks x {n_j} knots"
+        out["chosen_lambda"] = lam
+        # Boundary flags, so a reader never has to parse param_detail to see that a
+        # grid bound the choice. LAMBDA_GRID is (0.0,) + logspace(-4, 2, 13), so its
+        # ends are 0.0 and 100.0.
+        if isinstance(lam, float):
+            out["at_grid_boundary"] = ("lambda_max" if lam >= 100.0 - 1e-9 else
+                                       "lambda_min" if lam <= 0.0 else "")
     elif "implied_response" in fit:                        # B3 family
         used = int(fit["implied_response"]["bin_centre"].size)
         out["n_free_params"] = used
-        out["param_detail"] = (f"{used} non-empty bins of "
-                               f"{fit.get('n_bins', 'n/a')} requested"
+        nb = fit.get("n_bins", None)
+        out["param_detail"] = (f"{used} non-empty bins of {nb} requested"
                                + ("; Hirth edges" if fit.get("bin_edges") else
                                   "; equal-count quantile"))
+        out["chosen_bins"] = nb if nb is not None else ""
+        if fit.get("cv_scores") and isinstance(nb, int):      # B3-CV only
+            out["at_grid_boundary"] = ("bins_min" if nb == min(B3_BIN_GRID) else
+                                       "bins_max" if nb == max(B3_BIN_GRID) else "")
     elif "model" in fit:                                   # B6
         b = fit["model"].booster_
         n_trees = int(b.num_trees())
