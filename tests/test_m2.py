@@ -288,3 +288,80 @@ def test_the_boundary_is_tested_on_c_hat_not_on_one_minus_c_hat():
 
     assert (1.0 - 0.8) >= RECOVERY_MIN_DENOM is False or (1.0 - 0.8) < RECOVERY_MIN_DENOM
     assert 0.8 <= (1.0 - RECOVERY_MIN_DENOM)      # the form actually used
+
+
+# ------------------- Amendment 2 as corrected: the SHARED stability fallback
+
+
+def _c(*vals):
+    return np.array(vals, dtype=float)
+
+
+def test_unstable_quarter_hours_give_an_exactly_zero_paired_difference():
+    """The property the whole correction rests on, asserted exactly, not approximately.
+
+    If unstable quarter-hours did not tie exactly, a method could gain from falling
+    back, and the paired event-day bootstrap would be comparing different samples.
+    """
+    from src.censoring.m2 import scored_recovery, shared_stability_mask
+
+    g = np.array([1000.0, 1000.0, 1000.0, 1000.0, 1000.0])
+    a_stage = np.array([1100.0, 1200.0, 1300.0, 1400.0, 1500.0])
+    c_m2 = _c(0.00, 0.50, 0.95, 0.80, 0.30)     # unstable at index 2
+    c_b3 = _c(0.10, 0.99, 0.40, 0.20, 0.30)     # unstable at index 1
+
+    unstable = shared_stability_mask({"M2": c_m2, "B3": c_b3})
+    assert unstable.tolist() == [False, True, True, False, False]
+
+    a_m2 = scored_recovery(g, c_m2, a_stage, unstable)
+    a_b3 = scored_recovery(g, c_b3, a_stage, unstable)
+
+    diff = a_m2 - a_b3
+    assert np.all(diff[unstable] == 0.0), "unstable QHs must tie EXACTLY"
+    assert np.array_equal(a_m2[unstable], a_stage[unstable])
+    assert np.array_equal(a_b3[unstable], a_stage[unstable])
+    # and the stable ones are genuinely the structural recovery, not the fallback
+    assert a_m2[0] == pytest.approx(1000.0)
+    assert a_b3[0] == pytest.approx(1000.0 / 0.9)
+    assert np.any(diff[~unstable] != 0.0)
+
+
+def test_c_hat_exactly_at_the_boundary_is_stable():
+    """ĉ = 0.8 is included; the IEEE754 trap would have excluded it."""
+    from src.censoring.m2 import shared_stability_mask
+
+    assert shared_stability_mask({"m": _c(0.8)}).tolist() == [False]
+    assert shared_stability_mask({"m": _c(0.8000001)}).tolist() == [True]
+
+
+def test_a_method_cannot_gain_by_being_unstable():
+    """Falling back can never beat the rival: both land on the same stage-A value."""
+    from src.censoring.m2 import scored_recovery, shared_stability_mask
+
+    rng = np.random.default_rng(3)
+    n = 500
+    g = rng.uniform(100.0, 5000.0, n)
+    a_stage = rng.uniform(100.0, 6000.0, n)
+    a_true = rng.uniform(100.0, 6000.0, n)
+    c_good = rng.uniform(0.0, 0.5, n)
+    c_bad = rng.uniform(0.0, 0.999, n)          # often unstable
+
+    unstable = shared_stability_mask({"g": c_good, "b": c_bad})
+    ag = scored_recovery(g, c_good, a_stage, unstable)
+    ab = scored_recovery(g, c_bad, a_stage, unstable)
+    err_g = np.abs(ag - a_true)
+    err_b = np.abs(ab - a_true)
+    assert np.all(err_g[unstable] == err_b[unstable])   # no edge either way
+    assert np.isfinite(ag).all() and np.isfinite(ab).all()
+
+
+def test_recovery_report_shows_whether_the_shared_mask_binds_harder():
+    from src.censoring.m2 import recovery_report
+
+    rep = recovery_report({"M2": _c(0.1, 0.9, 0.1, 0.1),
+                           "B3": _c(0.1, 0.1, 0.95, 0.1)})
+    assert rep["fallback_n_shared"] == 2
+    assert rep["fallback_share_shared"] == pytest.approx(0.5)
+    assert rep["fallback_share_own"]["M2"] == pytest.approx(0.25)
+    assert rep["fallback_share_own"]["B3"] == pytest.approx(0.25)
+    assert rep["shared_binds_harder_than_any_own"] is True

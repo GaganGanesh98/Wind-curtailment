@@ -401,6 +401,45 @@ the fit and not as a shrinkage weight. The fit is untouched; this is a scoring g
 only. If a different reading was intended, it must be corrected before any M2 number
 exists.
 
+### A2.3a Correction, 1 November 2026 — shared fallback, not per-method exclusion
+
+**Supervisor's correction, before any E1 v2 or M2 number exists.** A2.3's threshold
+and its scoring-only character are **confirmed**: nothing enters the fit — no cap on
+ĉ, no shrinkage, no change to the objective or the simplex constraint. Both bugs found
+while implementing it stand fixed (the 1e-6 denominator floor, and the IEEE754
+boundary — `ĉ ≤ 0.8` is exact, `1 − ĉ ≥ 0.2` is not).
+
+**What changes: NaN exclusion is replaced by a shared fallback.** Excluding unstable
+quarter-hours per method scores M2 and B3 on *different* quarter-hours, so their MAEs
+are not comparable and the paired event-day bootstrap is ill-defined — a pair needs
+both members to exist. Instead:
+
+- For each comparison, build **one shared stability mask** over the compared methods:
+  `unstable_t = OR over compared methods m of (ĉ_m,t > 0.8)`.
+- `A_struct_m,t = G_t / (1 − ĉ_m,t)` where stable; `= A_hat_stageA,t` where unstable.
+- Because stage A is shared and identical across methods, unstable quarter-hours
+  contribute an **exact tie**, so no method can gain by falling back, and the **full
+  censored sample is retained**.
+- **Criterion (c) (M2 vs B2):** B2 sits at `A_hat_stageA` everywhere, so the mask is
+  M2's own stability and M2 ties with B2 wherever it falls back. Non-gameable.
+- The NaN array is kept as an **internal diagnostic** ("recovery undefined");
+  scoring uses the fallback.
+- **Report per cell:** the fallback share under the shared mask, and the share under
+  each method's own rule, so it is visible whether the shared mask binds harder than
+  the individual ones.
+
+Implemented as `shared_stability_mask()`, `scored_recovery()` and
+`recovery_report()` in `src/censoring/m2.py`. Four tests, including the one this
+correction requires: **where unstable, the paired difference between any two compared
+methods is exactly 0** — asserted with `==`, not a tolerance, since an approximate tie
+would still let a method gain.
+
+**One condition this rests on, stated so it is checked rather than assumed:** the tie
+property holds *only* because stage A is bit-identical across the compared methods
+(pre-registration section 1, and Amendment 3's 0.1 puts hour Fourier in every method's
+stage A). If a future arm ever gave a method its own stage A, unstable quarter-hours
+would stop tying and this rule would silently become gameable.
+
 ### A2.4 Like-for-like against B3
 
 **B3 is scored on the same construction**: its binned implied response gives a ĉ, and

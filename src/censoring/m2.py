@@ -364,6 +364,64 @@ ABLATIONS = (
 )
 
 
+def shared_stability_mask(c_hats: dict[str, np.ndarray],
+                          min_denom: float = RECOVERY_MIN_DENOM) -> np.ndarray:
+    """Quarter-hours where ANY compared method's recovery is unstable.
+
+    Amendment 2, corrected 1 Nov 2026. The first implementation excluded unstable
+    quarter-hours per method, which scores M2 and B3 on **different** quarter-hours:
+    their MAEs are then not comparable and the paired event-day bootstrap is not even
+    well defined, because a "pair" needs both members to exist.
+
+    One mask over all compared methods fixes both problems. The threshold is applied
+    to c_hat rather than to 1 - c_hat because IEEE754 makes `1 - 0.8` equal
+    0.19999999999999996, which would exclude a quarter-hour sitting exactly on the
+    boundary the rule says to include.
+    """
+    thresh = 1.0 - min_denom
+    it = iter(c_hats.values())
+    unstable = np.asarray(next(it)) > thresh
+    for c in it:
+        unstable = unstable | (np.asarray(c) > thresh)
+    return unstable
+
+
+def scored_recovery(g_obs: np.ndarray, c_hat: np.ndarray, a_stage_a: np.ndarray,
+                    unstable: np.ndarray) -> np.ndarray:
+    """G/(1 - c_hat) where stable, stage A where not — the shared-fallback rule.
+
+    The fallback is what makes unstable quarter-hours an **exact tie**: stage A is
+    shared and bit-identical across methods (pre-registration section 1), so every
+    compared method returns the same number there. No method can gain by falling back,
+    and the full censored sample is retained instead of being silently thinned.
+
+    The denominator is replaced by 1.0 on the unstable side before the division, so
+    the discarded branch cannot raise or produce an inf that later arithmetic might
+    propagate.
+    """
+    denom = np.where(unstable, 1.0, 1.0 - np.asarray(c_hat))
+    return np.where(unstable, np.asarray(a_stage_a),
+                    np.asarray(g_obs) / denom)
+
+
+def recovery_report(c_hats: dict[str, np.ndarray],
+                    min_denom: float = RECOVERY_MIN_DENOM) -> dict:
+    """Fallback shares: the shared mask, and each method's own rule beside it.
+
+    Reported per cell so it is visible whether the shared mask binds harder than the
+    individual ones — i.e. how much one unstable method costs the others.
+    """
+    shared = shared_stability_mask(c_hats, min_denom)
+    own = {m: float((np.asarray(c) > 1.0 - min_denom).mean())
+           for m, c in c_hats.items()}
+    return {"fallback_share_shared": float(shared.mean()),
+            "fallback_n_shared": int(shared.sum()),
+            "fallback_share_own": own,
+            "fallback_share_own_max": max(own.values()) if own else 0.0,
+            "shared_binds_harder_than_any_own":
+                float(shared.mean()) > (max(own.values()) if own else 0.0) + 1e-12}
+
+
 def response_curve(p: np.ndarray, knots: np.ndarray, block_shares: np.ndarray,
                    depth_grid: np.ndarray) -> np.ndarray:
     """Capacity-weighted pooled r-hat on a depth grid: the CDF, by construction."""
@@ -443,28 +501,29 @@ def fit_m2(data, depth_grid: np.ndarray, ablation: M2Ablation | None = None,
     c_hat = np.clip(X @ p.reshape(-1), 0.0, 1.0)
     rank, ncols = numerical_rank(X[train], sa.omega[train])
 
-    # A-hat: the STRUCTURAL RECOVERY, with stage A reported separately. See the module
-    # docstring on why criterion (c) is vacuous on the stage-A value.
+    # A-hat. Amendment 2 as corrected 1 Nov 2026: the NaN array below is an INTERNAL
+    # DIAGNOSTIC ("recovery undefined"), not the scored quantity. Scoring happens at
+    # comparison time via shared_stability_mask() + scored_recovery(), because the
+    # mask has to be shared across the methods being compared -- excluding per method
+    # would score them on different quarter-hours and leave the paired event-day
+    # bootstrap undefined.
     #
-    # Amendment 2's 0.2 stability rule: G/(1 - c_hat) diverges as c_hat -> 1, so the
-    # recovery is formed ONLY where 1 - c_hat >= 0.2 and is undefined elsewhere. An
-    # earlier version floored the denominator at 1e-6, which does not stabilise
-    # anything -- it just replaces a divergence with a number up to 10^6 times G, which
-    # would then dominate any MAE it entered. Excluded quarter-hours are NaN, and the
-    # count and share are reported so a recovery result can never be read without
-    # knowing how much of the sample it rests on.
-    a_struct = np.full(c_hat.shape, np.nan)
-    # Tested on c_hat, not on (1 - c_hat): in IEEE754 `1 - 0.8` is 0.19999999999999996,
-    # so the natural form silently EXCLUDES a quarter-hour sitting exactly on the 0.2
-    # boundary that the rule says to include. `1.0 - 0.2` is exactly 0.8, so this form
-    # puts the boundary where Amendment 2 A2.3 puts it.
+    # The boundary is tested on c_hat, not on (1 - c_hat): IEEE754 makes `1 - 0.8`
+    # equal 0.19999999999999996, so the literal form excludes a quarter-hour sitting
+    # exactly on the boundary that the rule says to include.
     ok = c_hat <= (1.0 - RECOVERY_MIN_DENOM)
-    a_struct[ok] = data.g_obs_mw[ok] / (1.0 - c_hat[ok])
+    a_struct_undefined = np.full(c_hat.shape, np.nan)
+    a_struct_undefined[ok] = data.g_obs_mw[ok] / (1.0 - c_hat[ok])
     n_excluded = int((~ok).sum())
+    # The single-method fallback, correct when M2 is compared against B2 alone
+    # (criterion c): B2 sits at stage A everywhere, so M2 ties with it wherever it
+    # falls back. For any other comparison the caller must rebuild the mask.
+    a_struct = scored_recovery(data.g_obs_mw, c_hat, sa.a_hat, ~ok)
 
     return {
         "name": ab.label, "ablation": ab.label, "ablation_note": ab.note,
         "a_hat": a_struct, "a_hat_stage_a": sa.a_hat, "c_hat": c_hat,
+        "a_hat_recovery_undefined": a_struct_undefined,
         "recovery_excluded_n": n_excluded,
         "recovery_excluded_share": float(n_excluded / c_hat.size),
         "recovery_min_denom": RECOVERY_MIN_DENOM,
