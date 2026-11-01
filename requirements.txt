@@ -19,3 +19,12 @@ open-mastr==1.0.0   # MaStR bulk-export URL resolution
 unzip-http==0.9     # partial download of zip members by HTTP range request
 openpyxl==3.1.5     # BNetzA tender statistics workbook
 pypdf==6.21.4      # reading archived source PDFs
+
+# Block 10 — M2 (HRD). cvxpy's default QP solver is OSQP; the other backends come
+# with the wheel and are listed because the solver identity is part of reproducing a
+# fit. CLARABEL (interior point) is the pre-registered fallback.
+cvxpy==1.9.3
+clarabel==0.11.1    # interior-point conic solver (fallback)
+osqp==1.1.3         # ADMM QP solver -- cvxpy's DEFAULT, so this is the primary
+scs==3.3.1          # pulled in by cvxpy
+highspy==1.15.1     # pulled in by cvxpy

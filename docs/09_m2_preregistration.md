@@ -234,3 +234,120 @@ one.
 5. **The real-data response shape.** 4a-response found the real contrast strongly convex
    in depth with most movement below −20 €/MWh; whether a 2 €/MWh reservation-depth grid
    resolves that adequately is an empirical question for E1 v2, not a settled one.
+
+---
+
+## Amendment 1 — 1 November 2026, before any M2 number
+
+Supervisor's decisions on commit `108fef5`. Sections 1–7 stay on record unchanged;
+where this amendment supersedes one, the superseded text is named.
+
+### A1.1 Solver: cvxpy, default backend, SLSQP dropped
+
+**cvxpy is now installed and pinned.** `cvxpy==1.9.3`, with the solver backends it
+ships — `clarabel==0.11.1`, `osqp==1.1.3`, `scs==3.3.1`, `highspy==1.15.1` — all
+recorded in `requirements.txt` with versions read back from `importlib.metadata`, not
+guessed. Installed solvers reported by cvxpy: `CLARABEL, SCS, SCIPY, HIGHS, OSQP`.
+
+- **Primary solver: cvxpy with its default QP solver, which is OSQP** (reported as
+  instructed; confirmed by `problem.solver_stats.solver_name` on an M2-shaped problem).
+- **FISTA with exact simplex projection is retained as a per-fit cross-check**, at a
+  **1e-6 relative objective** tolerance. Disagreements are reported, not resolved by
+  taking the better number.
+- **scipy SLSQP is dropped.** Section 4.1's pre-registration of it is superseded.
+
+**Section 4.1's concern about the 1e-6 tolerance is withdrawn.** I had flagged that
+OSQP, being a first-order ADMM method, might not reach 1e-6 and so might make the
+cross-check unusable. Measured on a problem of M2's shape — 6 cohort blocks × 70 knots
+= 420 variables, 4,000 rows, weighted least squares plus the shrink-to-mean penalty,
+block simplex constraints:
+
+| solver | objective | relative difference vs CLARABEL | seconds |
+|---|---|---|---|
+| OSQP (cvxpy default) | 1.827629283 | **3.67e-09** | 0.39 |
+| OSQP at eps 1e-9 | 1.827629283 | 3.67e-09 | 0.42 |
+| CLARABEL (interior point) | 1.827629289 | — | 0.96 |
+| SCS | 1.827629283 | 3.67e-09 | 0.35 |
+
+OSQP agrees with an interior-point solver to **four orders of magnitude inside** the
+pre-registered tolerance, with the simplex constraints satisfied to 1e-9 and exact
+non-negativity. The 1e-6 cross-check is comfortably attainable. **CLARABEL is the
+pre-registered fallback** if OSQP reports anything other than `optimal` on real data,
+and such a substitution is reported per cell.
+
+The 400–620 variable figure in section 4.1 stands as a statement of problem size; it
+is no longer a statement of solver risk.
+
+### A1.2 Placebo and cross-fitting
+
+Supersedes section 4.2's scheme.
+
+- **Structural placebo: kept, relabelled "exposure-mask identity check (cannot
+  fail)".** It verifies that s = 0 at non-negative prices, which forces structural
+  ĉ = 0 exactly. It is not evidence about the response and is never reported as such.
+- **Stage A is cross-fitted by event-day folds.** Fixed fold assignment, **seed 42**,
+  **5 folds by whole Berlin-local event-days**, the *same* assignment for every method
+  and every cell, so that every quarter-hour's Â comes from a model that did not see
+  its own day. Because the A-stage is shared across all methods (section 1), this
+  changes Â for M1 and the baselines too, which is intended: it keeps the comparison
+  like-for-like.
+- **TRUE placebo:** derived **ĉ = 1 − G/Â on held-out quarter-hours with price >
+  5 €/MWh**. **Pass** if the 95% event-day block-bootstrap CI contains 0 **and**
+  |mean| < 1 percentage point.
+
+  **Cross-fitting is what makes this a real test.** Section 4.2 recorded that the
+  > 5 band was stage A's own training sample and therefore not an out-of-sample
+  placebo. Held-out cross-fitted Â removes that objection, so the > 5 band becomes the
+  primary placebo rather than a weak one. That limitation is resolved, not carried.
+
+- **CONSISTENCY check — explicitly not a zero test.** Derived ĉ in the **0–5 €/MWh**
+  band should agree, within its CI, with the model-free 4a contrast.
+
+  From `results/15_4a_response.csv` (onshore, all F):
+
+  | area | G/F, 0–5 band | 95% CI | implied shortfall | n QH |
+  |---|---|---|---|---|
+  | DE | 0.9754 | [0.9616, 0.9888] | **2.46%** [1.12%, 3.84%] | 827 |
+  | 50Hertz | 0.9386 | [0.9187, 0.9568] | 6.14% [4.32%, 8.13%] | 837 |
+
+  The figure in the decision — G/F ≈ 0.975, ≈ 2.5% — is **DE's**, and is recorded as
+  the pre-registered comparator, with DE primary per spec v1.8's E2 ordering.
+
+  **Two refinements flagged, not substituted.** (i) Â corrects the day-ahead forecast's
+  own conditional bias where F does not, so the strictly comparable quantity is the
+  **contrast against the > 5 band** rather than the raw ratio: 2.80% for DE. For DE the
+  two barely differ, because its > 5 ratio is 1.0035. (ii) **For 50Hertz they differ a
+  lot** — 6.14% raw against 3.21% as a contrast — because its > 5 ratio is 0.9697. So
+  the comparator is area-specific and the ≈ 2.5% figure must not be applied to 50Hertz.
+
+  **Hirth (2026) context — now verified rather than cited second-hand.** Table 3,
+  **page 14**, pooled 2022 to August 2026, wind: the **"0 to 5 (placebo)"** band gives
+  a curtailment rate of **4.2%** (1,129 hours, 29 TWh potential, 1.2 TWh curtailed),
+  and the **"above 5 (placebo)"** band **−0.37%**. **Hirth labels both bands "placebo"
+  himself**, which is the same construction as this section — independent support for
+  the design, not merely a number for context.
+
+  **An agreement worth recording.** Hirth's above-5 placebo is **−0.37%**; this
+  project's DE onshore > 5 figure is **−0.35%** (G/F 1.0035). Two different datasets,
+  two different methods, 0.02 percentage points apart. That is a meaningful external
+  check on the placebo band itself, and it sets the scale for what "≈ 0" should mean:
+  the pre-registered 1-percentage-point bound is loose by comparison, not tight.
+
+### A1.3 Framing: what M2 claims
+
+- **Primary claim: a fleet-level reservation-depth response with known exposure.** This
+  is what M2 is for, and what its results are reported as.
+- **Cohort-level responses are secondary**, and are **reported only for the months
+  where the rank condition holds.** Per section 4.4 that is **18 of 33 months**, and
+  they are listed here so the claim cannot later be widened silently:
+
+  **2024:** 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 12 — eleven months
+  **2025:** 04, 05, 06, 08, 09, 10 — six months
+  **2026:** 04 — one month
+
+  (2024-11, 2025-01, 02, 03, 07, 11, 12 and 2026-01, 02, 03, 05, 06, 07, 08, 09 all
+  have a market value above every award value, so MP = 0, θ = 0 for every cohort, and
+  the cohort dimension of X has rank 1.)
+
+  On 2026 alone the cohort claim rests on **April 2026 only**. Any cohort-level
+  statement must name the months that identify it.
