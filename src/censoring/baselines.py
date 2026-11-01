@@ -207,18 +207,33 @@ def fit_b2(data, cfg: TrainConfig | None = None, **kw) -> dict:
     return _fit_plain(data, data.g_obs_mw, "B2", train_subset=keep, cfg=cfg, **kw)
 
 
-# Hirth (2026) Fig. 12 bins the pooled wind response on profit-margin bands. The
-# band edges are NOT recorded anywhere in this repo and the paper is not stored in
-# data/raw/, so they cannot be used yet.
+# Hirth (2026, arXiv 2609.10053) Fig. 12 bins the pooled wind response on
+# profit-margin bands. RESOLVED 1 Nov 2026.
 #
-# UNRESOLVED: read the exact edges off Hirth (2026, arXiv 2609.10053) Fig. 12 or its
-# underlying table and put them here as a tuple in EUR/MWh of profit margin. Until
-# then B3 uses equal-count quantile bins, which is a choice of mine and not Hirth's
-# -- results/10_diag_b3_bins.csv records how much that choice is worth
-# (int|r-r*| moves from 0.2507 at 4 bins to 0.0115 at 64 on the logistic shape).
-# Do NOT guess these: inventing band edges would make B3 a straw man and the
-# comparison worthless (hard rules 9 and 14).
-HIRTH_FIG12_MARGIN_EDGES_EUR_MWH: tuple[float, ...] | None = None
+# PROVENANCE: read from raster /Image66 p.17 of 2609.10053v1; axis ticks, not
+# text-extracted; [read from figure]. The figure is a bitmap, so no text extraction
+# could ever have recovered these. The x-axis ticks run
+# 100, 50, 20, 10, 5, 0, -5, -10, -20, -50, -100 EUR/MWh of profit margin, giving
+# twelve bands, which matches the twelve plotted wind points. Corroborated two ways:
+# the negative-side edges coincide exactly with Table 3 (p. 14), and the student
+# independently verified the same reading by rendering the page.
+#
+# These are DEPTH edges (z = -margin), i.e. the exposed side only, where the response
+# is defined. The open top band is inf.
+HIRTH_FIG12_MARGIN_EDGES_EUR_MWH: tuple[float, ...] = (0.0, 5.0, 10.0, 20.0, 50.0,
+                                                       100.0, float("inf"))
+
+# Hirth's own response rates for those six exposed bands, same figure, for the
+# plausibility comparison in T-D(v) -- NOT used in any fit.
+HIRTH_FIG12_WIND_RESPONSE = (0.25, 0.32, 0.34, 0.45, 0.61, 0.56)
+
+# fit_b3 must NOT silently adopt the edges above. Amendment 4 keeps B3@8 and B3-CV on
+# equal-count quantile bins and introduces Hirth's bands only as a SEPARATE comparator
+# (B3-H), which passes them explicitly. Before this constant was filled in, fit_b3
+# fell back to it whenever it was not None, so setting it would have changed every
+# existing B3 fit at once and invalidated the comparison the amendment is trying to
+# make. The fallback is therefore removed and the default is quantile bins, stated.
+B3_DEFAULT_EDGES: tuple[float, ...] | None = None
 
 
 def fit_b3(data, cfg: TrainConfig | None = None, n_bins: int = 8,
@@ -249,7 +264,7 @@ def fit_b3(data, cfg: TrainConfig | None = None, n_bins: int = 8,
         margin = np.where(exposed_share > 0, weighted_depth / exposed_share, 0.0)
 
     use = exposed_potential > 0
-    edges = bin_edges if bin_edges is not None else HIRTH_FIG12_MARGIN_EDGES_EUR_MWH
+    edges = bin_edges if bin_edges is not None else B3_DEFAULT_EDGES
     fit["implied_response"] = _binned_response(
         margin[use], residual[use], exposed_potential[use], n_bins, edges=edges
     )

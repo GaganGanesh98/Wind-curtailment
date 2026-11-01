@@ -359,6 +359,58 @@ Supersedes section 4.2's scheme.
 
 ---
 
+## Amendment 2 — criterion (c) settled: the ex-post structural recovery
+
+**Supervisor's decision. Written 1 November 2026, before any M2 number.**
+
+**Recorded gap:** this amendment did not exist when Amendment 3 was committed
+(`81996c4`), whose section 0.3 refers to "the like-for-like ex-post recovery
+comparison (Amendment 2)". That reference was reproduced verbatim without noticing it
+pointed at nothing. The omission is mine; it is written up here rather than quietly
+back-filled, and Amendment 3's text is unchanged.
+
+### A2.1 What criterion (c) is scored on
+
+The question flagged on commit `05485aa` is settled. **M2's A-estimate for scoring is
+the structural recovery**
+
+    A_hat_recovered = G_t / (1 - c_hat_t)
+
+not stage A's prediction. Scored on stage A the criterion is vacuous: stage A is
+shared by every method and B2 (deletion) *is* a fit on the uncensored sample, so M2
+and B2 would be bit-identical and the test would tie by construction.
+
+### A2.2 Ex post only
+
+The recovery uses the **observed** G_t, so it is a **T1 / ex-post quantity and can
+never be a day-ahead forecast**. It is used for recovery scoring and for T-A, and it
+is **forbidden in T-E**, where the forecast stays `G_hat = A_hat_stageA × (1 − c_hat)`
+exactly as Amendment 3's 0.3 specifies. Any report of the recovery must carry the
+label "ex post".
+
+### A2.3 The 0.2 stability rule
+
+`G/(1 − ĉ)` diverges as ĉ approaches 1, so a quarter-hour's recovery is formed **only
+where `1 − ĉ_t ≥ 0.2`**, i.e. ĉ_t ≤ 0.8. Where it is not, the recovery is **undefined
+and excluded from scoring**, and **the excluded count and share are reported with
+every recovery result**.
+
+*Reading recorded because the instruction was terse ("0.2 stability rule"):* the 0.2
+is taken as a floor on the denominator `1 − ĉ`, not as a cap on ĉ's permitted value in
+the fit and not as a shrinkage weight. The fit is untouched; this is a scoring guard
+only. If a different reading was intended, it must be corrected before any M2 number
+exists.
+
+### A2.4 Like-for-like against B3
+
+**B3 is scored on the same construction**: its binned implied response gives a ĉ, and
+its recovery is `G/(1 − ĉ_B3)` under the identical 0.2 rule. So the comparison uses
+one formula for both sides, as the v1.8 gate did with the derived ĉ. Reporting M2's
+structural recovery against B3's *stage-A* estimate would not be like-for-like and is
+not done.
+
+---
+
 ## Amendment 3 — M2 full test, pre-registered 1 November 2026
 
 **Committed before ANY M2 number exists.** Supersedes the earlier sequencing.
@@ -511,3 +563,92 @@ criterion or a threshold.
 - A bug fixed without re-running the affected cells **in full** and recording the bug
   and the fix in a dated minute.
 - Any number reported from a provisional or partial run (hard rule 20).
+
+---
+
+## Amendment 4 — B3-H, the revised fail branch, and the fleet-monotonicity prediction
+
+**Supervisor's decisions, 1 November 2026, before any E1 v2 number.** Amendments 1–3
+stand; where this supersedes one, it says so.
+
+### A4.1 B3-H: Hirth's actual bands as a new comparator
+
+> Hirth Fig 12 edges: do NOT change B3-CV or B3@8. Add as Amendment 4 (dated, before
+> any E1 v2 number): new comparator B3-H using Hirth's actual bands, exposed-side
+> depth edges {0,5,10,20,50,100,inf}. Set HIRTH_FIG12_MARGIN_EDGES_EUR_MWH with a
+> provenance comment: "read from raster /Image66 p.17 of 2609.10053v1; axis ticks, not
+> text-extracted; [read from figure]". B3-H is reported in T-A and T-B. Pre-registered
+> reading, recorded now: if M2 beats B3-CV but loses to B3-H on logistic AND step at
+> n=50, the data-efficiency claim is NOT supported. (Strictly harder than the existing
+> rule; no existing criterion changes.)
+
+**Implementation note — the two instructions conflicted and had to be decoupled.**
+`fit_b3` previously fell back to `HIRTH_FIG12_MARGIN_EDGES_EUR_MWH` whenever it was
+not `None`. Setting the constant would therefore have **silently re-binned every
+existing B3 fit**, changing B3-CV and B3@8 — the opposite of the instruction, and it
+would have invalidated the comparison this amendment creates. The constant is now set
+and carries the provenance comment, and `fit_b3`'s default is an explicit
+`B3_DEFAULT_EDGES = None` meaning equal-count quantile bins. **B3-H is the only
+method that passes Hirth's bands, and it passes them explicitly.** Two regression
+tests pin this: one asserts the default stays `None`, the other asserts the two
+binnings give different responses, since if they agreed B3-H would not be a distinct
+comparator and the new rule would be moot.
+
+Hirth's own six exposed-band response rates — **0.25, 0.32, 0.34, 0.45, 0.61, 0.56** —
+are recorded as `HIRTH_FIG12_WIND_RESPONSE` for the T-D(v) comparison only. **They
+enter no fit.**
+
+### A4.2 Revised first branch of the decision mapping
+
+Supersedes Amendment 3's 0.4 first branch.
+
+> T-B FAIL -> run the FULL T-D (not just i-iii), then STOP before T-E; topic decision
+> goes to the supervisor on T-B + T-D together, with the recommendation to end the
+> topic. Rationale to record: the generator's MAR-given-F property makes criterion (b)
+> vacuous but does NOT invalidate T-B, because T-B scores the r-side where an unbiased
+> A_hat helps; nonetheless a synthetic result alone should not end a topic.
+
+### A4.3 A non-monotone fleet response is predicted, and is not a finding
+
+> Non-monotone fleet response: Hirth Fig 12 falls 61% -> 56% at the deepest band.
+> Table 3 p.15 gives 44 h (below -100) and 64 h (-100 to -50), so treat it as probably
+> noise, NOT a finding. Record as a pre-registered prediction for T-D(v)/E4: monotone
+> cohort curves can yield a non-monotone FLEET curve because cohort exposure
+> composition changes with depth. Report M2's predicted fleet curve against Hirth's six
+> values and say whether the direction matches. Do not relax M2's per-cohort
+> monotonicity.
+
+This is a genuine prediction of the HRD structure rather than a caveat: `r_k` is a CDF
+and so monotone for every cohort by construction (tested), yet the capacity-weighted
+fleet curve Σ_k w_k s_k(z) r_k(z) can fall with depth, because the **exposure weights
+`s_k(z)` change with depth**. If M2 reproduces a non-monotone fleet curve while every
+cohort curve rises, that is the mechanism asserting itself, not a defect.
+
+### A4.4 Positioning quote
+
+> Positioning: quote verbatim in docs/06 and docs/07, Hirth 2609.10053 p.18: "Because
+> curtailment is not observed cohort by cohort, one common response function is fitted
+> across the classes."
+
+Added to both. (The extracted text reads "coh ort"; that is a PDF text-extraction
+artefact of the line break, not the paper's spelling.)
+
+### A4.5 T-D additions
+
+> 6. Add to T-D: validate stage A against the Online-Hochrechnung ex post (DE and per
+>    area); report level ratio and correlation on uncensored QHs.
+> 7. Diagnose TenneT R(>5) = 0.839 before any DE-level aggregate uses the projection:
+>    check area definition, offshore inclusion, and whether SMARD's TenneT actual and
+>    the projection cover the same fleet. Report findings; if unresolved, exclude
+>    TenneT from aggregate validation and say so.
+> 8. Label the -20 to -5 band (18 QH, 1 day, CI nan) "point estimate, no inference"
+>    everywhere.
+
+These become **T-D(vi)**, **T-D(vii)** and a reporting rule. They are possible only
+because the Nr. 5.1 check now passes (spec §7, `results/39_nr51_compliance.csv`),
+which makes the Online-Hochrechnung an admissible ex-post proxy for A in T1.
+
+T-D(vii) is a precondition, not a diagnostic: **no DE-level aggregate may use the
+projection until TenneT's 0.839 baseline is explained or TenneT is excluded and the
+exclusion stated.** TenneT is 30.4 GW, so a silent 16% level bias there would
+contaminate any fleet-level validation built on the projection.

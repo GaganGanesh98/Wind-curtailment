@@ -250,3 +250,41 @@ def test_ablation_table_matches_the_pre_registration():
     byname = {a.label: a for a in ABLATIONS}
     assert byname["M2-noPool"].pool is False and byname["M2-noPool"].atom is True
     assert byname["M2-noAtom"].atom is False and byname["M2-noAtom"].pool is True
+
+
+# --------------------------------------------- Amendment 2: the 0.2 stability rule
+
+
+def test_structural_recovery_is_undefined_where_the_denominator_is_too_small():
+    """A2.3: form G/(1 - c_hat) only where 1 - c_hat >= 0.2, never with a tiny floor.
+
+    Flooring the denominator at 1e-6 (the earlier behaviour) does not stabilise the
+    recovery -- it replaces a divergence with a value up to a million times G, which
+    would then dominate any MAE it entered. Undefined is the honest answer.
+    """
+    from src.censoring.m2 import RECOVERY_MIN_DENOM
+
+    assert RECOVERY_MIN_DENOM == 0.2
+    g = np.array([1000.0, 1000.0, 1000.0, 1000.0])
+    c_hat = np.array([0.0, 0.5, 0.80, 0.999])
+    a = np.full(c_hat.shape, np.nan)
+    ok = c_hat <= (1.0 - RECOVERY_MIN_DENOM)
+    a[ok] = g[ok] / (1.0 - c_hat[ok])
+
+    assert ok.tolist() == [True, True, True, False]
+    assert a[0] == pytest.approx(1000.0)
+    assert a[1] == pytest.approx(2000.0)
+    assert a[2] == pytest.approx(5000.0)          # exactly at the 0.2 boundary
+    assert np.isnan(a[3])                          # would have been 1,000,000
+
+
+def test_the_boundary_is_tested_on_c_hat_not_on_one_minus_c_hat():
+    """IEEE754: 1 - 0.8 is 0.19999999999999996, so the natural form excludes ĉ = 0.8.
+
+    Pinned because the rule in Amendment 2 A2.3 is written as '1 - c_hat >= 0.2' and
+    coding it that way literally gets the boundary wrong by one quarter-hour class.
+    """
+    from src.censoring.m2 import RECOVERY_MIN_DENOM
+
+    assert (1.0 - 0.8) >= RECOVERY_MIN_DENOM is False or (1.0 - 0.8) < RECOVERY_MIN_DENOM
+    assert 0.8 <= (1.0 - RECOVERY_MIN_DENOM)      # the form actually used

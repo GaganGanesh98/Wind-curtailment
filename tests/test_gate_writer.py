@@ -81,3 +81,48 @@ def test_paired_abs_bias_pools_the_sign_before_taking_the_absolute_value():
     p = paired_abs_bias(a, b, mask, days)
     assert p["diff"] == pytest.approx(0.0 - 40.0)        # |0| - |40|
     assert np.mean(np.abs([100.0, -100.0])) == 100.0     # the wrong statistic
+
+
+# ------------------------- Amendment 4: Hirth's edges must not leak into B3's default
+
+
+def test_setting_hirths_edges_does_not_change_b3s_default_binning():
+    """Amendment 4 says set the constant but do NOT change B3-CV or B3@8.
+
+    Those two instructions conflict unless the constant is decoupled from fit_b3's
+    fallback. Before the constant was filled in, fit_b3 used it whenever it was not
+    None, so merely recording Hirth's edges would have silently re-binned every
+    existing B3 fit and invalidated the very comparison Amendment 4 sets up. This
+    test is what keeps the two apart.
+    """
+    from src.censoring.baselines import (
+        B3_DEFAULT_EDGES,
+        HIRTH_FIG12_MARGIN_EDGES_EUR_MWH,
+    )
+
+    assert HIRTH_FIG12_MARGIN_EDGES_EUR_MWH == (0.0, 5.0, 10.0, 20.0, 50.0, 100.0,
+                                                float("inf"))
+    assert B3_DEFAULT_EDGES is None, (
+        "B3's default must stay equal-count quantile bins; Hirth's bands belong to "
+        "B3-H only, passed explicitly")
+
+
+def test_b3_quantile_bins_and_hirth_bands_give_different_responses():
+    """If they agreed, B3-H would not be a distinct comparator and T-B would be moot."""
+    import numpy as np
+
+    from src.censoring.baselines import (
+        HIRTH_FIG12_MARGIN_EDGES_EUR_MWH,
+        _binned_response,
+    )
+
+    rng = np.random.default_rng(0)
+    margin = rng.uniform(0.0, 120.0, 5000)
+    potential = rng.uniform(100.0, 1000.0, 5000)
+    residual = potential * np.clip(margin / 150.0, 0, 1)
+
+    quant = _binned_response(margin, residual, potential, 8, edges=None)
+    hirth = _binned_response(margin, residual, potential, 8,
+                             edges=HIRTH_FIG12_MARGIN_EDGES_EUR_MWH)
+    assert quant["bin_centre"].size and hirth["bin_centre"].size
+    assert not np.array_equal(quant["bin_centre"], hirth["bin_centre"])

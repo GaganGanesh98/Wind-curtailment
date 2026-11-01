@@ -810,3 +810,13 @@ Implemented by Claude Code from `CLAUDE_CODE_PROMPT.md`.
   `docs/09_m2_preregistration.md` Amendment 1. And **TenneT is not significant in the
   kill test** — it is now stated wherever area results are listed, here and in
   `docs/08`.
+
+**Positioning against Hirth (2026).** Hirth faces the same identification problem and
+resolves it by not resolving it, in his own words (arXiv 2609.10053, p. 18): *"Because
+curtailment is not observed cohort by cohort, one common response function is fitted
+across the classes."* That is precisely the gap this project targets: M2's hierarchical
+reservation-depth structure estimates a response **per cohort** from the exposure the
+EEG rules imply, where Hirth fits one pooled curve. The limitation is his stated
+choice, not an oversight, and the contribution here is to test whether the cohort
+structure is recoverable at all — which `docs/09` section 4.4 shows is identified in
+only 18 of 33 months.

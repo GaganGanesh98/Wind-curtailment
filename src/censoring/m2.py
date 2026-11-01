@@ -80,6 +80,7 @@ DEPTH_PCTILE = 99.0        # knot grid runs to this percentile of positive depth
 MIN_BIN = 30               # observations needed before a hour x level variance bin is used
 VAR_FLOOR_PCTILE = 5.0
 XCHECK_RTOL = 1e-6         # FISTA vs cvxpy agreement, Amendment 1 A1.1
+RECOVERY_MIN_DENOM = 0.2   # Amendment 2 A2.3: form G/(1-c_hat) only where 1-c_hat >= 0.2
 
 
 # --------------------------------------------------------------------- stage A
@@ -444,11 +445,29 @@ def fit_m2(data, depth_grid: np.ndarray, ablation: M2Ablation | None = None,
 
     # A-hat: the STRUCTURAL RECOVERY, with stage A reported separately. See the module
     # docstring on why criterion (c) is vacuous on the stage-A value.
-    a_struct = data.g_obs_mw / np.maximum(1.0 - c_hat, 1e-6)
+    #
+    # Amendment 2's 0.2 stability rule: G/(1 - c_hat) diverges as c_hat -> 1, so the
+    # recovery is formed ONLY where 1 - c_hat >= 0.2 and is undefined elsewhere. An
+    # earlier version floored the denominator at 1e-6, which does not stabilise
+    # anything -- it just replaces a divergence with a number up to 10^6 times G, which
+    # would then dominate any MAE it entered. Excluded quarter-hours are NaN, and the
+    # count and share are reported so a recovery result can never be read without
+    # knowing how much of the sample it rests on.
+    a_struct = np.full(c_hat.shape, np.nan)
+    # Tested on c_hat, not on (1 - c_hat): in IEEE754 `1 - 0.8` is 0.19999999999999996,
+    # so the natural form silently EXCLUDES a quarter-hour sitting exactly on the 0.2
+    # boundary that the rule says to include. `1.0 - 0.2` is exactly 0.8, so this form
+    # puts the boundary where Amendment 2 A2.3 puts it.
+    ok = c_hat <= (1.0 - RECOVERY_MIN_DENOM)
+    a_struct[ok] = data.g_obs_mw[ok] / (1.0 - c_hat[ok])
+    n_excluded = int((~ok).sum())
 
     return {
         "name": ab.label, "ablation": ab.label, "ablation_note": ab.note,
         "a_hat": a_struct, "a_hat_stage_a": sa.a_hat, "c_hat": c_hat,
+        "recovery_excluded_n": n_excluded,
+        "recovery_excluded_share": float(n_excluded / c_hat.size),
+        "recovery_min_denom": RECOVERY_MIN_DENOM,
         "p": p, "knots": knots, "blocks": members, "block_of": block_of,
         "block_shares": block_shares, "n_blocks": n_b, "n_knots": n_j,
         "lambda": lam_used, "cv_log": cv_log,
