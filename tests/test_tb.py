@@ -181,3 +181,79 @@ def test_inner_cv_sees_only_selected_days_even_when_others_are_corrupted():
     assert corrupted["n_bins"] == clean["n_bins"], (
         "B3-CV's bin choice moved when unselected days were corrupted: its inner CV "
         "is seeing data the other methods were denied, and T-B would be void")
+
+
+# ----------------------- Amendment 5 A5.2: the shared array, asserted bit-identical
+
+
+def test_shared_stage_a_is_bit_identical_across_every_response_method():
+    """One array per cell, reused by M2, B3-CV, B3@8, B3-H and B6 — not re-fitted.
+
+    If any method quietly built its own A-hat, T-B would no longer be isolating the
+    response model, which is the single thing it exists to measure.
+    """
+    from src.censoring.run_tb import MethodSpec, score_cell
+    from src.censoring.synthetic import SyntheticConfig
+    from src.censoring.cohorts import mastr_cohort_set
+
+    seen: dict[str, np.ndarray] = {}
+    names = ["M2", "B3-CV", "B6", "B3@8", "B3-H"]
+
+    def recorder(nm):
+        def _fit(data, mask, shared_a):
+            seen[nm] = np.asarray(shared_a.a_hat).copy()
+            return {"a_hat": shared_a.a_hat}
+        return _fit
+
+    specs = [MethodSpec(n, recorder(n), lambda f, d, g: np.zeros_like(g))
+             for n in names]
+    sentinel = {"calls": 0}
+
+    class _A:
+        def __init__(self, arr): self.a_hat = arr
+
+    def shared(data):
+        sentinel["calls"] += 1
+        rng = np.random.default_rng(7)
+        return _A(rng.normal(5000.0, 500.0, data.forecast_mw.size))
+
+    cfg = SyntheticConfig(censoring_rate=0.10, gamma=0.0, r_shape="step", seed=45)
+    score_cell(cfg, specs, (20, 50), shared, mastr_cohort_set("DE"))
+
+    assert sentinel["calls"] == 1, "stage A must be fitted ONCE per cell, not per level"
+    ref = seen[names[0]]
+    for n in names[1:]:
+        assert np.array_equal(seen[n], ref), f"{n} did not receive the shared array"
+        assert not np.shares_memory(seen[n], np.empty(0))
+
+
+def test_b2_does_not_consume_the_shared_array():
+    """A5.2: B2 keeps its own fit. Rewiring it would void the no-harm claim.
+
+    Asserted behaviourally — B2's a_hat must DIFFER from the shared array — rather
+    than by inspecting its signature, which would not catch a quiet rewiring.
+    """
+    from src.censoring.baselines import fit_b2
+    from src.censoring.cohorts import mastr_cohort_set
+    from src.censoring.m2 import fit_shared_stage_a
+    from src.censoring.model import TrainConfig
+    from src.censoring.synthetic import SyntheticConfig, generate
+
+    d = generate(SyntheticConfig(censoring_rate=0.10, gamma=0.0, r_shape="step",
+                                 seed=45), cohorts=mastr_cohort_set("DE"))
+    shared = fit_shared_stage_a(d, cfg=TrainConfig(), check=False)
+    b2 = fit_b2(d, TrainConfig())["a_hat"]
+    assert not np.array_equal(b2, shared.a_hat)
+    assert np.abs(b2 - shared.a_hat).mean() > 1.0
+
+
+def test_b2_is_absent_from_tb_specs_because_it_has_no_response_curve():
+    """Recorded so its absence reads as a decision, not an omission.
+
+    Amendment 3 0.2 lists B2 among the methods, but T-B's metric is
+    integrated |r_hat - r*| and B2 estimates A only — it has no response to score.
+    B2 belongs to T-A's criterion (c), not to T-B.
+    """
+    from src.censoring.tb_methods import build_specs
+
+    assert "B2" not in {s.name for s in build_specs()}
