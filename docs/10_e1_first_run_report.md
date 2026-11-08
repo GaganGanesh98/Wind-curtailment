@@ -28,8 +28,8 @@ Reported first because they affect how the rest of this document should be read.
 2. **`docs/09_e1_generator_design.md` did not exist in the repo** when this report was
    written; the design note was supplied only as pasted text. Its decisions are quoted
    below where they were tested, and two of its statements turn out to be wrong on real
-   data (§7). It has since been committed, in a revised form that marks its superseded
-   claims, on branch `identification-fix`.
+   data (§7). It has since been committed on branch `identification-fix`, rewritten to
+   record its own superseded claims rather than to restate them.
 
 3. **There is already a committed E1 generator for the same spec section.**
    `src/censoring/synthetic.py` (committed, 24.9K, polars) is a semi-synthetic censoring
