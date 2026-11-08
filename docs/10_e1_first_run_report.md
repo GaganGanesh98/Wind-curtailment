@@ -7,8 +7,10 @@ without renaming stored data or editing the generator's defaults.
 
 **Headline: the generator is correct on real data — 17/17 assertions pass for DE, 50Hertz
 and Amprion, and all 225 grid cells hit their rate target. One thing is genuinely broken
-for the gate: the hourly-clock cohort's response is identified off 1–14 quarter-hours,
-never more, anywhere in the grid. That is not a thin cell, it is the whole arm.**
+for the gate: the hourly-clock cohort's response is identified off 10 quarter-hours at the
+main DE cell (7 for 50Hertz, 14 for Amprion, 2 on the narrower study window), and off
+1–11 in every one of the 225 DE grid cells. It never grows with the censoring rate. That
+is not a thin cell, it is the whole arm.**
 
 ---
 
