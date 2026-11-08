@@ -584,6 +584,7 @@ class GateVerdict:
     unique_ok: bool
     cond_ok: bool
     rank: int
+    feature_rank: int
     k: int
     min_pair_differ: int
     worst_pair: tuple[str, str] | None
@@ -629,7 +630,11 @@ def gate_identification_verdict(
     """The composite identification criterion proposed to replace the I4 day count.
 
     Three conditions, all required:
-      1. `rank(s) == K`                    -- no exactly collinear cohorts;
+      1. full rank on the FEATURE BLOCK `[s | depth]` -- no two cohorts
+         indistinguishable. `rank(s)` alone is too strict: a pair with identical `s`
+         but differing `depth` is weakly identified, not unidentified, and would be
+         failed by a rank test on `s`. Both ranks are reported; the verdict uses the
+         feature block when depth is available and falls back to `s` when it is not.
       2. every cohort pair differs on at least `min_pair_qh` quarter-hours;
       3. `cond(s) <= max_cond_s`           -- backstop (see MAX_COND_S).
 
@@ -643,14 +648,18 @@ def gate_identification_verdict(
     """
     rep = identification_diagnostics(s, cohort_ids, w, depth, label="gate")
     n_pair, pair = min_pair_differ(s, cohort_ids)
-    rank_ok = rep.exposure.full_rank
+    # The feature block is the matrix that decides separability; `s` alone fails a
+    # weakly-identified pair that depth does distinguish.
+    eff = rep.combined_rank if rep.combined_rank is not None else rep.exposure
+    rank_ok = eff.rank == rep.exposure.k
     unique_ok = n_pair >= min_pair_qh
     cond_ok = rep.cond_s <= max_cond_s
     reasons: list[str] = []
     if not rank_ok:
         dup = "; ".join(" == ".join(g.members) for g in rep.groups if g.is_exact)
         reasons.append(
-            f"rank(s) = {rep.exposure.rank} of {rep.exposure.k}; exactly collinear: "
+            f"rank([s | depth]) = {eff.rank} of {rep.exposure.k} "
+            f"(rank(s) = {rep.exposure.rank}); exactly collinear: "
             f"{dup or 'unnamed'} carrying "
             f"{100 * rep.collinear_capacity_share:.1f}% of capacity")
     if not unique_ok:
@@ -663,7 +672,7 @@ def gate_identification_verdict(
     return GateVerdict(
         passed=rank_ok and unique_ok and cond_ok,
         rank_ok=rank_ok, unique_ok=unique_ok, cond_ok=cond_ok,
-        rank=rep.exposure.rank, k=rep.exposure.k,
+        rank=rep.exposure.rank, feature_rank=eff.rank, k=rep.exposure.k,
         min_pair_differ=n_pair, worst_pair=pair,
         cond_s=rep.cond_s, cond_ws=rep.cond_ws,
         exposure_differs_days=exposure_differs_days,
