@@ -25,10 +25,11 @@ Reported first because they affect how the rest of this document should be read.
    8 Nov 2026). This branch copies them to `src/`, which is where the task and the design
    note say they belong.
 
-2. **`docs/09_e1_generator_design.md` does not exist in the repo.** The design note
-   referenced by the task was supplied only as pasted text. Nothing in `docs/` corresponds
-   to it. Its decisions are quoted below where they were tested, and two of its statements
-   turn out to be wrong on real data (§7).
+2. **`docs/09_e1_generator_design.md` did not exist in the repo** when this report was
+   written; the design note was supplied only as pasted text. Its decisions are quoted
+   below where they were tested, and two of its statements turn out to be wrong on real
+   data (§7). It has since been committed, in a revised form that marks its superseded
+   claims, on branch `identification-fix`.
 
 3. **There is already a committed E1 generator for the same spec section.**
    `src/censoring/synthetic.py` (committed, 24.9K, polars) is a semi-synthetic censoring
