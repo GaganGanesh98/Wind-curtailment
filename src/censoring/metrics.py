@@ -108,6 +108,12 @@ def paired_abs_bias(err_a_signed, err_b_signed, mask, days, n_boot=N_BOOT, seed=
     difference, because |mean| is not the mean of anything. The day-block resample is
     therefore done here directly: each draw recomputes both biases on the drawn days
     and takes the difference of their absolute values.
+
+    Returns `n_qh` and `n_days` alongside the estimate, matching
+    `paired_difference` and `mae_with_ci`. They were previously omitted, which broke
+    every gate caller: `gate_verdict.criterion_b` writes `p["n_qh"]` and
+    `p["n_days"]` into the results CSV for both statistics it reports, so the gate
+    raised `KeyError: 'n_qh'` before it could reach criterion (c).
     """
     a = np.asarray(err_a_signed)[mask]
     b = np.asarray(err_b_signed)[mask]
@@ -120,7 +126,8 @@ def paired_abs_bias(err_a_signed, err_b_signed, mask, days, n_boot=N_BOOT, seed=
     point = abs(a_sum.sum() / counts.sum()) - abs(b_sum.sum() / counts.sum())
     if n_days < 2:
         return {"diff": point, "lo": np.nan, "hi": np.nan, "significant": False,
-                "a_better": False}
+                "a_better": False,
+                "n_qh": int(counts.sum()), "n_days": int(n_days)}
     rng = np.random.default_rng(seed)
     idx = rng.integers(0, n_days, size=(n_boot, n_days))
     n = counts[idx].sum(axis=1)
@@ -128,7 +135,8 @@ def paired_abs_bias(err_a_signed, err_b_signed, mask, days, n_boot=N_BOOT, seed=
     lo, hi = np.percentile(boot, [2.5, 97.5])
     return {"diff": float(point), "lo": float(lo), "hi": float(hi),
             "significant": ci_excludes_zero(lo, hi),
-            "a_better": bool(point < 0 and ci_excludes_zero(lo, hi))}
+            "a_better": bool(point < 0 and ci_excludes_zero(lo, hi)),
+            "n_qh": int(counts.sum()), "n_days": int(n_days)}
 
 
 def mae_with_ci(a_hat, a_true, mask, days, n_boot=N_BOOT, seed=SEED):

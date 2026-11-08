@@ -346,12 +346,17 @@ def criterion_b(cells: list[dict], rows: list[dict]) -> dict:
     return verdicts
 
 
-def criterion_d(cells: list[dict], rows: list[dict]) -> dict:
+def criterion_d(cells: list[dict], rows: list[dict]) -> dict:  # noqa: ARG001
     """[PROPOSED] Identification of the cohort design actually used by each cell.
 
     Scored from the stored `s`, `depth` and `shares` arrays, so it needs no refit and
     no regeneration. The old I4 day count is computed alongside and reported, never
     gated, so the two verdicts sit side by side.
+
+    `rows` is accepted for signature symmetry with the other criteria but is NOT
+    written to: criteria (a)-(c) share one 15-column CSV schema and (d)'s columns do
+    not fit it. Per-cell detail goes to results/39_identification_gate.csv via
+    `run_identification.py`.
 
     Not part of the spec v1.8 verdict. `main` prints it and writes it to the CSV but
     does not let it change PASS/FAIL, because this module does not get to invent a
@@ -382,17 +387,11 @@ def criterion_d(cells: list[dict], rows: list[dict]) -> dict:
         out[label] = v.passed
         print(f"  {label:<30}{f'{v.rank}/{v.k}':>8}{v.min_pair_differ:>10,}"
               f"{v.cond_s:>10.1f}{nd:>9}{'pass' if v.passed else 'FAIL':>7}")
-        rows.append({"criterion": "d_proposed", "cell": label,
-                     "rank": v.rank, "k": v.k,
-                     "min_pair_differ_qh": v.min_pair_differ,
-                     "worst_pair": "|".join(v.worst_pair) if v.worst_pair else "",
-                     "cond_s": round(v.cond_s, 3),
-                     "cond_ws": round(v.cond_ws, 3),
-                     "collinear_capacity_share": round(v.collinear_capacity_share, 4),
-                     "i4_exposure_differs_days": nd,
-                     "i4_old_verdict": "K-cohort stands" if nd >= 10 else "FALLBACK",
-                     "new_verdict": "pass" if v.passed else "FAIL",
-                     "reasons": "; ".join(v.reasons)})
+        # Deliberately NOT appended to `rows`: that list is written by
+        # csv.DictWriter with fieldnames taken from rows[0], i.e. criteria (a)-(c)'s
+        # fixed 15-column schema, and (d)'s columns are entirely different. The
+        # per-cell detail is written by `run_identification.py` to
+        # results/39_identification_gate.csv instead.
     if out:
         n_fail = sum(1 for ok in out.values() if not ok)
         print(f"  {len(out)} cells scored; {n_fail} FAIL the proposed criterion "

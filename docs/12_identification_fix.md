@@ -37,12 +37,10 @@ Three things diverged from the task's premises; each is flagged where it arises
    collinear pair's thetas differ, and a theta-keyed merge finds **zero** groups while
    the correct key finds one. §3 derives the correct criterion.
 
-3. **`gate_verdict.py` cannot currently run to completion.** It raises
-   `KeyError: 'n_qh'` inside `criterion_b` on the artifacts now on disk. Verified
-   pre-existing by stashing this branch's change and re-running: it fails identically.
-   **Not fixed here** — it is an unrelated fault in committed code and deserves its own
-   change. Criterion (d) is wired into `gate_verdict.py` as the brief asks, and is also
-   scored standalone by `run_identification.py` so the result exists regardless.
+3. **`gate_verdict.py` could not run to completion** — `KeyError: 'n_qh'` inside
+   `criterion_b`. Verified pre-existing by stashing this branch's change and
+   re-running: it failed identically. **Fixed in a follow-up commit on this branch**;
+   see §H. The gate now runs end to end on the full 81-cell grid.
 
 ---
 
@@ -466,8 +464,9 @@ a merged design; the window is verified and named.
    the rank-6-of-8 design with 34.6% collinear capacity. Merging is a cohort-definition
    change upstream of generation, so the artifacts must be rebuilt; nothing can be
    salvaged by re-scoring them. This is the largest remaining task.
-3. **Fix `gate_verdict.py`'s `KeyError: 'n_qh'`** (§0.3). Pre-existing, unrelated to
-   this work, and it blocks any gate run at all.
+3. ~~Fix `gate_verdict.py`'s `KeyError: 'n_qh'`.~~ **Done** (§H). The gate now
+   produces a verdict, and it is `FAIL` on (a) and (b) — scored on the pre-merge
+   design, so item 2 above has to land before that verdict means anything.
 4. **Decide what `stress` means for the verdict.** At 62.9% collinear capacity it is
    not a sensitivity, it is a different experiment: merged, K drops to 6 and two legal
    cohorts that the thesis wants to talk about separately cease to exist. Either the
@@ -498,3 +497,60 @@ python src/censoring/check_window.py            # the window check
 
 Seed 42, DE, no shuffling, `data/raw/` untouched. In a worktree, symlink
 `data/processed` and `data/raw` from the main checkout.
+
+---
+
+## H. The gate bug, fixed
+
+Two faults, one pre-existing and one mine from the previous commit. Neither changes
+any statistic.
+
+**1. `metrics.paired_abs_bias` omitted `n_qh` and `n_days`** (pre-existing). Its two
+siblings in the same module, `paired_difference` and `mae_with_ci`, both return them,
+and `gate_verdict.criterion_b` writes `p["n_qh"]` / `p["n_days"]` into the results CSV
+for *both* statistics it reports. So the gate raised `KeyError: 'n_qh'` in criterion
+(b) and never reached (c) or (d). The function already had both quantities in hand
+(`counts.sum()` and `n_days`); they were simply not returned, on either return path.
+Fixed in `metrics.py` rather than in the caller, because the omission is the outlier
+against the module's own contract. `run_reduced_grid.py` and `run_synthetic.py` also
+call it but read only `diff` / `significant` / `a_better`, so the change is purely
+additive; `tests/test_gate_writer.py` still passes (4/4).
+
+**2. `criterion_d` appended rows on a different schema** (introduced by the previous
+commit on this branch, i.e. mine). `results/13_gate_verdict.csv` is written by
+`csv.DictWriter` with `fieldnames=list(rows[0])` — criteria (a)–(c) share one fixed
+15-column schema — and (d)'s columns are entirely different, so the write would have
+raised `ValueError` as soon as (b) stopped crashing first. `criterion_d` no longer
+writes to the shared list; its per-cell detail already goes to
+`results/39_identification_gate.csv`.
+
+### Verified: no statistic moved
+
+Diffing the whole of the pre-fix run's output against the post-fix run over the same
+line range: the only differences are the removed traceback and the lines the crashed
+run never reached. **Every printed statistic is byte-identical.** The fix adds two
+reported counts and nothing else.
+
+### The grid was complete all along
+
+`Cells found in data/processed/e1_gate_artifacts: 81 of 81`. `--allow-partial` was
+never needed and the run is **not** provisional. The `KeyError` was the only thing
+standing between this repo and a scored gate.
+
+| criterion | verdict |
+|---|---|
+| (a) gamma = 0, per shape | **FAIL** — step pass, logistic pass, **half FAIL** |
+| (b) gamma in {0.5, 1} | **FAIL** — 0.5 FAIL, 1.0 FAIL |
+| (c) no-harm clause | PASS (M1 MAE 1,232.7 vs B2 1,239.6 MW on censored QHs; diff −6.93, 95% CI [−9.10, −4.95], n = 216,150 QH in 357 days) |
+| (d) identification | FAIL 81/81 — *proposed, excluded from the verdict* |
+| **GATE** | **FAIL** (spec v1.8 needs all three) |
+
+`results/13_gate_verdict.csv` now exists: 48 rows, criteria (a)–(c), uniform
+15-column schema, `n_qh` populated on the 40 rows that have a CI.
+
+**Read this verdict with §G item 2 attached.** It is scored on the 81 stored cells,
+every one of which carries the rank-6-of-8 design with 34.6% of capacity exactly
+collinear. The (a) and (b) failures are therefore failures *on an unidentified
+design*, which is precisely the case spec section 7's fail branch addresses — refit
+with the two-cohort / single-response structure. The verdict becomes meaningful only
+after the artifacts are regenerated with merged cohorts.

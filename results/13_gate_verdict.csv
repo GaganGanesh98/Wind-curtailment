@@ -1,0 +1,49 @@
+criterion,stratum,rival,statistic,m1_value,rival_value,paired_diff,ci_lo,ci_hi,significant,m1_better,n_qh,n_days,n_cells,note
+a,shape=step,B3,"int_abs_r (pre-registered, uniform grid)",0.003041,0.002869,-0.000564,,,,False,,,9,M1 lower in 6/9 cells; no CI defined
+a,shape=step,B3,"fleet_r_err (companion, per-QH)",0.2354,0.311758,-0.076358,-0.077844,-0.074835,True,True,72050,357,9,directions agree with pre-registered: True
+a,shape=logistic,B3,"int_abs_r (pre-registered, uniform grid)",0.011823,0.244161,-0.233142,,,,True,,,9,M1 lower in 9/9 cells; no CI defined
+a,shape=logistic,B3,"fleet_r_err (companion, per-QH)",0.063044,0.08112,-0.018076,-0.019008,-0.01713,True,True,72050,357,9,directions agree with pre-registered: True
+a,shape=half,B3,"int_abs_r (pre-registered, uniform grid)",0.009684,0.00391,0.007284,,,,False,,,9,M1 lower in 1/9 cells; no CI defined
+a,shape=half,B3,"fleet_r_err (companion, per-QH)",0.157524,0.156546,0.000978,0.00067,0.001291,True,False,72050,357,9,directions agree with pre-registered: True
+b,gamma=0.5,B1,abs_bias_mw,,,-1539.977158,-1690.82093,-1254.376729,True,True,216105,357,27,"censored QHs; paired event-day bootstrap pooled over seeds, rates and shapes"
+b,gamma=0.5,B1,curtailed_share_mae,,,-0.02,-0.02257,-0.017453,True,True,216105,357,27,"censored QHs; paired event-day bootstrap pooled over seeds, rates and shapes"
+b,gamma=0.5,B2,abs_bias_mw,,,-4.748145,-15.406737,13.190219,False,False,216105,357,27,"censored QHs; paired event-day bootstrap pooled over seeds, rates and shapes"
+b,gamma=0.5,B2,curtailed_share_mae,,,-0.000297,-0.000435,-0.000167,True,True,216105,357,27,"censored QHs; paired event-day bootstrap pooled over seeds, rates and shapes"
+b,gamma=0.5,B3,abs_bias_mw,,,-12.980222,-23.23368,20.740811,False,False,216105,357,27,"censored QHs; paired event-day bootstrap pooled over seeds, rates and shapes"
+b,gamma=0.5,B3,curtailed_share_mae,,,-0.000417,-0.000575,-0.000267,True,True,216105,357,27,"censored QHs; paired event-day bootstrap pooled over seeds, rates and shapes"
+b,gamma=0.5,B4,abs_bias_mw,,,-7.386433,-15.323809,13.90611,False,False,216105,357,27,"censored QHs; paired event-day bootstrap pooled over seeds, rates and shapes"
+b,gamma=0.5,B4,curtailed_share_mae,,,-0.000182,-0.00029,-7.8e-05,True,True,216105,357,27,"censored QHs; paired event-day bootstrap pooled over seeds, rates and shapes"
+b,"gamma=0.5,shape=step",B1,abs_bias_mw + curtailed_share_mae,,,-2481.443525,-2737.365297,-2118.410512,True,True,72035,357,9,"per-shape split; cmae diff -0.034507 [-0.038284, -0.030744]; B0/B2/B3 are shape-invariant"
+b,"gamma=0.5,shape=step",B2,abs_bias_mw + curtailed_share_mae,,,-6.032362,-16.668774,14.511056,False,False,72035,357,9,"per-shape split; cmae diff -0.000172 [-0.000281, -0.000064]; B0/B2/B3 are shape-invariant"
+b,"gamma=0.5,shape=step",B3,abs_bias_mw + curtailed_share_mae,,,-14.264439,-24.338291,21.914109,False,False,72035,357,9,"per-shape split; cmae diff -0.000221 [-0.000361, -0.000092]; B0/B2/B3 are shape-invariant"
+b,"gamma=0.5,shape=step",B4,abs_bias_mw + curtailed_share_mae,,,-11.280741,-19.311991,17.736921,False,False,72035,357,9,"per-shape split; cmae diff -0.000152 [-0.000236, -0.000061]; B0/B2/B3 are shape-invariant"
+b,"gamma=0.5,shape=logistic",B1,abs_bias_mw + curtailed_share_mae,,,-573.712628,-649.239806,-318.078521,True,False,72035,357,9,"per-shape split; cmae diff +0.000717 [-0.000359, +0.001774]; B0/B2/B3 are shape-invariant"
+b,"gamma=0.5,shape=logistic",B2,abs_bias_mw + curtailed_share_mae,,,3.247668,-13.66265,13.814124,False,False,72035,357,9,"per-shape split; cmae diff -0.000550 [-0.000736, -0.000375]; B0/B2/B3 are shape-invariant"
+b,"gamma=0.5,shape=logistic",B3,abs_bias_mw + curtailed_share_mae,,,-4.984409,-16.780107,14.004761,False,False,72035,357,9,"per-shape split; cmae diff -0.000793 [-0.001009, -0.000588]; B0/B2/B3 are shape-invariant"
+b,"gamma=0.5,shape=logistic",B4,abs_bias_mw + curtailed_share_mae,,,9.883153,-17.266884,17.549984,False,False,72035,357,9,"per-shape split; cmae diff -0.000304 [-0.000451, -0.000165]; B0/B2/B3 are shape-invariant"
+b,"gamma=0.5,shape=half",B1,abs_bias_mw + curtailed_share_mae,,,-1564.775321,-1696.831765,-1285.54335,True,True,72035,357,9,"per-shape split; cmae diff -0.026210 [-0.029444, -0.023064]; B0/B2/B3 are shape-invariant"
+b,"gamma=0.5,shape=half",B2,abs_bias_mw + curtailed_share_mae,,,-11.459742,-21.286167,19.795507,False,False,72035,357,9,"per-shape split; cmae diff -0.000167 [-0.000336, -0.000004]; B0/B2/B3 are shape-invariant"
+b,"gamma=0.5,shape=half",B3,abs_bias_mw + curtailed_share_mae,,,-19.691819,-29.230879,27.415884,False,False,72035,357,9,"per-shape split; cmae diff -0.000238 [-0.000440, -0.000048]; B0/B2/B3 are shape-invariant"
+b,"gamma=0.5,shape=half",B4,abs_bias_mw + curtailed_share_mae,,,-20.761712,-29.804459,28.073585,False,False,72035,357,9,"per-shape split; cmae diff -0.000091 [-0.000265, +0.000079]; B0/B2/B3 are shape-invariant"
+b,gamma=1.0,B1,abs_bias_mw,,,-2678.946273,-2935.658136,-2328.164974,True,True,216258,357,27,"censored QHs; paired event-day bootstrap pooled over seeds, rates and shapes"
+b,gamma=1.0,B1,curtailed_share_mae,,,-0.040894,-0.045271,-0.036623,True,True,216258,357,27,"censored QHs; paired event-day bootstrap pooled over seeds, rates and shapes"
+b,gamma=1.0,B2,abs_bias_mw,,,19.170789,-39.322426,34.047039,False,False,216258,357,27,"censored QHs; paired event-day bootstrap pooled over seeds, rates and shapes"
+b,gamma=1.0,B2,curtailed_share_mae,,,-0.000376,-0.000573,-0.000207,True,True,216258,357,27,"censored QHs; paired event-day bootstrap pooled over seeds, rates and shapes"
+b,gamma=1.0,B3,abs_bias_mw,,,8.234036,-58.564749,47.616363,False,False,216258,357,27,"censored QHs; paired event-day bootstrap pooled over seeds, rates and shapes"
+b,gamma=1.0,B3,curtailed_share_mae,,,-0.00046,-0.00076,-0.000228,True,True,216258,357,27,"censored QHs; paired event-day bootstrap pooled over seeds, rates and shapes"
+b,gamma=1.0,B4,abs_bias_mw,,,5.095169,-54.883187,47.656803,False,False,216258,357,27,"censored QHs; paired event-day bootstrap pooled over seeds, rates and shapes"
+b,gamma=1.0,B4,curtailed_share_mae,,,-0.000422,-0.000649,-0.000235,True,True,216258,357,27,"censored QHs; paired event-day bootstrap pooled over seeds, rates and shapes"
+b,"gamma=1.0,shape=step",B1,abs_bias_mw + curtailed_share_mae,,,-4557.132679,-5023.301458,-4024.26915,True,True,72086,357,9,"per-shape split; cmae diff -0.074392 [-0.081676, -0.067247]; B0/B2/B3 are shape-invariant"
+b,"gamma=1.0,shape=step",B2,abs_bias_mw + curtailed_share_mae,,,27.954538,-46.672979,42.546426,False,False,72086,357,9,"per-shape split; cmae diff -0.000162 [-0.000292, -0.000050]; B0/B2/B3 are shape-invariant"
+b,"gamma=1.0,shape=step",B3,abs_bias_mw + curtailed_share_mae,,,17.017786,-65.73299,56.479462,False,False,72086,357,9,"per-shape split; cmae diff -0.000259 [-0.000436, -0.000114]; B0/B2/B3 are shape-invariant"
+b,"gamma=1.0,shape=step",B4,abs_bias_mw + curtailed_share_mae,,,26.001742,-50.009162,45.526891,False,False,72086,357,9,"per-shape split; cmae diff -0.000285 [-0.000466, -0.000128]; B0/B2/B3 are shape-invariant"
+b,"gamma=1.0,shape=logistic",B1,abs_bias_mw + curtailed_share_mae,,,-864.686133,-935.075807,-597.215378,True,False,72086,357,9,"per-shape split; cmae diff -0.000544 [-0.001922, +0.000843]; B0/B2/B3 are shape-invariant"
+b,"gamma=1.0,shape=logistic",B2,abs_bias_mw + curtailed_share_mae,,,8.71094,-28.766654,22.627432,False,False,72086,357,9,"per-shape split; cmae diff -0.000601 [-0.000851, -0.000392]; B0/B2/B3 are shape-invariant"
+b,"gamma=1.0,shape=logistic",B3,abs_bias_mw + curtailed_share_mae,,,-2.225813,-47.826172,36.292365,False,False,72086,357,9,"per-shape split; cmae diff -0.000593 [-0.000966, -0.000302]; B0/B2/B3 are shape-invariant"
+b,"gamma=1.0,shape=logistic",B4,abs_bias_mw + curtailed_share_mae,,,-12.255561,-51.129884,41.80551,False,False,72086,357,9,"per-shape split; cmae diff -0.000599 [-0.000874, -0.000372]; B0/B2/B3 are shape-invariant"
+b,"gamma=1.0,shape=half",B1,abs_bias_mw + curtailed_share_mae,,,-2615.020006,-2853.025115,-2279.175501,True,True,72086,357,9,"per-shape split; cmae diff -0.047744 [-0.052708, -0.042787]; B0/B2/B3 are shape-invariant"
+b,"gamma=1.0,shape=half",B2,abs_bias_mw + curtailed_share_mae,,,20.846888,-42.272445,37.60814,False,False,72086,357,9,"per-shape split; cmae diff -0.000364 [-0.000618, -0.000145]; B0/B2/B3 are shape-invariant"
+b,"gamma=1.0,shape=half",B3,abs_bias_mw + curtailed_share_mae,,,9.910136,-61.124618,51.04261,False,False,72086,357,9,"per-shape split; cmae diff -0.000527 [-0.000883, -0.000243]; B0/B2/B3 are shape-invariant"
+b,"gamma=1.0,shape=half",B4,abs_bias_mw + curtailed_share_mae,,,1.539327,-63.541885,55.762371,False,False,72086,357,9,"per-shape split; cmae diff -0.000381 [-0.000676, -0.000145]; B0/B2/B3 are shape-invariant"
+c,gamma=0 (censored QHs),B2,mae_mw,1232.7107,1239.6417,-6.931023,-9.097446,-4.947793,True,True,216150,357,27,no-harm clause: pass unless M1 is significantly worse
+c,gamma=0 (all QHs),B2,mae_mw,1213.2476,1214.9923,-1.744669,-2.465116,-1.027787,True,True,925344,357,27,no-harm clause: pass unless M1 is significantly worse
