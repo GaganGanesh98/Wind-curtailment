@@ -6,7 +6,7 @@ Its check 6 ("hourly-clock censoring at a positive quarter-hour price exists")
 asserted the symptom of that generator's section 51 misreading, so a passing suite
 would have locked the bug in. The port drops check 6 and asserts the inverse.
 
-Kept, not deleted: docs/10 and docs/11 quote this suite's output verbatim.
+Kept, not deleted: docs/17 and docs/11 quote this suite's output verbatim.
 """
 
 from __future__ import annotations

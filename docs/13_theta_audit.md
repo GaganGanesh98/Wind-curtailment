@@ -150,9 +150,9 @@ Per month, share of exposed quarter-hours with ≥2 distinct θ:
 **At AW `low`, all 492 separating quarter-hours are April 2026.** The entire cohort
 structure at that setting rests on one month.
 
-### A correction to `docs/09`
+### A correction to `docs/16`
 
-`docs/09` says the −5…0 band "carries most of the information". It carries most of the
+`docs/16` says the −5…0 band "carries most of the information". It carries most of the
 **observations** — 1,261 of 1,853 exposed quarter-hours — but *less* separation than
 average at every setting: 15.9% against 26.6% (low), 57.2% against 62.5% (main), 73.9%
 against 80.1% (high), 25.4% against 34.1% (stress). The shallow band is where the

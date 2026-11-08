@@ -9,7 +9,7 @@ Read-only: touches no artifact directory and writes no result CSV unless --out i
 given. Cheap by construction -- one panel scan per step, no model fitting.
 
 Why it exists. `MP = max(0, AW - MV)` is reported as zero across much of the study
-window, which would make the premium channel nearly dead on real data (docs/09). That
+window, which would make the premium channel nearly dead on real data (docs/16). That
 conclusion rests entirely on MV being the right series: the market value **for wind**
 sits below the base-load price, because wind output correlates with low prices, so a
 base-load or plain monthly-average series would be systematically too high and would

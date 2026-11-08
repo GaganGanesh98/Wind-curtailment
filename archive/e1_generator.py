@@ -23,7 +23,7 @@ Conflating the two is the bug. cohorts.py applies the retroactive zeroing to the
 and still compares the quarter-hour price, which is the correct combination
 (verified in docs/12 section A.2).
 
-Kept, not deleted: docs/10 and docs/11 cite this file and its measurements.
+Kept, not deleted: docs/17 and docs/11 cite this file and its measurements.
 The validation suite was ported to `src/censoring/validate_synthetic.py`, minus its
 check 6, which asserted that the bug's symptom MUST be present.
 """

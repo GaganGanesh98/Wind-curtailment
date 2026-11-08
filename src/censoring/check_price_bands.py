@@ -1,4 +1,4 @@
-"""Verify the price-band and window figures docs/09 quotes as fact.
+"""Verify the price-band and window figures docs/16 quotes as fact.
 
 Three claims, all checked on the real DE panel:
 

@@ -1,4 +1,8 @@
-# 10 — E1 first run against the real panel
+# 17 — E1 first run against the real panel
+
+> **Renumbered 8 Nov 2026: was `docs/10_e1_first_run_report.md`.** Main carries a
+> different `docs/10_m2_verdict.md`, so the two collided on merge. See the note in
+> `docs/16_e1_generator_design.md`.
 
 Run 8 Nov 2026 on branch `e1-first-run`. Implements the task "run E1 against the real
 panel and report". Supersedes nothing. The generator's logic was **not** changed; the only
@@ -25,7 +29,7 @@ Reported first because they affect how the rest of this document should be read.
    8 Nov 2026). This branch copies them to `src/`, which is where the task and the design
    note say they belong.
 
-2. **`docs/09_e1_generator_design.md` did not exist in the repo** when this report was
+2. **`docs/16_e1_generator_design.md` did not exist in the repo** when this report was
    written; the design note was supplied only as pasted text. Its decisions are quoted
    below where they were tested, and two of its statements turn out to be wrong on real
    data (§7). It has since been committed on branch `identification-fix`, rewritten to

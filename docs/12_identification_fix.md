@@ -1,6 +1,6 @@
 # 12 — Identification fix: statute, rank, merge, gate criterion, window
 
-Run 8 Nov 2026 on branch `identification-fix`. Follows `docs/10` and `docs/11`.
+Run 8 Nov 2026 on branch `identification-fix`. Follows `docs/17` and `docs/11`.
 Every step measured the current state before changing it. Supersedes nothing; it
 retires `e1_generator.py` (now under `archive/`) and adds
 `src/censoring/identification.py`, `window.py`, `validate_synthetic.py`,
@@ -31,7 +31,7 @@ Three things diverged from the task's premises; each is flagged where it arises
    29.3%** at `low`/`main`/`high`, and **rank 6 of 8 with 62.9%** at `stress`. Both
    numbers are right; they describe different arms. §2 reports both.
 
-2. **`theta` is the wrong merge key**, although `docs/09` and `docs/11` both state the
+2. **`theta` is the wrong merge key**, although `docs/16` and `docs/11` both state the
    theta mechanism as if it were the whole story. Theta equality is *sufficient* for
    indistinguishability but **not necessary**: at the `high` award setting the
    collinear pair's thetas differ, and a theta-keyed merge finds **zero** groups while
@@ -359,7 +359,7 @@ tests identification.** The threshold was not weakened to obtain a pass.
 
 `src/e1_generator.py` → `archive/e1_generator.py`, `src/e1_validate.py` →
 `archive/e1_validate.py` (both via `git mv`, history preserved), each with a header
-naming the supersession and the §51 reason. Not deleted: `docs/10` and `docs/11` cite
+naming the supersession and the §51 reason. Not deleted: `docs/17` and `docs/11` cite
 them and quote their output.
 
 The untracked original at the main checkout's `E1_generator/` is outside this worktree
@@ -415,7 +415,7 @@ the target negative share is met and raises if it cannot, rather than bisecting 
 intensity knob. **The archived `intensity` / `max_day_fraction` machinery is not
 needed and was not ported.** Note the difference in definition: `synthetic.py`'s rate
 is the share of quarter-hours given a negative synthetic price, and its realised
-censored share is reported separately — not the same quantity as `docs/10`'s
+censored share is reported separately — not the same quantity as `docs/17`'s
 `qh_share`, and the two must not be compared directly.
 
 ---
@@ -490,7 +490,7 @@ a merged design; the window is verified and named.
    window the real-data arms lose roughly three-quarters of their quarter-hours, which
    will move every interval.
 
-**Not blocking, but do not forget.** `docs/09` and `docs/11` both state the theta
+**Not blocking, but do not forget.** `docs/16` and `docs/11` both state the theta
 mechanism as if theta equality were the whole story (§0.2, §C); the corrected statement
 is that the realised `(s, depth)` block is the criterion. And the "rank 6 of 8 / 34.6%"
 figure needs its arm attached wherever it is quoted (§0.1).
@@ -646,7 +646,7 @@ keeps MP > 0 for every in-support cohort throughout.
 Two consequences worth carrying forward. First, **a partition validated only on the E1
 benchmark can be degenerate on the data the thesis is about** — the flat placeholder
 market value is not a neutral simplification. Second, the premium channel that
-`docs/09` lists as one of the three sources of identification is **dead in most
+`docs/16` lists as one of the three sources of identification is **dead in most
 quarter-hours**: `out_of_support` has MP = 0 throughout and `pilot_exempt` in 89% of
 the window. That is the same weakness the `stress` arm exaggerates (§B), showing up in
 the `main` arm too.

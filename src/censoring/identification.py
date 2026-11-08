@@ -261,7 +261,7 @@ def per_cohort_counts(
     w: Sequence[float] | None = None,
 ) -> list[CohortCounts]:
     """Per-cohort identifying variation. Never pooled: a pooled count hides exactly
-    the asymmetry that matters (docs/10 section 4.2, where 2,050 differing
+    the asymmetry that matters (docs/17 section 4.2, where 2,050 differing
     quarter-hours were 99.5% one direction)."""
     s = np.asarray(s, dtype=float)
     ids = list(cohort_ids)

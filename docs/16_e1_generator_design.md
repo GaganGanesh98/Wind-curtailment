@@ -1,4 +1,10 @@
-# 09 — E1 generator (`e1_generator.py`): SUPERSEDED, with corrections
+# 16 — E1 generator (`e1_generator.py`): SUPERSEDED, with corrections
+
+> **Renumbered 8 Nov 2026: was `docs/09_e1_generator_design.md`.** Main carries a
+> different `docs/09_m2_preregistration.md`, so the two collided on merge. 11–14 were
+> already taken by the E1 identification docs and 15 is reserved for the T-B restart
+> report, so this pair moved to 16 and 17. Cross-references in docs 11–14, in
+> `archive/` and in `src/censoring/` were updated with it.
 
 **Status as of 8 Nov 2026: do not use `e1_generator.py` for thesis results.**
 It is wrong on §51, and `src/censoring/synthetic.py` — already committed — is right.

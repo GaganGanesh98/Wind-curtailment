@@ -45,7 +45,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 RESULTS_DIR = REPO_ROOT / "results"
 ARTIFACT_DIR = REPO_ROOT / "data" / "processed" / "e1_gate_artifacts"
 #: Set by `main` when --merge-cohorts is passed, so a merged run writes beside the
-#: original rather than over it. The originals are what docs/10-12 were measured on.
+#: original rather than over it. The originals are what docs/11, 12 and 17 were measured on.
 MERGED_ARTIFACT_DIR = REPO_ROOT / "data" / "processed" / "e1_gate_artifacts_merged"
 _artifact_dir = ARTIFACT_DIR
 
