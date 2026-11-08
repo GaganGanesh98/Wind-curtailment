@@ -39,6 +39,7 @@ from src.censoring.identification import (  # noqa: E402
 )
 
 ARTIFACT_DIR = REPO_ROOT / "data" / "processed" / "e1_gate_artifacts"
+MERGED_ARTIFACT_DIR = REPO_ROOT / "data" / "processed" / "e1_gate_artifacts_merged"
 PANEL = REPO_ROOT / "data" / "processed" / "panel_qh.parquet"
 RESULTS_DIR = REPO_ROOT / "results"
 OUT_CSV = RESULTS_DIR / "39_identification_gate.csv"
@@ -114,6 +115,20 @@ def _row(arm: str, stage: str, v, ids_k: int) -> dict:
 
 
 def main() -> None:
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--artifact-dir", default=None,
+                    help="directory of cell_*.npz (default: e1_gate_artifacts)")
+    a = ap.parse_args()
+    global ARTIFACT_DIR, OUT_CSV
+    if a.artifact_dir:
+        ARTIFACT_DIR = Path(a.artifact_dir)
+        if not ARTIFACT_DIR.is_absolute():
+            ARTIFACT_DIR = REPO_ROOT / ARTIFACT_DIR
+        tag = ARTIFACT_DIR.name.replace("e1_gate_artifacts", "").strip("_")
+        OUT_CSV = OUT_CSV.with_name(
+            f"{OUT_CSV.stem}_{tag or 'alt'}{OUT_CSV.suffix}")
+        print(f"scoring artifacts in {ARTIFACT_DIR}")
     rows: list[dict] = []
     print("=" * 78)
     print("IDENTIFICATION: old I4 day count vs the proposed composite criterion")
@@ -169,11 +184,13 @@ def main() -> None:
     if not paths:
         print("  no artifacts on disk; skipping")
     else:
-        mids = mastr_cohort_set("DE").ids
+        fallback_ids = mastr_cohort_set("DE").ids
         agg: list[tuple[str, object]] = []
         for path in paths:
             z = np.load(path, allow_pickle=False)
             s, depth, sh = z["s"].astype(float), z["depth"].astype(float), z["shares"]
+            mids = ([str(x) for x in z["cohort_ids"]] if "cohort_ids" in z.files
+                    else fallback_ids)
             if len(mids) != s.shape[0]:
                 print(f"  {path.name}: stored K={s.shape[0]} but cohort set has "
                       f"{len(mids)}; skipping")

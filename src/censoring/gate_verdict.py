@@ -365,7 +365,7 @@ def criterion_d(cells: list[dict], rows: list[dict]) -> dict:  # noqa: ARG001
     from src.censoring.cohorts import exposure_differs_by_day, mastr_cohort_set
     from src.censoring.identification import gate_identification_verdict
 
-    ids = mastr_cohort_set("DE").ids
+    fallback_ids = mastr_cohort_set("DE").ids
     out: dict[str, bool] = {}
     print(f"\n{'-' * 78}\n(d) [PROPOSED] identification -- reported, not gated\n"
           f"{'-' * 78}")
@@ -375,6 +375,11 @@ def criterion_d(cells: list[dict], rows: list[dict]) -> dict:  # noqa: ARG001
         s, depth, w = c.get("s"), c.get("depth"), c.get("shares")
         if s is None or w is None:
             continue
+        # Artifacts written from 8 Nov 2026 carry their own cohort ids, which is the
+        # only way to label a MERGED design (K != 8). Older ones do not, and for
+        # those the MaStR set is the correct fallback.
+        stored = c.get("cohort_ids")
+        ids = [str(x) for x in stored] if stored is not None else fallback_ids
         if len(ids) != s.shape[0]:
             print(f"  cohort ids ({len(ids)}) do not match stored s "
                   f"({s.shape[0]}); skipping (d)")
@@ -451,7 +456,17 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--allow-partial", action="store_true",
                     help="score whatever cells are on disk (default: require 81)")
+    ap.add_argument("--artifact-dir", default=None,
+                    help="directory of cell_*.npz to score "
+                         "(default: data/processed/e1_gate_artifacts)")
     args = ap.parse_args()
+
+    global ARTIFACT_DIR
+    if args.artifact_dir:
+        ARTIFACT_DIR = Path(args.artifact_dir)
+        if not ARTIFACT_DIR.is_absolute():
+            ARTIFACT_DIR = REPO_ROOT / ARTIFACT_DIR
+        print(f"scoring artifacts in {ARTIFACT_DIR}")
 
     cells = load_cells()
     print(f"Gate scope: rates >= {MIN_RATE:.0%}, seeds {GATE_SEEDS}, "
@@ -490,11 +505,17 @@ def main() -> None:
               "structure is not identified\n  on this design.")
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(OUT_CSV, "w", newline="", encoding="utf-8") as fh:
+    out_csv = OUT_CSV
+    if args.artifact_dir:
+        # Keep the unmerged verdict: a merged scoring run writes its own file.
+        tag = ARTIFACT_DIR.name.replace("e1_gate_artifacts", "").strip("_")
+        out_csv = OUT_CSV.with_name(
+            f"{OUT_CSV.stem}_{tag or 'alt'}{OUT_CSV.suffix}")
+    with open(out_csv, "w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
         w.writeheader()
         w.writerows(rows)
-    print(f"\nWrote {OUT_CSV.relative_to(REPO_ROOT)}")
+    print(f"\nWrote {out_csv.relative_to(REPO_ROOT)}")
 
 
 if __name__ == "__main__":

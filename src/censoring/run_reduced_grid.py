@@ -44,11 +44,15 @@ from src.censoring.synthetic import SyntheticConfig, generate, true_response_cur
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RESULTS_DIR = REPO_ROOT / "results"
 ARTIFACT_DIR = REPO_ROOT / "data" / "processed" / "e1_gate_artifacts"
+#: Set by `main` when --merge-cohorts is passed, so a merged run writes beside the
+#: original rather than over it. The originals are what docs/10-12 were measured on.
+MERGED_ARTIFACT_DIR = REPO_ROOT / "data" / "processed" / "e1_gate_artifacts_merged"
+_artifact_dir = ARTIFACT_DIR
 
 
 def artifact_path(cfg: SyntheticConfig) -> Path:
     """One file per grid cell. Not committed -- it is regenerable from the seed."""
-    return ARTIFACT_DIR / (f"cell_r{int(round(cfg.censoring_rate * 100)):02d}"
+    return _artifact_dir / (f"cell_r{int(round(cfg.censoring_rate * 100)):02d}"
                            f"_g{cfg.gamma}_{cfg.r_shape}_s{cfg.seed}.npz")
 
 RATES = (0.10, 0.20, 0.40)
@@ -141,6 +145,11 @@ def save_artifact(path: Path, cfg: SyntheticConfig, data, fits: dict,
         "berlin_date": data.berlin_date.astype(str),
         "real_berlin_date": data.real_berlin_date.astype(str),
         "shares": np.asarray(data.cohorts.shares, dtype=np.float32),
+        # Added 8 Nov 2026: a merged cohort set has K != 8, so `shares` alone no
+        # longer identifies the rows of `s` and `depth`. Consumers that predate this
+        # key fall back to mastr_cohort_set("DE").ids, which is correct for the
+        # unmerged artifacts they were written against.
+        "cohort_ids": np.asarray(data.cohorts.ids, dtype=str),
         "depth": data.depth.astype(np.float32),
         "s": data.s.astype(np.float32),
         "depth_grid": DEPTH_GRID.astype(np.float32),
@@ -324,19 +333,69 @@ def main() -> None:
     ap.add_argument("--only", choices=("grid", "ladder", "proxy", "hetero"),
                     default=None)
     ap.add_argument("--max-epochs", type=int, default=2000)
+    ap.add_argument("--merge-cohorts", action="store_true",
+                    help="merge indistinguishable cohorts before generating "
+                         "(docs/12 step C). Writes to a SEPARATE artifact dir and "
+                         "suffixes the result CSVs, so the unmerged run is kept.")
     args = ap.parse_args()
 
+    global _artifact_dir
     train_cfg = TrainConfig(max_epochs=args.max_epochs)
     cohorts = mastr_cohort_set("DE")
-    print(f"MaStR cohort shares, {len(cohorts)} cohorts:")
+    suffix = ""
+    if args.merge_cohorts:
+        from src.censoring.identification import (
+            format_merge_map, identification_diagnostics, merge_cohorts,
+        )
+        from src.censoring.synthetic import generate as _gen
+
+        # The merge key is the realised (s, depth) block, which is cell-dependent in
+        # principle. Verify the map is the SAME on several cells rather than trusting
+        # one probe; the theta = 0 pair is structural and the AW = 66 pair comes from
+        # constant thetas, so it should be, but an assumption here would silently
+        # change the design between cells.
+        probes = [SyntheticConfig(censoring_rate=r, gamma=g, r_shape=sh, seed=sd)
+                  for r, g, sh, sd in ((0.10, 0.0, "step", 42),
+                                       (0.20, 0.5, "logistic", 43),
+                                       (0.40, 1.0, "half", 44))]
+        maps = []
+        for pc in probes:
+            d = _gen(pc, cohorts)
+            _, _, gmap = merge_cohorts(cohorts, np.hstack([d.s, d.depth]), d.theta)
+            maps.append(tuple(sorted(tuple(sorted(g.members)) for g in gmap)))
+        if len(set(maps)) != 1:
+            raise SystemExit(
+                "the merge map is not stable across cells; refusing to generate a "
+                f"grid whose cohort design varies by cell. maps = {maps}")
+        d0 = _gen(probes[1], cohorts)
+        merged, _, gmap = merge_cohorts(cohorts, np.hstack([d0.s, d0.depth]), d0.theta)
+        print(f"\n--merge-cohorts: K {len(cohorts)} -> {len(merged)}, "
+              f"map verified identical on {len(probes)} cells")
+        print(format_merge_map(gmap))
+        before = identification_diagnostics(d0.s, cohorts.ids,
+                                            list(cohorts.shares), d0.depth,
+                                            label="before merge")
+        dm = _gen(probes[1], merged)
+        after = identification_diagnostics(dm.s, merged.ids, list(merged.shares),
+                                           dm.depth, label="after merge")
+        print(f"  rank {before.exposure.rank}/{before.exposure.k} -> "
+              f"{after.exposure.rank}/{after.exposure.k}   "
+              f"collinear capacity {100 * before.collinear_capacity_share:.1f}% -> "
+              f"{100 * after.collinear_capacity_share:.1f}%")
+        cohorts = merged
+        _artifact_dir = MERGED_ARTIFACT_DIR
+        suffix = "_merged"
+        print(f"  artifacts -> {_artifact_dir.relative_to(REPO_ROOT)}")
+
+    print(f"\ncohort shares, {len(cohorts)} cohorts:")
     for c in cohorts:
-        print(f"  {c.cohort_id:<30}{c.capacity_share:7.2%}  {c.clock}")
+        print(f"  {c.cohort_id:<48}{c.capacity_share:7.2%}  {c.clock}")
 
     phases = {
-        "grid": (phase_grid, "12_reduced_grid.csv", PAIRED_FIELDS),
-        "ladder": (phase_ladder, "12_ladder.csv", ()),
-        "proxy": (phase_proxy, "12_proxy_quality.csv", PAIRED_FIELDS),
-        "hetero": (phase_hetero, "12_hetero_r.csv", ()),
+        "grid": (phase_grid, f"12_reduced_grid{suffix}.csv", PAIRED_FIELDS),
+        "ladder": (phase_ladder, f"12_ladder{suffix}.csv", ()),
+        "proxy": (phase_proxy, f"12_proxy_quality{suffix}.csv", PAIRED_FIELDS),
+        "hetero": (phase_hetero, f"12_hetero_r{suffix}.csv", ()),
     }
     chosen = [args.only] if args.only else list(phases)
     wall0 = time.perf_counter()
