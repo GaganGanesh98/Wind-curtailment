@@ -549,6 +549,15 @@ it should be decided now, not in December.
    (its docstring, `src/censoring/synthetic.py:20-24`) — that is precisely the thin
    direction, injected on purpose. It may already not have this problem. **Check that before
    changing anything here.**
+
+   > **Checked — see `docs/11_e1_identification_audit.md`.** `synthetic.py` has *zero*
+   > thin-direction rows, but structurally: its exposure is always evaluated on the
+   > quarter-hour price, so a positive quarter-hour can never be censored on either clock.
+   > The two generators therefore disagree on what §51 does, which must be settled first.
+   > Separately, `synthetic.py` has an exposure matrix of rank 4 of 5 (placeholder cohorts)
+   > and 6 of 8 (MaStR), with 34.6% of fleet capacity in exactly-collinear pairs — and the
+   > rule-18 check reports "K-cohort stands" at all four AW settings while that holds. The
+   > blind spot in the pre-registered criterion is common to both generators.
 2. **Fix the thin direction, if this generator is kept.** The cause is the parabolic depth
    profile (`depth_profile_exponent = 0.7`) making above-zero quarter-hours inside a negative
    hour rare at block edges. A deliberate sub-hour-episode mechanism — the same device
