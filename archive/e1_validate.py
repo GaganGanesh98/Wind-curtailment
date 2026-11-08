@@ -1,12 +1,12 @@
-"""
-Validation suite for the E1 generator.
+"""SUPERSEDED 8 Nov 2026 -- ported to `src/censoring/validate_synthetic.py`.
 
-Checks that the generated data actually obeys the observation model it claims
-to. Run this before any modelling, and re-run it whenever the generator
-changes. A generator bug here would silently invalidate every E1 result.
+Validates `archive/e1_generator.py`, which is itself superseded (see its header).
 
-    python e1_validate.py --selftest
-    python e1_validate.py --panel data/processed/panel_15min.parquet
+Its check 6 ("hourly-clock censoring at a positive quarter-hour price exists")
+asserted the symptom of that generator's section 51 misreading, so a passing suite
+would have locked the bug in. The port drops check 6 and asserts the inverse.
+
+Kept, not deleted: docs/10 and docs/11 quote this suite's output verbatim.
 """
 
 from __future__ import annotations

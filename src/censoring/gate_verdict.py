@@ -112,6 +112,12 @@ CRITERIA = {
     "b": "gamma in {0.5, 1}: both the absolute bias of A-hat and the curtailed-share "
          "MAE (c-hat against c_true) lower than each of B1-B4.",
     "c": "gamma = 0: M1's MAE not significantly worse than B2 -- the no-harm clause.",
+    # (d) is NOT from spec v1.8. It is PROPOSED in docs/12 to replace the I4 /
+    # rule-18 day count, which passes while large capacity shares are exactly
+    # collinear (docs/11). It must be pre-registered as a spec amendment before the
+    # gate is scored; until then it is reported and never folded into the verdict.
+    "d": "[PROPOSED, not yet pre-registered] identification: rank(s) == K, every "
+         "cohort pair differing on >= 10 quarter-hours, and cond(s) <= 100.",
 }
 MIN_RATE = 0.10          # "censoring rates >= 10%"
 GATE_SEEDS = (42, 43, 44)
@@ -340,6 +346,60 @@ def criterion_b(cells: list[dict], rows: list[dict]) -> dict:
     return verdicts
 
 
+def criterion_d(cells: list[dict], rows: list[dict]) -> dict:
+    """[PROPOSED] Identification of the cohort design actually used by each cell.
+
+    Scored from the stored `s`, `depth` and `shares` arrays, so it needs no refit and
+    no regeneration. The old I4 day count is computed alongside and reported, never
+    gated, so the two verdicts sit side by side.
+
+    Not part of the spec v1.8 verdict. `main` prints it and writes it to the CSV but
+    does not let it change PASS/FAIL, because this module does not get to invent a
+    gate criterion (see the module docstring).
+    """
+    from src.censoring.cohorts import exposure_differs_by_day, mastr_cohort_set
+    from src.censoring.identification import gate_identification_verdict
+
+    ids = mastr_cohort_set("DE").ids
+    out: dict[str, bool] = {}
+    print(f"\n{'-' * 78}\n(d) [PROPOSED] identification -- reported, not gated\n"
+          f"{'-' * 78}")
+    print(f"  {'cell':<30}{'rank':>8}{'min pair':>10}{'cond(s)':>10}"
+          f"{'I4 days':>9}{'new':>7}")
+    for c in cells:
+        s, depth, w = c.get("s"), c.get("depth"), c.get("shares")
+        if s is None or w is None:
+            continue
+        if len(ids) != s.shape[0]:
+            print(f"  cohort ids ({len(ids)}) do not match stored s "
+                  f"({s.shape[0]}); skipping (d)")
+            return {}
+        nd, _ = exposure_differs_by_day(s, c["berlin_date"])
+        v = gate_identification_verdict(s, ids, w, depth,
+                                        exposure_differs_days=nd)
+        label = (f"r{int(round(c['censoring_rate'] * 100)):02d}"
+                 f"_g{c['gamma']}_{c['r_shape']}_s{c['seed']}")
+        out[label] = v.passed
+        print(f"  {label:<30}{f'{v.rank}/{v.k}':>8}{v.min_pair_differ:>10,}"
+              f"{v.cond_s:>10.1f}{nd:>9}{'pass' if v.passed else 'FAIL':>7}")
+        rows.append({"criterion": "d_proposed", "cell": label,
+                     "rank": v.rank, "k": v.k,
+                     "min_pair_differ_qh": v.min_pair_differ,
+                     "worst_pair": "|".join(v.worst_pair) if v.worst_pair else "",
+                     "cond_s": round(v.cond_s, 3),
+                     "cond_ws": round(v.cond_ws, 3),
+                     "collinear_capacity_share": round(v.collinear_capacity_share, 4),
+                     "i4_exposure_differs_days": nd,
+                     "i4_old_verdict": "K-cohort stands" if nd >= 10 else "FALLBACK",
+                     "new_verdict": "pass" if v.passed else "FAIL",
+                     "reasons": "; ".join(v.reasons)})
+    if out:
+        n_fail = sum(1 for ok in out.values() if not ok)
+        print(f"  {len(out)} cells scored; {n_fail} FAIL the proposed criterion "
+              f"while all of them pass the old I4 day count.")
+    return out
+
+
 def criterion_c(cells: list[dict], rows: list[dict]) -> bool:
     """gamma = 0: M1's MAE not significantly worse than B2."""
     print(f"\n{'=' * 78}\nCRITERION (c)  {CRITERIA['c']}\n{'=' * 78}")
@@ -408,6 +468,7 @@ def main() -> None:
     va = criterion_a(cells, rows)
     vb = criterion_b(cells, rows)
     vc = criterion_c(cells, rows)
+    vd = criterion_d(cells, rows)      # PROPOSED: reported, never gated
     sensitivity_seedday(cells)
 
     a_pass = bool(va) and all(va.values())
@@ -418,6 +479,9 @@ def main() -> None:
     print(f"  (a) {'PASS' if a_pass else 'FAIL'}   per shape: {fmt(va)}")
     print(f"  (b) {'PASS' if b_pass else 'FAIL'}   per gamma: {fmt(vb)}")
     print(f"  (c) {'PASS' if vc else 'FAIL'}")
+    d_pass = bool(vd) and all(vd.values())
+    print(f"  (d) {'PASS' if d_pass else 'FAIL'}   [PROPOSED -- not in spec v1.8, "
+          f"excluded from the verdict below]")
     overall = a_pass and b_pass and vc
     print(f"\n  GATE: {'PASS' if overall else 'FAIL'}  "
           f"(spec v1.8 needs all three)")

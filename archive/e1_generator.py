@@ -1,34 +1,31 @@
-"""
-E1 semi-synthetic censoring generator.
+"""SUPERSEDED 8 Nov 2026 -- do not use for thesis results.
 
-Takes a clean (uncensored) quarter-hour panel, treats its observed wind output as
-TRUE available power A, injects synthetic price-driven censoring with a KNOWN
-response function r*, and returns a frame with both the censored observation and
-the ground truth.
+Superseded by `src/censoring/synthetic.py`, which is the production E1 path.
 
-This is the only place in the thesis where A is known, so it is the only place
-where "did the model recover A?" can actually be answered.
+Reason: this generator evaluates an hourly-clock cohort's exposure against the
+HOURLY MEAN price, so a quarter-hour whose own price is positive, inside a
+qualifying negative hour, is treated as switched off. That misreads section 51
+EEG 2023. Section 51 zeroes the anzulegender Wert; it does not mandate switch-off,
+and since the 15-minute market time unit went live for delivery day 1 Oct 2025 a
+plant's day-ahead revenue settles per quarter-hour. The clock decides which branch
+of theta applies, never which price the plant compares against:
 
-Design notes
-------------
-* Base rows are quarter-hours with price above `clean_price_floor` (default 5
-  EUR/MWh). In those rows nobody had a financial reason to switch off, so the
-  TSO actual is taken as A_true.
-* Synthetic negative prices are injected in contiguous BLOCKS within a
-  Berlin-local day, because the pre-2025 EEG rules key on run length. Scattered
-  single quarter-hours would make the hourly-clock cohort untestable.
-* Confounding (gamma) tilts day selection towards high-wind days. gamma = 0 is
-  the easy case (censoring independent of weather); gamma = 1 is the hard case
-  that a naive model should fail on.
-* Exposure s_k is computed from cohort rules, NOT learned. The response r*_k is
-  the thing a model is later asked to recover.
+    theta_k,t = 0        if support is zeroed (section 51 triggered, or out of support)
+              = -MP_k,t  otherwise
+    s_k,t     = 1[ p_qh,t < theta_k,t ]      -- always the QUARTER-HOUR price
 
-Swap-in point for real rules: `_exposure` below encodes the two clocks
-generically. To use the real rule table, build `CohortSpec` objects from
-`data/reference/eeg_negative_price_rules.csv` instead of the defaults.
+`src/censoring/cohorts.py:371 theta_and_exposure` implements that correctly.
 
-Ground-truth columns (A_true_mw, c_true, r_star_*, s_*) must NEVER reach a
-model. They exist only for scoring.
+`retro_run = True` here is right about the law -- the pre-2025 wording zeroes the
+value "fuer den gesamten Zeitraum, in dem der Spotmarktpreis ohne Unterbrechung
+negativ ist" -- but that governs the support payment, not the switch-off decision.
+Conflating the two is the bug. cohorts.py applies the retroactive zeroing to theta
+and still compares the quarter-hour price, which is the correct combination
+(verified in docs/12 section A.2).
+
+Kept, not deleted: docs/10 and docs/11 cite this file and its measurements.
+The validation suite was ported to `src/censoring/validate_synthetic.py`, minus its
+check 6, which asserted that the bug's symptom MUST be present.
 """
 
 from __future__ import annotations
