@@ -13,6 +13,14 @@ of any kind exists, in **8 of 9** usable months at AW `low`, **4 of 9** at `main
 quarter-hour falls in a single month. Which tier the thesis runs on is a supervisor
 decision, not something the gate will settle.
 
+> **Corrected by `docs/14_mv_coverage_fix.md` (same day).** The 69.4% coverage reported
+> below was our own bug, not a data limitation: `read_published` was hard-coded to the 2026
+> file while `Monatsmarktwerte_2025.csv` sat unread in the same directory. Fixed, coverage
+> is **92.9%** (12 of 13 months) and exposed quarter-hours 1,853 → 2,052. The step-2 tables
+> below are therefore computed on nine months; `docs/14` carries them recomputed on twelve.
+> **The identification verdict is unchanged** — two of the three recovered months have no
+> negative-price quarter-hours at all — so everything this document concludes still holds.
+
 **What is new here and what is not.** Spec v1.8 already states that separation is gated by
 the market premium, that "the §51 clock **never** separates cohorts on its own", and that
 "the low setting at 19 days is far closer to [the threshold] than the headline 55

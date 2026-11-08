@@ -46,10 +46,16 @@ only on that written decision.
   monthly mean in **9 of 9** months (capture rate 0.717–0.977, mean 0.826) and below the
   recomputation in 9 of 9. It is the right series, and in the conservative direction: a
   lower MV gives a *larger* premium, so MP = 0 occurs despite the more generous input.
-- **Study-window coverage is 69.4%, not 100% (v1.9).** θ needs a published monthly market
-  value, and only **9 of the 13** months from 1 Oct 2025 have one. 26,204 of 37,732
-  quarter-hours are usable; Oct–Dec 2025 and Oct 2026 are dropped. Any I4 or gate figure
-  on real data is computed on nine months of 2026, not on the stated 393-day window.
+- **Study-window coverage is 92.9%, and was 69.4% because of a loader bug (v1.9).** θ needs
+  a published monthly market value. `read_published` was hard-coded to
+  `Monatsmarktwerte_2026.csv` while the 2025 file sat unread beside it, so Oct–Dec 2025 were
+  silently dropped and every real-data θ figure covered nine months of 2026. Fixed to read
+  all year files: **12 of 13** months, 35,040 of 37,732 quarter-hours, exposed quarter-hours
+  1,853 → 2,052. Only Oct 2026 is legitimately absent (incomplete, and published after month
+  end). The gap survived because nothing asserted coverage;
+  `tests/test_market_value_coverage.py` now does. **The identification verdict is unchanged**
+  — Nov and Dec 2025 have no negative-price quarter-hours, so the whole gain is Oct 2025.
+  `docs/14_mv_coverage_fix.md`.
 
 **Changes in v1.8** (31 Oct 2026, student decision).
 
