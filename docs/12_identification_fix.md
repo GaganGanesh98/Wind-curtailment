@@ -278,9 +278,19 @@ does not get to invent a gate criterion. It needs pre-registration as a spec ame
 before the week-6 gate on 31 Dec 2026.
 
 ```
-(d) [PROPOSED] rank(s) == K, every cohort pair differing on >= 10 quarter-hours,
-    and cond(s) <= 100.   exposure_differs_by_day retained as a REPORTED diagnostic.
+(d) [PROPOSED] full rank on the feature block [s | depth], every cohort pair
+    differing on >= 10 quarter-hours, and cond(s) <= 100.
+    exposure_differs_by_day retained as a REPORTED diagnostic.
 ```
+
+**Amended after the fact.** The condition was first written as `rank(s) == K`. Writing
+the regression tests showed that is too strict: a pair with identical `s` but
+*differing* `depth` is weakly identified, not unidentified — separable through the
+depth contrast — and a rank test on `s` alone would fail a design that is in fact
+identified. The verdict now keys on `[s | depth]` and reports both ranks. This does
+not weaken it where it matters: the 81 unmerged artifacts have *exact* duplicates, so
+the feature block is deficient too, and they still fail 81/81 with the collinear pairs
+named.
 
 ### Why these three, and why not `cond(w·s)`
 
@@ -467,12 +477,15 @@ a merged design; the window is verified and named.
 3. ~~Fix `gate_verdict.py`'s `KeyError: 'n_qh'`.~~ **Done** (§H). The gate now
    produces a verdict, and it is `FAIL` on (a) and (b) — scored on the pre-merge
    design, so item 2 above has to land before that verdict means anything.
-4. **Decide what `stress` means for the verdict.** At 62.9% collinear capacity it is
+4. **Adopt a fallback partition that survives the merge** (§I). The pre-registered
+   clock partition is degenerate on a merged design, so the gate's fail branch cannot
+   be executed as written.
+5. **Decide what `stress` means for the verdict.** At 62.9% collinear capacity it is
    not a sensitivity, it is a different experiment: merged, K drops to 6 and two legal
    cohorts that the thesis wants to talk about separately cease to exist. Either the
    gate declares `stress` out of scope for per-cohort claims, or the write-up reports
    fleet-level recovery only under it.
-5. **Restrict E1/E2 to the window and re-run.** `window.py` exists but nothing calls
+6. **Restrict E1/E2 to the window and re-run.** `window.py` exists but nothing calls
    it yet; `synthetic.py:235 load_base` still takes the whole panel. On the narrower
    window the real-data arms lose roughly three-quarters of their quarter-hours, which
    will move every interval.
@@ -554,3 +567,118 @@ collinear. The (a) and (b) failures are therefore failures *on an unidentified
 design*, which is precisely the case spec section 7's fail branch addresses — refit
 with the two-cohort / single-response structure. The verdict becomes meaningful only
 after the artifacts are regenerated with merged cohorts.
+
+---
+
+## I. Re-speccing the two-cohort fallback
+
+Spec v1.8 §7's fail branch says to refit with the two-cohort / single-response
+structure. That structure is spec §3 I4's: macro-cohorts by **price clock**,
+quarter-hour against hourly, implemented as `CohortSet.macro_index()`, with the
+response tied inside each macro. On a merged design it has **one group**, so the
+instruction cannot be followed.
+
+### What breaks, measured
+
+A macro-tied fit estimates one response per macro, so `c = Σ_m r_m · A_m` where
+`A_m[t] = Σ_{k∈m} w_k s_k[t]`. It is the **capacity-weighted, macro-aggregated**
+matrix `A` (M × T) that has to be invertible — not the per-cohort `s`. Measured on
+the E1 benchmark at rate 0.20, gamma 0.5, logistic, seed 42:
+
+| design | partition | M | rank | cond | verdict |
+|---|---|---|---|---|---|
+| unmerged (8) | clock *(pre-registered)* | 2 | 2 | 12.0 | identified |
+| **merged (6)** | **clock** *(inherited)* | **1** | 1 | 1.0 | **DEGENERATE** |
+
+`post_feb2025_qh` — 12.6% of capacity and the only quarter-hour-clock cohort — is
+absorbed into a merged cohort whose dominant member is `out_of_support`. That merged
+cohort's theta is 0 at **every** quarter-hour, so no clock is ever consulted and the
+label carries no behavioural content. Every survivor inherits the hour macro.
+
+A one-group "fallback" is reported as **not identified** even though `rank == M`
+trivially holds: it is not a fallback at all.
+
+### The candidates, on both panels
+
+Identification comes from theta separation and from nothing else (§C), so the
+partition should be on the theta regime rather than on the clock:
+
+* **`theta_zero`** — two groups: theta reaches 0 somewhere, or never does. "Can §51
+  or the end of support take this cohort's premium away at all?"
+* **`theta_regime`** — three groups: theta always 0 / switching / never 0.
+
+| panel | partition | M | rank | cond | weakest pair, mean \|contrast\| | verdict |
+|---|---|---|---|---|---|---|
+| benchmark, merged | clock | 1 | 1 | 1.0 | — | DEGENERATE |
+| benchmark, merged | `theta_zero` | 2 | 2 | **4.0** | **0.0966** | identified |
+| benchmark, merged | `theta_regime` | 3 | 3 | 6.2 | 0.0137 | identified |
+| real panel, `main`, unmerged | clock | 2 | 2 | 21.1 | 0.0407 | identified |
+| real panel, `main`, unmerged | `theta_zero` | **1** | 1 | 1.0 | — | **DEGENERATE** |
+| real panel, `main`, unmerged | `theta_regime` | 2 | 2 | 6.7 | 0.0191 | identified |
+| real panel, `main`, merged | clock | **1** | 1 | 1.0 | — | **DEGENERATE** |
+| real panel, `main`, merged | `theta_zero` | **1** | 1 | 1.0 | — | **DEGENERATE** |
+| real panel, `main`, merged | `theta_regime` | 2 | 2 | 6.7 | 0.0191 | identified |
+
+### Why `theta_zero` fails on real data — a finding in its own right
+
+It was the obvious re-spec and the benchmark endorsed it: M = 2 at cond 4.0, better
+conditioned than the clock partition's 12.0, a more balanced 61/39 capacity split, and
+the strongest weakest-link of any candidate. **On the real panel it is degenerate**,
+because *every* cohort reaches theta = 0:
+
+| cohort | AW | reference | §51 | QH with MP = 0 | QH with trigger | QH with theta = 0 |
+|---|---|---|---|---|---|---|
+| `out_of_support` | — | monthly | no | 26,204 | 0 | 26,204 |
+| `pilot_exempt` | 74.06 | monthly | no | 23,324 | 0 | 23,324 |
+| `post_feb2025_qh` | 89.21 | annual | yes | 26,204 | 1,853 | 26,204 |
+| `pre2016_in_support_no_s51` | 87.30 | monthly | no | 11,808 | 0 | 11,808 |
+| `size_exempt` | 75.51 | monthly | no | 20,352 | 0 | 20,352 |
+| `wind2016_2020_6h` | 74.92 | monthly | yes | 23,324 | 1,072 | 23,692 |
+| `wind2021_2022_4h` | 74.56 | monthly | yes | 23,324 | 1,696 | 23,780 |
+| `wind2023_feb2025_staircase` | 77.28 | monthly | yes | 20,352 | 1,876 | 20,980 |
+
+The monthly market value runs **57.18 – 115.45 EUR/MWh** over the covered window and
+every award value (74 – 89) falls below it in some months, so
+`MP = max(0, AW − MV) = 0` there and theta = 0 **with no §51 trigger involved at
+all**. The benchmark hides this behind the flat placeholder `mv_eur_mwh = 45.0`, which
+keeps MP > 0 for every in-support cohort throughout.
+
+Two consequences worth carrying forward. First, **a partition validated only on the E1
+benchmark can be degenerate on the data the thesis is about** — the flat placeholder
+market value is not a neutral simplification. Second, the premium channel that
+`docs/09` lists as one of the three sources of identification is **dead in most
+quarter-hours**: `out_of_support` has MP = 0 throughout and `pilot_exempt` in 89% of
+the window. That is the same weakness the `stress` arm exaggerates (§B), showing up in
+the `main` arm too.
+
+### The re-spec
+
+**`theta_regime` — always 0 / switching / never 0 — is the proposed fallback
+partition**, and `DEFAULT_FALLBACK_MODE` is set to it. It is the only candidate
+identified on **both** panels, before and after merging: M = 3 at cond 6.2 on the
+benchmark, M = 2 at cond 6.7 on the real panel, where the "never 0" group is simply
+empty. On real data it is also better conditioned than the pre-registered clock
+partition (6.7 against 21.1).
+
+**Stated plainly: it is identified, not strongly identified.** Its weakest pair of
+macro profiles differs by a mean of only **0.0137** on the benchmark and **0.0191** on
+the real panel, against 0.0407 for the clock partition before merging. The fallback
+will work, but the tied responses it recovers will be imprecise, and that belongs in
+the write-up rather than in a footnote.
+
+**PROPOSED, not pre-registered.** Like criterion (d), this changes a structure spec
+v1.8 fixes, and must be pre-registered before the week-6 gate.
+
+Implementation: `fallback_partition`, `macro_exposure`, `fallback_identifiability` and
+`format_fallback` in `src/censoring/identification.py`; all three modes reported per
+arm, before and after merging, by `run_identification.py`. `FALLBACK_MODES` keeps
+`"clock"` available so the degeneracy can be reproduced rather than taken on trust.
+
+### Still open
+
+The merged cohort that absorbed the quarter-hour clock carries `clock="hour"` and
+`macro=MACRO_HOUR` as inherited metadata, which is now misleading: its theta is 0
+throughout, so neither field is ever consulted. The honest representation is a third
+value meaning "no clock applies", which would touch `Cohort.__post_init__`'s
+validation and `MACRO_QH`/`MACRO_HOUR` across the package. Left alone deliberately —
+it changes nothing about any number, and `theta_regime` does not read either field.

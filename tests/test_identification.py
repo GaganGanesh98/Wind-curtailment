@@ -13,6 +13,9 @@ import pytest
 from src.censoring.cohorts import Cohort, CohortSet, mastr_cohort_set
 from src.censoring.identification import (
     MIN_PAIR_DIFFER_QH,
+    fallback_identifiability,
+    fallback_partition,
+    macro_exposure,
     _row_key,
     condition_numbers,
     duplicate_groups,
@@ -296,3 +299,152 @@ def test_weak_duplicates_leave_rank_s_deficient_but_are_still_identified():
     # it still fails, but on the pair floor -- the binding test -- not on rank
     assert not v.unique_ok
     assert all("rank(" not in r for r in v.reasons)
+
+
+# ------------------------------------------------- the fallback partition (docs/12 I)
+
+def _two_cohort_set(macros):
+    """A CohortSet with chosen macros, for partition tests."""
+    from src.censoring.cohorts import MACRO_HOUR, MACRO_QH
+    names = {MACRO_QH: "post_feb2025_qh", MACRO_HOUR: "pre2016_out_of_support"}
+    out = []
+    for i, mac in enumerate(macros):
+        out.append(Cohort(
+            cohort_id=f"c{i}", rule_id="R01",
+            clock="quarterhour" if mac == MACRO_QH else "hour",
+            run_length_h=None, subject_to_s51=False, in_support=False,
+            aw_eur_mwh=None, capacity_share=1.0 / len(macros), macro=mac))
+    return CohortSet(out)
+
+
+def test_clock_partition_goes_degenerate_when_every_cohort_shares_a_macro():
+    """The reason the fallback needs re-speccing: merging absorbs the only
+    quarter-hour-clock cohort, every survivor carries the hour macro, and the
+    "two-cohort" fallback has one group."""
+    from src.censoring.cohorts import MACRO_HOUR
+
+    cohorts = _two_cohort_set([MACRO_HOUR] * 3)
+    s = np.array([[1, 1, 0], [1, 0, 0], [0, 1, 0]], dtype=float)
+    part = fallback_partition(cohorts, mode="clock")
+    diag = fallback_identifiability(s, list(cohorts.shares), part)
+    assert part.m == 1
+    assert not diag.identified          # rank == M, but M == 1 is not a fallback
+    assert diag.rank == 1
+
+
+def test_theta_zero_partition_separates_removable_from_intact_premium():
+    from src.censoring.cohorts import MACRO_HOUR
+
+    cohorts = _two_cohort_set([MACRO_HOUR] * 3)
+    # cohort 0 reaches theta = 0 somewhere; 1 and 2 never do
+    theta = np.array([[0.0, -5.0, -5.0],
+                      [-20.0, -20.0, -20.0],
+                      [-14.0, -14.0, -14.0]])
+    part = fallback_partition(cohorts, theta, mode="theta_zero")
+    assert part.m == 2
+    assert part.labels == ("premium_removable", "premium_intact")
+    assert part.members[0] == ("c0",)
+    assert set(part.members[1]) == {"c1", "c2"}
+    assert part.capacity[0] == pytest.approx(1 / 3)
+    assert part.capacity[1] == pytest.approx(2 / 3)
+
+
+def test_theta_zero_partition_normalises_signed_zero():
+    """-0.0 is theta = 0: a cohort whose premium is exactly zero has it removable."""
+    from src.censoring.cohorts import MACRO_HOUR
+
+    cohorts = _two_cohort_set([MACRO_HOUR] * 2)
+    theta = np.array([[-0.0, -0.0], [-9.0, -9.0]])
+    part = fallback_partition(cohorts, theta, mode="theta_zero")
+    assert part.members[0] == ("c0",)
+
+
+def test_theta_regime_partition_splits_switching_from_always_and_never():
+    from src.censoring.cohorts import MACRO_HOUR
+
+    cohorts = _two_cohort_set([MACRO_HOUR] * 3)
+    theta = np.array([[0.0, 0.0], [0.0, -7.0], [-7.0, -7.0]])
+    part = fallback_partition(cohorts, theta, mode="theta_regime")
+    assert part.m == 3
+    assert part.labels == ("premium_gone", "premium_switching", "premium_intact")
+    assert part.members == (("c0",), ("c1",), ("c2",))
+
+
+def test_macro_exposure_is_capacity_weighted():
+    """A macro-tied fit inverts the capacity-weighted sum, not the raw indicator."""
+    from src.censoring.cohorts import MACRO_HOUR
+
+    cohorts = _two_cohort_set([MACRO_HOUR] * 2)   # shares 0.5 / 0.5
+    s = np.array([[1, 0], [1, 1]], dtype=float)
+    theta = np.array([[0.0, -1.0], [-9.0, -9.0]])
+    part = fallback_partition(cohorts, theta, mode="theta_zero")
+    A = macro_exposure(s, list(cohorts.shares), part)
+    assert A.shape == (2, 2)
+    assert A[0].tolist() == [0.5, 0.0]
+    assert A[1].tolist() == [0.5, 0.5]
+
+
+def test_fallback_weakest_pair_is_chosen_by_magnitude_not_count():
+    """Two profiles can differ at every quarter-hour by a trivial amount; counting
+    differing quarter-hours would call that the strongest pair."""
+    from src.censoring.cohorts import MACRO_HOUR
+
+    cohorts = _two_cohort_set([MACRO_HOUR] * 3)
+    # groups 0 and 1 differ everywhere but minutely; 0 and 2 differ in few places,
+    # by a lot. The weakest link is the first pair.
+    theta = np.array([[0.0, 0.0, 0.0],
+                      [0.0, 0.0, -1.0],
+                      [-5.0, -5.0, -5.0]])
+    part = fallback_partition(cohorts, theta, mode="theta_regime")
+    s = np.array([[1.0, 1.0, 1.0],
+                  [1.0, 1.0, 0.999],
+                  [0.0, 0.0, 1.0]])
+    diag = fallback_identifiability(s, list(cohorts.shares), part)
+    assert diag.mean_abs_contrast < 0.01     # the minute pair, not the big one
+
+
+def test_fallback_partition_rejects_unknown_mode_and_missing_theta():
+    from src.censoring.cohorts import MACRO_HOUR
+
+    cohorts = _two_cohort_set([MACRO_HOUR] * 2)
+    with pytest.raises(ValueError, match="not in"):
+        fallback_partition(cohorts, mode="nonsense")
+    with pytest.raises(ValueError, match="needs theta"):
+        fallback_partition(cohorts, None, mode="theta_zero")
+
+
+def test_everything_in_all_actually_exists():
+    """__all__ went stale once already, when functions were appended without it."""
+    import src.censoring.identification as mod
+    missing = [n for n in mod.__all__ if not hasattr(mod, n)]
+    assert missing == []
+
+
+def test_theta_zero_is_degenerate_when_every_cohort_reaches_zero():
+    """Why the default is theta_regime and not theta_zero.
+
+    On real data MP = max(0, AW - MV) is zero in any month where the market value
+    exceeds the award value, so every cohort's theta reaches 0 and "ever zero"
+    partitions nothing. The benchmark hides this behind a flat placeholder market
+    value. theta_regime still separates them, by ALWAYS zero against sometimes.
+    """
+    from src.censoring.cohorts import MACRO_HOUR
+    from src.censoring.identification import DEFAULT_FALLBACK_MODE
+
+    assert DEFAULT_FALLBACK_MODE == "theta_regime"
+
+    cohorts = _two_cohort_set([MACRO_HOUR] * 3)
+    # every cohort touches 0 somewhere; only the first is 0 throughout
+    theta = np.array([[0.0, 0.0, 0.0],
+                      [0.0, -6.0, -6.0],
+                      [-3.0, 0.0, -3.0]])
+    s = np.array([[1.0, 1.0, 1.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+
+    zero = fallback_partition(cohorts, theta, mode="theta_zero")
+    assert zero.m == 1
+    assert not fallback_identifiability(s, list(cohorts.shares), zero).identified
+
+    regime = fallback_partition(cohorts, theta, mode="theta_regime")
+    assert regime.m == 2                      # "never 0" is empty, as on real data
+    assert regime.members[0] == ("c0",)
+    assert set(regime.members[1]) == {"c1", "c2"}

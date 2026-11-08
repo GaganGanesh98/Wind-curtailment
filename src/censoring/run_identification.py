@@ -33,7 +33,8 @@ from src.censoring.cohorts import (  # noqa: E402
     placeholder_cohort_set, trigger_active,
 )
 from src.censoring.identification import (  # noqa: E402
-    MAX_COND_S, MIN_PAIR_DIFFER_QH, format_merge_map, format_report,
+    FALLBACK_MODES, MAX_COND_S, MIN_PAIR_DIFFER_QH, fallback_identifiability,
+    fallback_partition, format_fallback, format_merge_map, format_report,
     gate_identification_verdict, identification_diagnostics, merge_cohorts,
     theta_merge_map,
 )
@@ -153,9 +154,29 @@ def main() -> None:
                                              exposure_differs_days=nd)
         rows.append(_row(f"real_{setting}", "before_merge", before, len(ids)))
 
+        # The tied-response fallback, under each candidate partition. Reported for
+        # the UNMERGED design too, so the pre-registered clock partition can be seen
+        # going degenerate rather than merely asserted to.
+        print(f"  -- fallback, '{setting}', before merge --")
+        for mode in FALLBACK_MODES:
+            fp = fallback_partition(cohorts, theta, mode)
+            print(format_fallback(fallback_identifiability(s, w, fp)))
+
         merged, theta_m, gmap = merge_cohorts(cohorts, np.hstack([s, depth]), theta)
         s_m = (p[None, :] < theta_m).astype(float)
         depth_m = np.maximum(0.0, theta_m - p[None, :]) * s_m
+        print(f"  -- fallback, '{setting}', after merge --")
+        fb_rows = []
+        for mode in FALLBACK_MODES:
+            fp = fallback_partition(merged, theta_m, mode)
+            fd = fallback_identifiability(s_m, list(merged.shares), fp)
+            print(format_fallback(fd))
+            fb_rows.append((mode, fd))
+        ok = [m for m, fd in fb_rows if fd.identified]
+        print(f"    -> identified under: {ok or 'NOTHING'}   "
+              f"(pre-registered 'clock' "
+              f"{'survives' if 'clock' in ok else 'does NOT survive'} the merge)")
+
         nd_m, _ = exposure_differs_by_day(s_m, dates[mask])
         after = gate_identification_verdict(s_m, merged.ids, list(merged.shares),
                                             depth_m, exposure_differs_days=nd_m)

@@ -49,6 +49,7 @@ from typing import Sequence
 import numpy as np
 
 __all__ = [
+    # diagnostics
     "RankResult",
     "DuplicateGroup",
     "CohortCounts",
@@ -57,8 +58,31 @@ __all__ = [
     "condition_numbers",
     "duplicate_groups",
     "per_cohort_counts",
+    "pairwise_differs",
     "identification_diagnostics",
     "format_report",
+    # merging indistinguishable cohorts
+    "MergeGroup",
+    "theta_merge_map",
+    "feature_merge_map",
+    "merge_cohorts",
+    "merge_cohorts_by_theta",
+    "format_merge_map",
+    # the proposed gate criterion
+    "MIN_PAIR_DIFFER_QH",
+    "MAX_COND_S",
+    "GateVerdict",
+    "min_pair_differ",
+    "gate_identification_verdict",
+    # the proposed fallback partition
+    "FALLBACK_MODES",
+    "DEFAULT_FALLBACK_MODE",
+    "FallbackPartition",
+    "FallbackDiagnostics",
+    "fallback_partition",
+    "macro_exposure",
+    "fallback_identifiability",
+    "format_fallback",
 ]
 
 
@@ -679,3 +703,174 @@ def gate_identification_verdict(
         collinear_capacity_share=rep.collinear_capacity_share,
         reasons=tuple(reasons),
     )
+
+
+# ------------------------------------------------- the fallback partition (PROPOSED)
+
+#: Available fallback partitions. "clock" is the pre-registered one (spec section 3
+#: I4): macro-cohorts by price clock, quarter-hour against hourly. The two theta
+#: modes are PROPOSED in docs/12 section I and are not pre-registered.
+FALLBACK_MODES = ("clock", "theta_zero", "theta_regime")
+
+#: The re-spec proposed in docs/12 section I: partition on the theta REGIME --
+#: always 0 / switching / never 0. This is the dimension identification actually
+#: comes from (`s` depends on the cohort only through theta), whereas the clock
+#: merely decides *when* theta flips and stops partitioning anything once
+#: indistinguishable cohorts are merged.
+#:
+#: Not "theta_zero" (ever 0 vs never 0), which looked better on the E1 benchmark and
+#: is DEGENERATE on real data. The benchmark uses a flat placeholder market value, so
+#: an in-support cohort keeps MP > 0 throughout; the real monthly market value runs
+#: 57.18 - 115.45 EUR/MWh over the covered window and every cohort's award value
+#: (74 - 89) falls below it in some months, giving MP = max(0, AW - MV) = 0 and
+#: theta = 0 with no section 51 trigger involved. So on real data EVERY cohort
+#: reaches theta = 0 and "ever 0" partitions nothing. "theta_regime" is identified on
+#: both: M = 3 at cond 6.2 on the benchmark, M = 2 at cond 6.7 on the real panel
+#: (the "never 0" group is simply empty there), before and after merging.
+DEFAULT_FALLBACK_MODE = "theta_regime"
+
+
+@dataclass(frozen=True)
+class FallbackPartition:
+    mode: str
+    index: tuple[int, ...]                  # group of each cohort, in cohort order
+    labels: tuple[str, ...]
+    members: tuple[tuple[str, ...], ...]
+    capacity: tuple[float, ...]
+
+    @property
+    def m(self) -> int:
+        return len(self.labels)
+
+
+def fallback_partition(
+    cohorts,
+    theta: np.ndarray | None = None,
+    mode: str = DEFAULT_FALLBACK_MODE,
+) -> FallbackPartition:
+    """Group cohorts into macro-cohorts for the tied-response fallback.
+
+    mode
+      "clock"        the pre-registered partition: `cohorts.macro_index()`.
+      "theta_zero"   two groups: theta reaches 0 somewhere, or never does.
+      "theta_regime" three groups: theta always 0 / switching / never 0.
+
+    `theta` is required by both theta modes and ignored by "clock".
+
+    Why this exists. The pre-registered fallback partitions on the price clock, which
+    was the identifying dimension while a quarter-hour-clock cohort had exposure of
+    its own. Merging indistinguishable cohorts absorbs that cohort into a group whose
+    theta is 0 at every quarter-hour -- so no clock is ever consulted, every surviving
+    cohort carries the hour label, and the "two-cohort" fallback has ONE group.
+    Measured on the merged Phase-3 design: M = 1 under "clock", against M = 2 and
+    cond 4.0 under "theta_zero" (docs/12 section I).
+    """
+    if mode not in FALLBACK_MODES:
+        raise ValueError(f"mode {mode!r} not in {FALLBACK_MODES}")
+    cs = list(cohorts)
+    ids = [c.cohort_id for c in cs]
+    shares = np.array([c.capacity_share for c in cs], dtype=float)
+
+    if mode == "clock":
+        idx = [int(i) for i in cohorts.macro_index()]
+        label_of = {0: "macro_qh_clock", 1: "macro_hour_clock"}
+    else:
+        if theta is None:
+            raise ValueError(f"mode {mode!r} needs theta")
+        th = np.asarray(theta, dtype=float) + 0.0      # normalise signed zero
+        if th.shape[0] != len(cs):
+            raise ValueError(f"theta has {th.shape[0]} rows for {len(cs)} cohorts")
+        ever = [bool((th[i] == 0.0).any()) for i in range(len(cs))]
+        if mode == "theta_zero":
+            idx = [0 if e else 1 for e in ever]
+            label_of = {0: "premium_removable", 1: "premium_intact"}
+        else:
+            always = [bool((th[i] == 0.0).all()) for i in range(len(cs))]
+            idx = [0 if a else (1 if e else 2)
+                   for a, e in zip(always, ever)]
+            label_of = {0: "premium_gone", 1: "premium_switching",
+                        2: "premium_intact"}
+
+    groups = sorted(set(idx))
+    return FallbackPartition(
+        mode=mode,
+        index=tuple(idx),
+        labels=tuple(label_of.get(g, f"group_{g}") for g in groups),
+        members=tuple(tuple(ids[i] for i, x in enumerate(idx) if x == g)
+                      for g in groups),
+        capacity=tuple(float(shares[[i for i, x in enumerate(idx) if x == g]].sum())
+                       for g in groups),
+    )
+
+
+@dataclass(frozen=True)
+class FallbackDiagnostics:
+    partition: FallbackPartition
+    rank: int
+    cond: float
+    contrast_qh: int
+    mean_abs_contrast: float
+
+    @property
+    def m(self) -> int:
+        return self.partition.m
+
+    @property
+    def identified(self) -> bool:
+        """A one-group "fallback" is not a fallback, however well conditioned."""
+        return self.m >= 2 and self.rank == self.m
+
+
+def macro_exposure(s: np.ndarray, w: Sequence[float],
+                   partition: FallbackPartition) -> np.ndarray:
+    """(M, T) capacity-weighted exposure per macro group.
+
+    This, not the per-cohort `s`, is what a macro-tied fit has to invert: with the
+    response tied inside a group, `c = sum_m r_m * (sum_{k in m} w_k s_k)`.
+    """
+    s = np.asarray(s, dtype=float)
+    wv = np.asarray(w, dtype=float)
+    idx = np.asarray(partition.index)
+    rows = []
+    for g in range(idx.max() + 1):
+        sel = np.flatnonzero(idx == g)
+        if sel.size:
+            rows.append((wv[sel, None] * s[sel]).sum(axis=0))
+    return np.vstack(rows)
+
+
+def fallback_identifiability(
+    s: np.ndarray,
+    w: Sequence[float],
+    partition: FallbackPartition,
+    tol: float | None = None,
+) -> FallbackDiagnostics:
+    """Is the tied-response fallback identified under this partition?"""
+    A = macro_exposure(s, w, partition)
+    r = exposure_rank(A, tol)
+    cond, _ = condition_numbers(A)
+    if A.shape[0] < 2:
+        return FallbackDiagnostics(partition, r.rank, cond, 0, 0.0)
+    diffs = [np.abs(A[a] - A[b]) for a in range(A.shape[0])
+             for b in range(a + 1, A.shape[0])]
+    # The weakest pair is the one with the smallest contrast MAGNITUDE, not the
+    # fewest differing quarter-hours: two profiles can differ everywhere by a
+    # trivial amount, which a count would report as the strongest pair.
+    worst = min(diffs, key=lambda d: float(d.mean()))
+    return FallbackDiagnostics(partition, r.rank, cond,
+                               int((worst > 1e-12).sum()), float(worst.mean()))
+
+
+def format_fallback(diag: FallbackDiagnostics) -> str:
+    p = diag.partition
+    L = [f"  fallback partition '{p.mode}': M = {p.m}"
+         f"   rank {diag.rank}/{p.m}   cond {diag.cond:.1f}"
+         f"   -> {'IDENTIFIED' if diag.identified else 'DEGENERATE'}"]
+    if p.m < 2:
+        L.append("    only one group: this is not a two-cohort fallback at all")
+    else:
+        L.append(f"    weakest pair differs on {diag.contrast_qh:,} QH, "
+                 f"mean |contrast| {diag.mean_abs_contrast:.4f}")
+    for lab, mem, cap in zip(p.labels, p.members, p.capacity):
+        L.append(f"    {lab:<20} {100 * cap:>5.1f}%  {list(mem)}")
+    return "\n".join(L)
