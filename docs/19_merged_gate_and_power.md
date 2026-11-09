@@ -12,7 +12,7 @@ Sources, so every number here is traceable:
 | unmerged gate verdict | `results/13_gate_verdict.csv` |
 | Oracle power diagnostic | `results/13_oracle_power_diagnostic_merged.csv` |
 | headroom / skill tables | `results/13_power_evidence_merged.csv` |
-| per-cell grid rows | `results/12_reduced_grid_merged.csv`, **uncommitted, in the `e1-generator-design-fe7f38` worktree only** (`results/` is not shared between worktrees) |
+| per-cell grid rows | `results/12_reduced_grid_merged.csv`, committed on `identification-fix` as `d136882`, **not on this branch** (`results/` is not shared between worktrees) |
 
 The merged artifacts are `data/processed/e1_gate_artifacts_merged/`, 81 `.npz`
 written in one run 8 Nov 21:32 – 9 Nov 06:12, 499.6 min wall clock, no failed cell
@@ -431,31 +431,90 @@ touched.**
 
 ---
 
-## 5. Two things found while scoring, neither acted on
+## 5. Found while scoring: what was fixed, and what still stands
 
-1. **The merge map's printed label and provenance note are wrong.** The grid log says
-   `merge map (keyed on identical theta)`, the merged cohort ids carry a `theta_`
-   prefix, and each merged cohort's `note` reads "merged on identical theta from: …".
-   The run is **correct** — `merge_cohorts(cohorts, key, theta)` groups on `key`, and
-   `run_reduced_grid.py` passes `np.hstack([s, depth])`, the realised block that
-   `docs/18` §3 requires, with `theta` only carried through. The strings are stale
-   labels from the earlier θ-keyed implementation (`merge_cohorts_by_theta`, still
-   present). But `docs/18` §3 relies on that note to "retain legal cohort labels as
-   metadata so rule provenance survives into the write-up", so a label that misnames
-   the key would propagate a false method description into the thesis. The strings live
-   on `identification-fix`, not here, and were not touched.
+Items 1 and 4 were resolved on `identification-fix` after this document was first
+filed, by the session that ran the grid. Both fixes are recorded here with the commit
+that made them; I verified each claim against the repository rather than taking the
+report at face value.
+
+1. **The merge map described a key it did not use — now fixed, `7020dbd`.** The grid
+   log printed `merge map (keyed on identical theta)`, merged cohort ids carried a
+   `theta_` prefix, and each merged cohort's `note` read "merged on identical theta
+   from: …". The grouping itself was always **correct**: `merge_cohorts` groups on its
+   `key` argument and `run_reduced_grid.py` passes `np.hstack([s, depth])`, the
+   realised block `docs/18` §3 requires.
+
+   The mechanism was worse than stale strings. `feature_merge_map` *delegated to*
+   `theta_merge_map`, passing `hstack([s, depth])` as that function's `theta`
+   argument — so the label was wrong in **100% of production calls**, not merely out
+   of date. Two of the four existing tests asserted the wrong strings themselves
+   (`note.startswith("merged on identical theta")`,
+   `cohort_id.startswith("theta_")`), which is why it survived. The fix maps a rule
+   token to its phrase and derives the id prefix, the cohort note and the printed
+   header from the token, with `rule` keyword-only and required on `merge_cohorts`;
+   four regressions now pin the label to the key, and the suite went 153 → 157. The
+   change was verified inert by grouping the real DE panel under all four award
+   settings before and after: identical members, member shares, capacity shares and
+   dominant cohort in every arm, only `merged_id` differing.
+
+   **Consequence for this document, and it is nil for every number in it.** Merged ids
+   are now `exposure_out_of_support+post_feb2025_qh` and
+   `exposure_out_of_support+post_feb2025_qh+pre2016_in_support_no_s51`, while the 81
+   artifacts on disk still store the old `theta_` ids — so code and artifacts disagree
+   on the label until a regeneration. Nothing reads those strings functionally:
+   `gate_verdict.py` and `oracle_power_check.py` never reference `cohort_ids` at all,
+   and `docs/18` §3's purpose for the note — carrying legal provenance into the
+   write-up — is what the fix restores. No value in §1 – §4 depends on a cohort id.
+
 2. **`window.py` is not on this branch and nothing in the grid path imports it.**
    The E1/E2 window constant lives only on `identification-fix`, and
    `run_reduced_grid.py` / `synthetic.load_base` apply no window filter on either
    branch. So the window rule is currently documentation, not an enforced
    precondition, and a grid run picks up whatever the shared panel happens to span.
    That is how a 61.6% pre-MTU15 base reached a gate scoring without anything
-   flagging it. Not fixed here: wiring it is a code change on a pre-registered path
-   and the window is the student's call.
-3. **`results/12_reduced_grid_merged.csv` is uncommitted** and exists only inside the
-   `e1-generator-design-fe7f38` worktree, because `results/` is not shared between
-   worktrees. Every §3 number traces to that file. It needs a home before this document
-   is citable.
+   flagging it (§1.1b). **Still stands.** Not fixed here: wiring it is a code change
+   on a pre-registered path and the window is the student's call.
+
+3. **The grid is immune to the market-value fix landing mid-run.** `69949c3` was
+   committed 8 Nov 22:35, about 25 minutes into the 500-minute run, so part of the
+   grid was generated before it and part after — a legitimate worry about internal
+   consistency, and the answer is that it does not arise. `SyntheticConfig.mv_eur_mwh`
+   is the constant **45.0** (`src/censoring/synthetic.py:89`, passed at `:520`), and
+   `synthetic.py` contains no reference to `read_published` or the monthly series at
+   all. Only the real-panel path reads published market values. The 81 cells are
+   therefore internally consistent across that commit. (This is also why `docs/18`
+   §1's "flat placeholder below every award value" caveat applies to the whole grid
+   uniformly.)
+
+4. **`results/12_reduced_grid_merged.csv` is now committed — `d136882`, tracked on
+   `identification-fix`** (730 lines), with the window confound recorded in its commit
+   message. Every §3 number has a home. It is not on this branch, so citing it from
+   here still means citing across branches until the two are merged.
+
+5. **`results/39_identification_gate.csv` is stale with respect to `69949c3`, and
+   stands as committed deliberately.** The MV fix widened `read_published()`, which
+   `run_identification._real_panel_theta` uses to mask the panel to months with a
+   published market value (now 96,380 of 99,072 DE quarter-hours, 97.3%). Regenerating
+   it today moves the pre-registered I4 day count from 19/55/71/29 to
+   **191/244/262/210** at low/main/high/stress, moves the weakest pair from
+   `wind2023_feb2025_staircase|wind2021_2022_4h` to `size_exempt|pilot_exempt` at main,
+   high and stress, and moves `cond(s)` after merge (39.391 → 31.171 at low). I4 is a
+   pre-registered quantity, so the committed file was restored rather than refreshed
+   and the discrepancy is recorded in `7020dbd`'s message; refreshing it is the
+   student's call.
+
+   **Nothing in this document or in `docs/18` cites a number from that file** — checked:
+   `docs/19` references I4 only as the spec clause whose two clocks collapse in the
+   hourly regime (§1.1b), and `docs/18` §2 cites the pre-registered threshold of 10
+   quarter-hours, not a measured day count. Any *other* text quoting an I4 day count
+   from `results/39` is quoting a pre-MV-fix number and should say so.
+
+6. **The 720-row deletion in the repo root's `results/12_reduced_grid.csv` working
+   tree is unexplained and unowned.** Not mine, and the session that ran the grid
+   reports it is not theirs either and that it has touched nothing in the main
+   checkout. It was present before this work began and is untouched by it. This needs
+   the student, not another session.
 
 ## Nothing pre-registered was changed
 
