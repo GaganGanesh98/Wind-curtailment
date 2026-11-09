@@ -229,7 +229,7 @@ Built from the data, not hard-coded. Legal provenance is preserved on the merged
 cohort's `note`; `CohortSet` validation (shares sum to 1, known `rule_id`) passes.
 
 ```
-MERGE -> theta_out_of_support+post_feb2025_qh      capacity 29.3%
+MERGE -> exposure_out_of_support+post_feb2025_qh   capacity 29.3%
            out_of_support                    16.7%   (dominant)
            post_feb2025_qh                   12.6%
 keep  -> pre2016_in_support_no_s51           33.6%
@@ -241,6 +241,13 @@ keep  -> pilot_exempt                         0.4%
 ```
 
 Under `stress` the group absorbs `pre2016_in_support_no_s51` as well (62.9%, K 8→6).
+
+The `exposure_` prefix names the key. It read `theta_` until 9 Nov 2026: `feature_merge_map`
+delegated to `theta_merge_map`, which labelled every merged id, every cohort `note` and the
+printed header "theta" whatever key it had been handed — so the label contradicted this
+section in every production call. The grouping was always the realised block and is
+unchanged (verified identical on all four arms); only the label moved. The 81 merged gate
+artifacts of 8 Nov store the old `theta_` ids.
 A merged group whose theta is identically zero is represented as out of support with no
 award value — which is what theta = 0 throughout means: no premium left to lose.
 

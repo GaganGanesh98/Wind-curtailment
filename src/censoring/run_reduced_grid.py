@@ -361,14 +361,16 @@ def main() -> None:
         maps = []
         for pc in probes:
             d = _gen(pc, cohorts)
-            _, _, gmap = merge_cohorts(cohorts, np.hstack([d.s, d.depth]), d.theta)
+            _, _, gmap = merge_cohorts(cohorts, np.hstack([d.s, d.depth]), d.theta,
+                                      rule="exposure")
             maps.append(tuple(sorted(tuple(sorted(g.members)) for g in gmap)))
         if len(set(maps)) != 1:
             raise SystemExit(
                 "the merge map is not stable across cells; refusing to generate a "
                 f"grid whose cohort design varies by cell. maps = {maps}")
         d0 = _gen(probes[1], cohorts)
-        merged, _, gmap = merge_cohorts(cohorts, np.hstack([d0.s, d0.depth]), d0.theta)
+        merged, _, gmap = merge_cohorts(cohorts, np.hstack([d0.s, d0.depth]), d0.theta,
+                                      rule="exposure")
         print(f"\n--merge-cohorts: K {len(cohorts)} -> {len(merged)}, "
               f"map verified identical on {len(probes)} cells")
         print(format_merge_map(gmap))

@@ -20,7 +20,9 @@ from src.censoring.identification import (
     condition_numbers,
     duplicate_groups,
     exposure_rank,
+    MERGE_RULES,
     feature_merge_map,
+    format_merge_map,
     gate_identification_verdict,
     identification_diagnostics,
     merge_cohorts,
@@ -181,7 +183,8 @@ def test_merge_restores_full_rank_and_preserves_capacity():
     assert not before.full_rank
     assert before.collinear_capacity_share > 0.0
 
-    merged, theta_m, gmap = merge_cohorts(cohorts, np.hstack([s, depth]), theta)
+    merged, theta_m, gmap = merge_cohorts(cohorts, np.hstack([s, depth]), theta,
+                                          rule="exposure")
     assert len(merged) < len(cohorts)
     assert float(np.sum(merged.shares)) == pytest.approx(1.0)   # CohortSet validates
     s_m = (price[None, :] < theta_m).astype(float)
@@ -192,7 +195,8 @@ def test_merge_restores_full_rank_and_preserves_capacity():
     assert not any(g.is_exact for g in after.groups)
 
     # legal provenance survives on the merged cohort
-    notes = [c.note for c in merged if c.note.startswith("merged on identical theta")]
+    notes = [c.note for c in merged
+             if c.note.startswith("merged on identical realised (s, depth)")]
     assert notes and "out_of_support" in notes[0]
 
 
@@ -208,8 +212,9 @@ def test_merged_group_at_theta_zero_is_marked_out_of_support():
     ])
     s = (price[None, :] < theta).astype(float)
     depth = np.maximum(0.0, theta - price[None, :]) * s
-    merged, _, _ = merge_cohorts(cohorts, np.hstack([s, depth]), theta)
-    z = [c for c in merged if c.cohort_id.startswith("theta_")][0]
+    merged, _, _ = merge_cohorts(cohorts, np.hstack([s, depth]), theta,
+                                 rule="exposure")
+    z = [c for c in merged if c.cohort_id.startswith("exposure_")][0]
     assert z.in_support is False
     assert z.aw_eur_mwh is None
     assert z.subject_to_s51 is False
@@ -448,3 +453,58 @@ def test_theta_zero_is_degenerate_when_every_cohort_reaches_zero():
     assert regime.m == 2                      # "never 0" is empty, as on real data
     assert regime.members[0] == ("c0",)
     assert set(regime.members[1]) == {"c1", "c2"}
+
+
+def test_merge_map_labels_the_key_it_actually_used():
+    """The bug: `feature_merge_map` delegated to `theta_merge_map`, so a merge keyed
+    on the realised (s, depth) block was labelled "theta" in the merged id, in the
+    cohort note and in the printed map -- a false method description, in every
+    production call, headed for the write-up. The label is now built where the
+    grouping happens, so it cannot disagree with the key.
+    """
+    price = np.array([-10.0, -10.0, 50.0, 50.0])
+    # identical ON the exposed set, different off it: merged by exposure, not by theta
+    theta = np.vstack([np.zeros(4), np.array([0.0, 0.0, -29.0, -29.0])])
+    s = (price[None, :] < theta).astype(float)
+    depth = np.maximum(0.0, theta - price[None, :]) * s
+
+    feat = [g for g in feature_merge_map(s, depth, ["i", "j"], [0.6, 0.4])
+            if g.is_merge]
+    assert len(feat) == 1
+    g = feat[0]
+    assert g.rule == "exposure"
+    assert g.rule_phrase == "identical realised (s, depth)"
+    assert g.merged_id == "exposure_i+j"
+    assert "theta" not in g.merged_id
+    assert "identical theta" not in format_merge_map(feat)
+    assert "identical realised (s, depth)" in format_merge_map(feat)
+
+    # and the theta map, which really is theta-keyed, still says so
+    same = np.vstack([np.zeros(4), np.zeros(4)])
+    th = [g for g in theta_merge_map(same, ["i", "j"], [0.6, 0.4]) if g.is_merge]
+    assert th and th[0].rule == "theta"
+    assert th[0].merged_id == "theta_i+j"
+    assert "identical theta" in format_merge_map(th)
+
+
+def test_merge_cohorts_will_not_merge_without_being_told_the_rule():
+    """`rule` is keyword-only and required: nothing can infer what `key` encodes, and
+    guessing is what produced the mislabel."""
+    cohorts = mastr_cohort_set("DE")
+    theta = np.zeros((len(cohorts), 3))
+    with pytest.raises(TypeError):
+        merge_cohorts(cohorts, theta, theta)
+
+
+def test_unknown_merge_rule_is_rejected():
+    with pytest.raises(ValueError, match="unknown merge rule"):
+        theta = np.zeros((2, 3))
+        merge_cohorts(mastr_cohort_set("DE"), theta, theta, rule="vibes")
+
+
+def test_every_merge_rule_token_has_a_phrase():
+    """A token with no phrase would raise only at print time, after the run."""
+    for token, phrase in MERGE_RULES.items():
+        assert token and phrase
+    # the one that matters: the exposure rule must not describe itself as theta
+    assert "theta" not in MERGE_RULES["exposure"]

@@ -279,7 +279,8 @@ def main() -> None:
         probe = generate(SyntheticConfig(area="DE", censoring_rate=0.20, gamma=0.5,
                                          r_shape="logistic", seed=42), cohorts)
         cohorts, _, gmap = merge_cohorts(
-            cohorts, np.hstack([probe.s, probe.depth]), probe.theta)
+            cohorts, np.hstack([probe.s, probe.depth]), probe.theta,
+            rule="exposure")
         label = f"{a.cohorts}+merged"
         n = sum(1 for g in gmap if g.is_merge)
         print(f"merged {n} group(s) on the realised (s, depth) block; "

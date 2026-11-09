@@ -162,7 +162,8 @@ def main() -> None:
             fp = fallback_partition(cohorts, theta, mode)
             print(format_fallback(fallback_identifiability(s, w, fp)))
 
-        merged, theta_m, gmap = merge_cohorts(cohorts, np.hstack([s, depth]), theta)
+        merged, theta_m, gmap = merge_cohorts(cohorts, np.hstack([s, depth]), theta,
+                                           rule="exposure")
         s_m = (p[None, :] < theta_m).astype(float)
         depth_m = np.maximum(0.0, theta_m - p[None, :]) * s_m
         print(f"  -- fallback, '{setting}', after merge --")

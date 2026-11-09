@@ -62,6 +62,7 @@ __all__ = [
     "identification_diagnostics",
     "format_report",
     # merging indistinguishable cohorts
+    "MERGE_RULES",
     "MergeGroup",
     "theta_merge_map",
     "feature_merge_map",
@@ -407,21 +408,82 @@ def format_report(rep: IdentificationReport) -> str:
     return "\n".join(L)
 
 
-# ------------------------------------------------- cohorts keyed on theta, not law
+# ------------------------------------------------ cohorts keyed on the data, not law
+
+#: How a merge map was keyed: the token that prefixes a merged cohort's id, mapped to
+#: the phrase naming the rule in the note, the printed map and the write-up.
+#:
+#: The label is built where the grouping happens and `_merge_map` demands it, so the
+#: two cannot drift apart again. They had: `feature_merge_map` delegated to
+#: `theta_merge_map`, which prefixed every merged id with "theta_" and whose note and
+#: printed header both read "identical theta", although the key it had been handed was
+#: the realised (s, depth) block. Every production call merges on (s, depth), so the
+#: description was wrong everywhere it appeared -- including the ids stored in the 81
+#: merged gate artifacts of 8 Nov 2026 and the map quoted in docs/12.
+MERGE_RULES = {
+    "theta": "identical theta",
+    "exposure": "identical realised (s, depth)",
+}
+
 
 @dataclass(frozen=True)
 class MergeGroup:
-    """One group of legal cohorts that share a theta trajectory."""
+    """One group of legal cohorts the data cannot tell apart under `rule`."""
 
     merged_id: str
     members: tuple[str, ...]
     member_shares: tuple[float, ...]
     capacity_share: float
     dominant: str
+    rule: str
 
     @property
     def is_merge(self) -> bool:
         return len(self.members) > 1
+
+    @property
+    def rule_phrase(self) -> str:
+        return MERGE_RULES[self.rule]
+
+
+def _merge_map(
+    key: np.ndarray,
+    cohort_ids: Sequence[str],
+    w: Sequence[float],
+    rule: str,
+) -> list[MergeGroup]:
+    """Group cohorts by identical rows of `key`, largest group first.
+
+    `rule` names the criterion `key` encodes, must be a key of `MERGE_RULES`, and is
+    what every merged id and note is labelled with. Callers go through
+    `feature_merge_map` or `theta_merge_map`, not here.
+    """
+    if rule not in MERGE_RULES:
+        raise ValueError(f"unknown merge rule {rule!r}; expected one of "
+                         f"{sorted(MERGE_RULES)}")
+    k = np.asarray(key, dtype=float)
+    ids, shares = list(cohort_ids), np.asarray(w, dtype=float)
+    if k.shape[0] != len(ids) or shares.size != len(ids):
+        raise ValueError("key, cohort_ids and w disagree on K")
+
+    by_row: dict[bytes, list[int]] = {}
+    for i in range(k.shape[0]):
+        by_row.setdefault(_row_key(k[i]), []).append(i)
+
+    groups: list[MergeGroup] = []
+    for idx in by_row.values():
+        dom = int(idx[int(np.argmax(shares[idx]))])
+        merged = (ids[dom] if len(idx) == 1
+                  else f"{rule}_" + "+".join(sorted(ids[i] for i in idx)))
+        groups.append(MergeGroup(
+            merged_id=merged,
+            members=tuple(ids[i] for i in idx),
+            member_shares=tuple(float(shares[i]) for i in idx),
+            capacity_share=float(shares[list(idx)].sum()),
+            dominant=ids[dom],
+            rule=rule,
+        ))
+    return sorted(groups, key=lambda g: -g.capacity_share)
 
 
 def theta_merge_map(
@@ -429,41 +491,19 @@ def theta_merge_map(
     cohort_ids: Sequence[str],
     w: Sequence[float],
 ) -> list[MergeGroup]:
-    """Group cohorts by identical theta trajectory, largest group first.
+    """Group cohorts by identical theta trajectory. SUFFICIENT, not necessary.
 
-    Keying on theta rather than on `s` is deliberate and slightly stronger: theta
-    determines both `s` and `depth`, so identical theta means the two cohorts are
-    indistinguishable in every feature a model can see, not merely in exposure.
-    Identical `s` with differing depth is the weak case and is NOT merged here --
-    it stays separate and is reported as weakly identified, because the depth
-    contrast is real information and merging would throw it away.
+    Keying on theta is slightly stronger than keying on exposure: theta determines
+    both `s` and `depth`, so identical theta means two cohorts are indistinguishable
+    in every feature a model can see. It is still not the right test -- see
+    `feature_merge_map`, which is what production uses. This map is kept because
+    reporting it beside the feature map is what shows the gap between the two.
 
     The map is data-dependent: theta depends on the award-value setting and on the
     price series, so a merge valid under one arm may not hold under another. Compute
     and report it per arm; never hard-code a pair.
     """
-    th = np.asarray(theta, dtype=float)
-    ids, shares = list(cohort_ids), np.asarray(w, dtype=float)
-    if th.shape[0] != len(ids) or shares.size != len(ids):
-        raise ValueError("theta, cohort_ids and w disagree on K")
-
-    by_theta: dict[bytes, list[int]] = {}
-    for i in range(th.shape[0]):
-        by_theta.setdefault(_row_key(th[i]), []).append(i)
-
-    groups: list[MergeGroup] = []
-    for idx in by_theta.values():
-        dom = int(idx[int(np.argmax(shares[idx]))])
-        merged = (ids[dom] if len(idx) == 1
-                  else "theta_" + "+".join(sorted(ids[i] for i in idx)))
-        groups.append(MergeGroup(
-            merged_id=merged,
-            members=tuple(ids[i] for i in idx),
-            member_shares=tuple(float(shares[i]) for i in idx),
-            capacity_share=float(shares[list(idx)].sum()),
-            dominant=ids[dom],
-        ))
-    return sorted(groups, key=lambda g: -g.capacity_share)
+    return _merge_map(theta, cohort_ids, w, rule="theta")
 
 
 def feature_merge_map(
@@ -486,18 +526,24 @@ def feature_merge_map(
     Formally, i and j are indistinguishable iff for all t
         1[p<theta_i] == 1[p<theta_j]   and   (theta_i - p) s = (theta_j - p) s,
     i.e. theta need only agree ON the exposed set.
+
+    Identical `s` with differing depth is the weak case and is NOT merged here: it
+    stays separate and is reported as weakly identified, because the depth contrast
+    is real information and merging would throw it away.
     """
-    s = np.asarray(s, dtype=float)
-    d = np.asarray(depth, dtype=float)
-    return theta_merge_map(np.hstack([s, d]), cohort_ids, w)
+    return _merge_map(np.hstack([np.asarray(s, dtype=float),
+                                np.asarray(depth, dtype=float)]),
+                      cohort_ids, w, rule="exposure")
 
 
-def merge_cohorts(cohorts, key: np.ndarray, theta: np.ndarray):
+def merge_cohorts(cohorts, key: np.ndarray, theta: np.ndarray, *, rule: str):
     """(merged CohortSet, merged theta, merge map), grouping on `key` rows.
 
     `key` is the matrix whose identical rows mean "indistinguishable": pass
-    `np.hstack([s, depth])` for the correct criterion, or `theta` for the weaker
-    sufficient one. `theta` is carried through so the merged set keeps a threshold
+    `np.hstack([s, depth])` with rule="exposure" for the correct criterion, or
+    `theta` with rule="theta" for the weaker sufficient one. `rule` is required
+    and keyword-only because nothing here can infer what `key` encodes, and a
+    merge map that misdescribes its own criterion is how the labels went wrong. `theta` is carried through so the merged set keeps a threshold
     trajectory for downstream use.
 
     Legal provenance is preserved: every merged cohort's `note` lists the legal
@@ -513,7 +559,7 @@ def merge_cohorts(cohorts, key: np.ndarray, theta: np.ndarray):
     ids = [c.cohort_id for c in cs]
     shares = [c.capacity_share for c in cs]
     by_id = {c.cohort_id: c for c in cs}
-    groups = theta_merge_map(key, ids, shares)
+    groups = _merge_map(key, ids, shares, rule=rule)
 
     new_cohorts, rows = [], []
     for g in groups:
@@ -534,7 +580,7 @@ def merge_cohorts(cohorts, key: np.ndarray, theta: np.ndarray):
             aw = (sum(a * s for a, s in have) / sum(s for _, s in have)
                   if have else dom.aw_eur_mwh)
             s51 = dom.subject_to_s51
-        note = ("merged on identical theta from: "
+        note = (f"merged on {MERGE_RULES[rule]} from: "
                 + ", ".join(f"{m}({100 * s:.1f}% of fleet)"
                             for m, s in zip(g.members, g.member_shares))
                 + f"; dominant {g.dominant}")
@@ -557,7 +603,10 @@ def merge_cohorts(cohorts, key: np.ndarray, theta: np.ndarray):
 
 
 def format_merge_map(groups: Sequence[MergeGroup]) -> str:
-    L = ["  merge map (keyed on identical theta):"]
+    rules = sorted({g.rule for g in groups})
+    phrase = (" + ".join(MERGE_RULES[r] for r in rules) if rules
+              else "no cohorts")
+    L = [f"  merge map (keyed on {phrase}):"]
     for g in groups:
         if g.is_merge:
             L.append(f"    MERGE -> {g.merged_id}   capacity {100*g.capacity_share:.1f}%")
@@ -571,9 +620,11 @@ def format_merge_map(groups: Sequence[MergeGroup]) -> str:
 
 def merge_cohorts_by_theta(cohorts, theta: np.ndarray):
     """Merge on theta equality alone. SUFFICIENT but not necessary -- prefer
-    `merge_cohorts(cohorts, np.hstack([s, depth]), theta)`. Kept because the
+    `merge_cohorts(cohorts, np.hstack([s, depth]), theta, rule="exposure")`.
+    Kept because the
     theta map is worth reporting beside the feature map to show the gap."""
-    return merge_cohorts(cohorts, np.asarray(theta, dtype=float), theta)
+    return merge_cohorts(cohorts, np.asarray(theta, dtype=float), theta,
+                         rule="theta")
 
 
 # ------------------------------------------------------- the proposed gate criterion
