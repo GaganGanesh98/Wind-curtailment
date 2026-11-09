@@ -346,8 +346,49 @@ def overall(verdicts: list[dict], n_level) -> dict:
     }
 
 
-def run(levels, out_name: str, cells=None, verbose: bool = True) -> list[dict]:
-    """The cell loop. One shared stage A per cell, reused at every n-level."""
+def cell_key(rate, gamma, shape, seed) -> tuple[str, str, str, str]:
+    """The identity of a cell as it appears in the CSV, as strings."""
+    return (str(rate), str(gamma), str(shape), str(seed))
+
+
+def completed_cells(path: Path, n_methods: int) -> set[tuple[str, str, str, str]]:
+    """Cells already fully written in `path`.
+
+    A cell counts as complete only when it carries a row for EVERY method. A cell
+    with fewer rows is treated as absent and is re-run, so a file that stopped
+    mid-cell cannot leave a half-scored cell in the record.
+
+    Raises if any cell is partial, because append-mode cannot remove the orphan
+    rows -- the caller must decide what to do rather than have it papered over.
+    """
+    import csv as _csv
+    if not path.exists():
+        return set()
+    counts: dict[tuple[str, str, str, str], set[str]] = {}
+    with open(path, encoding="utf-8") as fh:
+        for row in _csv.DictReader(fh):
+            k = cell_key(row["censoring_rate"], row["gamma"],
+                         row["r_shape"], row["seed"])
+            counts.setdefault(k, set()).add(row["method"])
+    partial = {k: sorted(v) for k, v in counts.items() if len(v) != n_methods}
+    if partial:
+        raise ValueError(
+            f"{path.name} holds {len(partial)} partially written cell(s); append "
+            f"mode cannot remove their orphan rows. Resolve by hand before "
+            f"resuming. First: {next(iter(partial.items()))}")
+    return set(counts)
+
+
+def run(levels, out_name: str, cells=None, verbose: bool = True,
+        resume: bool = False) -> list[dict]:
+    """The cell loop. One shared stage A per cell, reused at every n-level.
+
+    `resume=True` skips cells already complete in the output CSV and APPENDS the
+    rest. Without it the Writer truncates, which is the default and unchanged.
+    Resume is only valid because every cell is fully determined by its own
+    SyntheticConfig seed and every fit re-seeds its own RNG, so a cell's result
+    does not depend on how many cells preceded it.
+    """
     from src.censoring.cohorts import mastr_cohort_set
     from src.censoring.tb_methods import build_specs, make_shared_stage_a
 
@@ -356,7 +397,18 @@ def run(levels, out_name: str, cells=None, verbose: bool = True) -> list[dict]:
     shared = make_shared_stage_a()
     cells = cells or [(r, g, sh, sd) for r in RATES for g in GAMMAS
                       for sh in SHAPES for sd in SEEDS]
-    writer = Writer(RESULTS_DIR / out_name,
+    out_path = RESULTS_DIR / out_name
+    if resume:
+        done = completed_cells(out_path, len(specs))
+        before = len(cells)
+        cells = [c for c in cells if cell_key(*c) not in done]
+        print(f"  resume: {len(done)} cell(s) already complete, "
+              f"{len(cells)} of {before} to run, appending to {out_path.name}",
+              flush=True)
+        if not cells:
+            print("  nothing to do.", flush=True)
+            return []
+    writer = Writer(out_path, append=resume,
                     extra_fieldnames=("n_free_params", "param_detail", "chosen_lambda",
                                       "chosen_bins", "at_grid_boundary"))
     rows: list[dict] = []
@@ -433,6 +485,9 @@ def main() -> None:
                     help="run only the first N cells (timing probe only)")
     ap.add_argument("--report-only", action="store_true",
                     help="re-report from an existing CSV without refitting anything")
+    ap.add_argument("--resume", action="store_true",
+                    help="skip cells already complete in the output CSV and append "
+                         "the rest, instead of truncating and starting over")
     args = ap.parse_args()
     levels = (N_PRIMARY,) if args.which == "primary" else N_SECONDARY
     out = ("21_tb_primary.csv" if args.which == "primary"
@@ -452,7 +507,7 @@ def main() -> None:
         return
     print(f"T-B {args.which}: {len(cells)} cells, levels={levels}, "
           f"writing results/{out}")
-    rows = run(levels, out, cells=cells)
+    rows = run(levels, out, cells=cells, resume=args.resume)
     report(rows, levels)
 
 

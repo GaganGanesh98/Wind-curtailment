@@ -85,9 +85,13 @@ class Writer:
     it.
     """
 
-    def __init__(self, path: Path, extra_fieldnames: tuple[str, ...] = ()):
+    def __init__(self, path: Path, extra_fieldnames: tuple[str, ...] = (),
+                 append: bool = False):
         self.path = path
         self.extra = tuple(extra_fieldnames)
+        # append=True only takes effect when the file already exists; a fresh run
+        # with append=True behaves exactly like a normal run.
+        self.append = bool(append) and path.exists()
         self.fh = None
         self.writer = None
 
@@ -95,11 +99,25 @@ class Writer:
         if self.writer is None:
             fields = list(row) + [f for f in self.extra if f not in row]
             self.path.parent.mkdir(parents=True, exist_ok=True)
-            self.fh = open(self.path, "w", newline="", encoding="utf-8")
+            if self.append:
+                # Refuse to append to a file whose header differs: a silent column
+                # mismatch would corrupt every row written from here on.
+                with open(self.path, encoding="utf-8", newline="") as fh:
+                    existing = next(csv.reader(fh), None)
+                if existing != fields:
+                    raise ValueError(
+                        f"Refusing to append to {self.path.name}: its header does "
+                        f"not match the rows about to be written.\n"
+                        f"  on disk:  {existing}\n"
+                        f"  incoming: {fields}")
+                self.fh = open(self.path, "a", newline="", encoding="utf-8")
+            else:
+                self.fh = open(self.path, "w", newline="", encoding="utf-8")
             self.writer = csv.DictWriter(self.fh, fieldnames=fields,
                                          lineterminator="\n", restval="",
                                          extrasaction="raise")
-            self.writer.writeheader()
+            if not self.append:
+                self.writer.writeheader()
         self.writer.writerow(row)
         self.fh.flush()
 
