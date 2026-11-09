@@ -104,6 +104,9 @@ from src.censoring.run_reduced_grid import ARTIFACT_DIR, GATE_RIVALS
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RESULTS_DIR = REPO_ROOT / "results"
 OUT_CSV = RESULTS_DIR / "13_gate_verdict.csv"
+#: Where a `run_reduced_grid.py --merge-cohorts` run stores its cells. Scoring that
+#: run means reading these instead of the unmerged ARTIFACT_DIR imported above.
+MERGED_ARTIFACT_DIR = REPO_ROOT / "data" / "processed" / "e1_gate_artifacts_merged"
 
 # Quoted from spec v1.8 section 7. Not editable here.
 CRITERIA = {
@@ -434,9 +437,20 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--allow-partial", action="store_true",
                     help="score whatever cells are on disk (default: require 81)")
+    ap.add_argument("--merged", action="store_true",
+                    help="score the merged-cohort run in "
+                         "data/processed/e1_gate_artifacts_merged (default: the "
+                         "unmerged data/processed/e1_gate_artifacts)")
     args = ap.parse_args()
 
+    global ARTIFACT_DIR
+    out_csv = OUT_CSV
+    if args.merged:
+        ARTIFACT_DIR = MERGED_ARTIFACT_DIR
+        out_csv = OUT_CSV.with_name(f"{OUT_CSV.stem}_merged{OUT_CSV.suffix}")
+
     cells = load_cells()
+    print(f"scoring artifacts in {ARTIFACT_DIR}")
     print(f"Gate scope: rates >= {MIN_RATE:.0%}, seeds {GATE_SEEDS}, "
           f"all three r* shapes.")
     print(f"Cells found in {ARTIFACT_DIR.relative_to(REPO_ROOT)}: {len(cells)} of 81")
@@ -469,11 +483,11 @@ def main() -> None:
               "structure is not identified\n  on this design.")
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(OUT_CSV, "w", newline="", encoding="utf-8") as fh:
+    with open(out_csv, "w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
         w.writeheader()
         w.writerows(rows)
-    print(f"\nWrote {OUT_CSV.relative_to(REPO_ROOT)}")
+    print(f"\nWrote {out_csv.relative_to(REPO_ROOT)}")
 
 
 if __name__ == "__main__":
