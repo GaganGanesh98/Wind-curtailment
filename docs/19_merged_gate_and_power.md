@@ -462,10 +462,29 @@ report at face value.
    are now `exposure_out_of_support+post_feb2025_qh` and
    `exposure_out_of_support+post_feb2025_qh+pre2016_in_support_no_s51`, while the 81
    artifacts on disk still store the old `theta_` ids — so code and artifacts disagree
-   on the label until a regeneration. Nothing reads those strings functionally:
-   `gate_verdict.py` and `oracle_power_check.py` never reference `cohort_ids` at all,
-   and `docs/18` §3's purpose for the note — carrying legal provenance into the
-   write-up — is what the fix restores. No value in §1 – §4 depends on a cohort id.
+   on the label until a regeneration. `docs/18` §3's purpose for the note — carrying
+   legal provenance into the write-up — is what the fix restores.
+
+   Stated precisely, because the two branches differ and it matters which one produced
+   these numbers. **On this branch**, `gate_verdict.py` (494 lines) contains no
+   criterion (d) and no reference to `cohort_ids` whatsoever, and
+   `oracle_power_check.py` references neither; the merged run's output in §1 contains
+   no (d) section. **On `identification-fix`**, `gate_verdict.py` (522 lines) does have
+   a `criterion_d` (`:349`) that reads `cohort_ids` (`:381`) — but it is `[PROPOSED]`,
+   printed as "reported, not gated", its `rows` parameter is unused (`# noqa: ARG001`)
+   so it contributes nothing to the verdict CSV, and the verdict line is explicitly
+   `overall = a_pass and b_pass and vc`, excluding it. There the ids serve only as
+   weakest-pair display labels plus a length check. **Either way, no gated number in
+   §1 – §4 can depend on a cohort id**, which is the claim that matters.
+
+   Two riders for whoever runs (d) against these artifacts. It will print the stored
+   `theta_` ids rather than the `exposure_*` ones the code now emits, so the label
+   divergence above becomes visible in that output rather than staying latent. And its
+   length check does `return {}` on the first cell whose stored id count disagrees with
+   `s`, which aborts (d) for the **entire run**, not just that cell; because
+   `d_pass = bool(vd) and all(...)`, an aborted (d) then prints as `FAIL` rather than as
+   "skipped". That is a guard misreporting itself as a failed criterion — harmless
+   while (d) is excluded from the verdict, and worth fixing before it ever is not.
 
 2. **`window.py` is not on this branch and nothing in the grid path imports it.**
    The E1/E2 window constant lives only on `identification-fix`, and
