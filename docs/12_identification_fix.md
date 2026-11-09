@@ -689,3 +689,48 @@ throughout, so neither field is ever consulted. The honest representation is a t
 value meaning "no clock applies", which would touch `Cohort.__post_init__`'s
 validation and `MACRO_QH`/`MACRO_HOUR` across the package. Left alone deliberately —
 it changes nothing about any number, and `theta_regime` does not read either field.
+
+## J. Criterion (d) on the merged design, measured
+
+Criterion (d) is `[PROPOSED]` and excluded from the gate verdict
+(`overall = a_pass and b_pass and vc`). What follows is a measurement, not a verdict.
+
+Scored from the stored `s`, `depth` and `shares` of all 81 merged gate artifacts in
+`data/processed/e1_gate_artifacts_merged`, via `gate_identification_verdict`. No
+refit, no regeneration.
+
+| quantity | min | median | max | floor |
+|---|---|---|---|---|
+| `rank([s \| depth])` vs K | 6 = K in **81 of 81** cells | — | — | rank = K |
+| tightest pair differs on | **181** QH | 466 | 1,041 | 10 QH |
+| `cond(s)` | 15.673 | 16.214 | 19.177 | ≤ 100 |
+| `cond(w·s)` | 40.344 | 41.603 | 42.815 | reported, not gated |
+| old I4 exposure-differs days | 403 | 732 | 925 | 10 days |
+
+So (d) passes on every cell, and the merge delivered the identification it was
+introduced for: before it, the design was rank 7 of 8 with an exactly collinear pair
+carrying 29.3% of capacity (62.9% under `stress`), and the tightest pair differed on
+**0** quarter-hours.
+
+Three limits, because the first is easy to lose:
+
+1. **This is not a gate verdict.** Criteria (a)–(c) are the gate. Identification
+   decides which cohort tier is carried forward, not whether M1 passes.
+2. **Identification is necessary, not sufficient.** It does not rescue (a) or (b).
+3. **It inherits the window problem in full.** The identification is achieved on a
+   base 61.6% of which predates the MTU15 cutoff of 2025-10-01, so the 18.1×
+   margin over the floor of 10 is partly bought by the longer base. A design can be
+   well identified on data E1/E2 may not be entitled to use.
+
+### Correction to `662bff9`
+
+That commit's message quotes these as "min pair 216-1,029 QH, cond(s) 15.7-17.1, I4
+days 482-896". **All three are wrong.** They were read off a `tail`-truncated print of
+`criterion_d`'s per-cell table — six `r40_g1.0` rows and three cells of a re-run —
+and reported as the range over 81 cells. The table above is the range over 81 cells,
+computed over every one. The commit is not amended because another branch cites its
+SHA; the code it describes is unaffected, since only the quoted ranges were wrong.
+
+The figures were reproduced independently from the same artifacts by the gate-scoring
+session as `docs/18` §2's two gates, to three decimals on every quantity. There is no
+definitional disagreement between the two measurements; there was one truncated print.
