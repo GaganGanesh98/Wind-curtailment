@@ -447,11 +447,19 @@ def recovery_report(c_hats: dict[str, np.ndarray],
 
 def response_curve(p: np.ndarray, knots: np.ndarray, block_shares: np.ndarray,
                    depth_grid: np.ndarray) -> np.ndarray:
-    """Capacity-weighted pooled r-hat on a depth grid: the CDF, by construction."""
+    """Capacity-weighted pooled r-hat on a depth grid: the CDF, by construction.
+
+    `knots[0] == 0.0` is the reservation-depth atom at 0+: capacity that switches off
+    at ANY positive depth. It must be counted once, and only for z > 0, matching
+    `synthetic.true_response`, which is 0 at z = 0 for every shape. The finite sum
+    therefore excludes index 0 (`knots > 0.0`) and the atom is added by the explicit
+    term below. Before 9 Nov 2026 the finite mask admitted index 0 as well, so the
+    atom was counted twice for every z > 0; see `docs/20_response_curve_bug.md`.
+    """
     w = block_shares / block_shares.sum()
     out = np.zeros_like(depth_grid, dtype=float)
     for b in range(p.shape[0]):
-        cdf = np.array([p[b][np.isfinite(knots) & (knots <= z)].sum()
+        cdf = np.array([p[b][np.isfinite(knots) & (knots <= z) & (knots > 0.0)].sum()
                         + (p[b][0] if (knots[0] == 0.0 and z > 0) else 0.0)
                         for z in depth_grid])
         out += w[b] * np.minimum(cdf, 1.0)
