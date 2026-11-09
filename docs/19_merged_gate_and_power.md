@@ -355,6 +355,46 @@ full-grid range:
 
 ---
 
+### 3.5 Did the merge deliver the identification it was for?
+
+`docs/18` §2 is the governing document here, and its drop trigger has exactly two
+gates. Computed by me on the same 81 merged artifacts that §1 – §4 scored, directly
+from the stored `s` and `depth`:
+
+| `docs/18` §2 gate | result on the 81 merged cells |
+|---|---|
+| 1. full rank on the cohort feature block `[s \| depth]` | **rank = 6 = K in 81 of 81 cells** |
+| 2. no cohort pair differing on fewer than 10 quarter-hours | **min pair 181 – 1,041 QH**, median 466; **0 cells below the floor** |
+| *reported, never gated:* `cond(s)` | 15.673 – 19.177, median 16.214 |
+
+**Both gates pass on every cell, and gate 2 passes by more than an order of
+magnitude** — the tightest pair in the whole grid differs on 181 quarter-hours against
+a floor of 10. On the unmerged design the identification audit is what motivated the
+merge in the first place; on the merged design Tier 1's structure is identified on
+every cell of the grid. So the merge did the job it was introduced to do.
+
+Three things this is **not**. It is not a gate verdict — the verdict is §1, and
+`docs/18` §2's trigger decides which *tier* is carried forward, not whether M1 passes.
+It does not rescue (a) or (b): being identified is necessary, not sufficient, and §1
+still fails. And it is **subject to §1.1b in full** — the identification is achieved on
+a base 61.6% of which predates MTU15, where the quarter-hour price has no within-hour
+variation. A design can be well identified on data E1/E2 may not use; that is this
+grid's situation, and gate 2 passing by 18× is partly a consequence of the longer base.
+
+**A discrepancy left unreconciled rather than smoothed over.** The session that ran the
+grid independently scored its `criterion_d` on the same artifacts and reports rank 6/6
+on all 81 cells, which agrees, but min pair 216 – 1,029 QH and `cond(s)` 15.7 – 17.1,
+where I get 181 – 1,041 and 15.673 – 19.177. The ranges differ at both ends. The likely
+cause is definitional — which matrix the condition number is taken on, and whether the
+pair count runs over all quarter-hours or a restricted set — and I have not reconciled
+it. Neither set of numbers changes the conclusion, since both show full rank and both
+put the tightest pair more than an order of magnitude above the floor of 10. **The
+figures in the table above are mine, computed as `docs/18` §2 states the criteria**;
+that session's `criterion_d` is `[PROPOSED]`, excluded from its verdict, does not exist
+on this branch, and is cited here as corroboration, not as a gate result.
+
+---
+
 ## 4. Does this benchmark have the power to discriminate?
 
 **Partly, and only in the pooled bootstrap.** Three findings, which point in different
