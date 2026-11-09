@@ -81,3 +81,65 @@ def test_paired_abs_bias_pools_the_sign_before_taking_the_absolute_value():
     p = paired_abs_bias(a, b, mask, days)
     assert p["diff"] == pytest.approx(0.0 - 40.0)        # |0| - |40|
     assert np.mean(np.abs([100.0, -100.0])) == 100.0     # the wrong statistic
+
+
+def _d_cell(seed, k, t=8):
+    """A minimal criterion (d) cell: two cohorts whose exposure differs."""
+    s = np.zeros((k, t))
+    s[0, : t // 2] = 1.0          # cohort 0 exposed early
+    if k > 1:
+        s[1, t // 2 :] = 1.0      # cohort 1 late, so the pair differs everywhere
+    return {
+        "s": s, "depth": s * 5.0,
+        "shares": np.full(k, 1.0 / k),
+        "cohort_ids": np.array([f"c{i}" for i in range(k)], dtype=str),
+        "berlin_date": np.array([f"2026-01-{1 + i // 2:02d}" for i in range(t)]),
+        "censoring_rate": 0.2, "gamma": 0.5, "r_shape": "half", "seed": seed,
+    }
+
+
+def test_criterion_d_skips_a_bad_cell_instead_of_aborting_the_run():
+    """The guard was `return {}` inside the per-cell loop, so one cell whose stored
+    cohort ids disagreed with `s` discarded every cell already scored. Worse, the
+    verdict line read `d_pass = bool(vd) and all(...)`, so an aborted (d) printed
+    FAIL -- asserting an identification failure when nothing had been scored. A
+    guard must not be reportable as a verdict.
+    """
+    from src.censoring.gate_verdict import criterion_d
+
+    good = _d_cell(42, 2)
+    bad = _d_cell(43, 2)
+    bad["cohort_ids"] = np.array(["c0", "c1", "c2"], dtype=str)   # 3 ids, s has 2 rows
+
+    out = criterion_d([bad, good], [])
+    assert out, "a mismatching cell must not empty the result"
+    assert "r20_g0.5_half_s42" in out       # the good cell survived the bad one
+    assert "r20_g0.5_half_s43" not in out   # the bad one is absent, not False
+
+
+def test_criterion_d_reports_no_cells_as_not_scored_not_as_fail():
+    """An empty (d) is an absence of evidence. `bool({})` is False, which is why it
+    printed as a failed criterion."""
+    from src.censoring.gate_verdict import criterion_d
+
+    vd = criterion_d([], [])
+    assert vd == {}
+    d_pass = bool(vd) and all(vd.values())
+    assert d_pass is False                                  # the old label: "FAIL"
+    assert (("PASS" if d_pass else "FAIL") if vd else "NOT SCORED") == "NOT SCORED"
+
+
+def test_the_i4_day_threshold_is_not_the_per_pair_quarter_hour_floor():
+    """Both are 10. They are different pre-registered quantities -- days vs
+    quarter-hours, "some pair" vs "every pair" -- and must not share a constant."""
+    from src.censoring.gate_verdict import I4_MIN_EXPOSURE_DIFFERS_DAYS
+    from src.censoring.identification import MIN_PAIR_DIFFER_QH
+
+    assert I4_MIN_EXPOSURE_DIFFERS_DAYS == MIN_PAIR_DIFFER_QH == 10
+
+    # The QH floor must not be bound in gate_verdict's namespace at all: if it is not
+    # there, no code there can compare a day count against it. Checking the source
+    # text instead would trip over the comment that explains the distinction.
+    import src.censoring.gate_verdict as gv
+    assert not hasattr(gv, "MIN_PAIR_DIFFER_QH"), (
+        "the I4 day count must not be compared against the per-pair QH floor")

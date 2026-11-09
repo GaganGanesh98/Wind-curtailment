@@ -346,6 +346,15 @@ def criterion_b(cells: list[dict], rows: list[dict]) -> dict:
     return verdicts
 
 
+#: The pre-registered I4 threshold: a cohort design "stands" if some pair's
+#: exposure differs on at least this many event-DAYS. Numerically equal to
+#: identification.MIN_PAIR_DIFFER_QH but a DIFFERENT quantity -- days, not
+#: quarter-hours, and "some pair", not "every pair". Held separately so that
+#: changing one can never silently move the other. Mirrors the literal 10 in
+#: run_identification._row, which is where the I4 verdict is written to CSV.
+I4_MIN_EXPOSURE_DIFFERS_DAYS = 10
+
+
 def criterion_d(cells: list[dict], rows: list[dict]) -> dict:  # noqa: ARG001
     """[PROPOSED] Identification of the cohort design actually used by each cell.
 
@@ -367,6 +376,8 @@ def criterion_d(cells: list[dict], rows: list[dict]) -> dict:  # noqa: ARG001
 
     fallback_ids = mastr_cohort_set("DE").ids
     out: dict[str, bool] = {}
+    skipped: list[str] = []
+    i4_days: list[int | None] = []
     print(f"\n{'-' * 78}\n(d) [PROPOSED] identification -- reported, not gated\n"
           f"{'-' * 78}")
     print(f"  {'cell':<30}{'rank':>8}{'min pair':>10}{'cond(s)':>10}"
@@ -378,18 +389,23 @@ def criterion_d(cells: list[dict], rows: list[dict]) -> dict:  # noqa: ARG001
         # Artifacts written from 8 Nov 2026 carry their own cohort ids, which is the
         # only way to label a MERGED design (K != 8). Older ones do not, and for
         # those the MaStR set is the correct fallback.
+        label = (f"r{int(round(c['censoring_rate'] * 100)):02d}"
+                 f"_g{c['gamma']}_{c['r_shape']}_s{c['seed']}")
         stored = c.get("cohort_ids")
         ids = [str(x) for x in stored] if stored is not None else fallback_ids
         if len(ids) != s.shape[0]:
-            print(f"  cohort ids ({len(ids)}) do not match stored s "
-                  f"({s.shape[0]}); skipping (d)")
-            return {}
+            # Skip THIS cell, not the run. This was `return {}`, which threw away
+            # every cell already scored on the first mismatch -- and since
+            # `d_pass = bool(vd) and all(...)`, an aborted (d) then printed FAIL,
+            # asserting an identification failure when nothing had been scored.
+            # A guard must not be reportable as a verdict.
+            skipped.append(f"{label} (ids {len(ids)} vs s {s.shape[0]})")
+            continue
         nd, _ = exposure_differs_by_day(s, c["berlin_date"])
         v = gate_identification_verdict(s, ids, w, depth,
                                         exposure_differs_days=nd)
-        label = (f"r{int(round(c['censoring_rate'] * 100)):02d}"
-                 f"_g{c['gamma']}_{c['r_shape']}_s{c['seed']}")
         out[label] = v.passed
+        i4_days.append(nd)
         print(f"  {label:<30}{f'{v.rank}/{v.k}':>8}{v.min_pair_differ:>10,}"
               f"{v.cond_s:>10.1f}{nd:>9}{'pass' if v.passed else 'FAIL':>7}")
         # Deliberately NOT appended to `rows`: that list is written by
@@ -399,8 +415,18 @@ def criterion_d(cells: list[dict], rows: list[dict]) -> dict:  # noqa: ARG001
         # results/39_identification_gate.csv instead.
     if out:
         n_fail = sum(1 for ok in out.values() if not ok)
-        print(f"  {len(out)} cells scored; {n_fail} FAIL the proposed criterion "
-              f"while all of them pass the old I4 day count.")
+        # The old-I4 comparison is counted, not asserted: it was printed as "while
+        # all of them pass the old I4 day count" unconditionally, which was true
+        # when written and would have gone on being printed when it stopped being.
+        n_i4_fail = sum(1 for d in i4_days
+                        if d is None or d < I4_MIN_EXPOSURE_DIFFERS_DAYS)
+        print(f"  {len(out)} cells scored; {n_fail} FAIL the proposed criterion, "
+              f"{n_i4_fail} FAIL the old I4 day count.")
+    if skipped:
+        shown = "; ".join(skipped[:5]) + (" ..." if len(skipped) > 5 else "")
+        print(f"  {len(skipped)} cell(s) NOT SCORED (skipped, not failed): {shown}")
+    if not out:
+        print("  (d) scored no cells. That is an absence of evidence, not a FAIL.")
     return out
 
 
@@ -494,7 +520,8 @@ def main() -> None:
     print(f"  (b) {'PASS' if b_pass else 'FAIL'}   per gamma: {fmt(vb)}")
     print(f"  (c) {'PASS' if vc else 'FAIL'}")
     d_pass = bool(vd) and all(vd.values())
-    print(f"  (d) {'PASS' if d_pass else 'FAIL'}   [PROPOSED -- not in spec v1.8, "
+    d_label = ("PASS" if d_pass else "FAIL") if vd else "NOT SCORED"
+    print(f"  (d) {d_label}   [PROPOSED -- not in spec v1.8, "
           f"excluded from the verdict below]")
     overall = a_pass and b_pass and vc
     print(f"\n  GATE: {'PASS' if overall else 'FAIL'}  "
