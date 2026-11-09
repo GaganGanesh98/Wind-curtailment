@@ -1,0 +1,16 @@
+table,method,statistic,n,value_min,value_median,value_max,value_mean,note
+headroom_mw,(per cell),min/median/max/mean,81,92.1,147.7,186.5,149.2,mae_b0 - mae_oracle; the recoverable gap
+recovery_skill_above_1,B0,n_above_1 / min / median / max,0,-0.0,0.0,0.0,-0.0,baseline; 0 of 81 cells above 1.0
+recovery_skill_above_1,B1,n_above_1 / min / median / max,21,-42.5506,0.5469,1.1833,-3.29,baseline; 21 of 81 cells above 1.0
+recovery_skill_above_1,B2,n_above_1 / min / median / max,21,0.8218,0.9802,1.0406,0.9607,baseline; 21 of 81 cells above 1.0
+recovery_skill_above_1,B3,n_above_1 / min / median / max,12,0.8282,0.9763,1.0416,0.9549,baseline; 12 of 81 cells above 1.0
+recovery_skill_above_1,B4,n_above_1 / min / median / max,22,0.782,0.9703,1.0688,0.9642,baseline; 22 of 81 cells above 1.0
+recovery_skill_above_1,B5,n_above_1 / min / median / max,36,0.8246,0.9988,1.1685,0.9903,baseline; 36 of 81 cells above 1.0
+recovery_skill_above_1,M1,n_above_1 / min / median / max,40,0.7907,0.9992,1.0856,0.989,candidate; 40 of 81 cells above 1.0
+recovery_skill_above_1,Oracle,n_above_1 / min / median / max,0,1.0,1.0,1.0,1.0,ceiling; 0 of 81 cells above 1.0
+recovery_skill_above_1,Proxy,n_above_1 / min / median / max,18,-42.2434,0.5329,1.1466,-3.3526,baseline; 18 of 81 cells above 1.0
+recovery_skill_above_1,ANY baseline,n_cells_with_any_baseline_above_1,64,,,,,of 81 cells; baselines B0/B1/B2/B3/B4/B5/Proxy
+censored_mae_mw,M1,min/median/max,81,1103.9,1309.3,1537.0,1311.9,MAE on censored QHs
+censored_mae_mw,B0,min/median/max,81,1195.7,1455.3,1703.8,1459.4,MAE on censored QHs
+censored_mae_mw,Oracle,min/median/max,81,1103.6,1305.1,1519.7,1310.3,MAE on censored QHs
+headroom_vs_error,M1,median_headroom / median_censored_mae,81,,0.112813,,,147.7 MW of 1309.3 MW
