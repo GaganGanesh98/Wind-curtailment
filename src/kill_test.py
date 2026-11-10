@@ -41,7 +41,7 @@ from stats_boot import (  # noqa: E402
 )
 
 WIND_GATE_MW = 10_000.0  # "windy" gate: DE day-ahead wind forecast >= 10 GW
-EASTER_DAYS = ["2026-04-05", "2026-04-06"]
+EASTER_DAYS = ["2026-04-05", "2026-04-06"]  # Easter weekend, a known outlier, excluded from robustness checks
 
 
 def band_mask(price: np.ndarray, lo, hi) -> np.ndarray:
