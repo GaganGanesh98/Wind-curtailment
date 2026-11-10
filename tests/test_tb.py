@@ -257,3 +257,84 @@ def test_b2_is_absent_from_tb_specs_because_it_has_no_response_curve():
     from src.censoring.tb_methods import build_specs
 
     assert "B2" not in {s.name for s in build_specs()}
+
+
+# ----------------------------------------------- the --report-only CSV round trip
+
+def _tb_row(shape, method, seed, value, n_requested=50, failed=False):
+    """A row shaped like `run()` builds them: real int, real bool, real float."""
+    return {
+        "censoring_rate": 0.10, "gamma": 0.0, "r_shape": shape, "seed": seed,
+        "n_event_days_requested": n_requested, "n_event_days_used": n_requested,
+        "method": method, "int_abs_r": value, "failed": failed, "error": "",
+    }
+
+
+def _as_csv_dictreader_would(rows, tmp_path):
+    """Round-trip through CSV so every value comes back a string, as DictReader gives."""
+    import csv
+    p = tmp_path / "rt.csv"
+    with open(p, "w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
+    with open(p, encoding="utf-8") as fh:
+        return list(csv.DictReader(fh))
+
+
+def test_score_verdict_is_identical_live_and_from_csv(tmp_path):
+    """The --report-only bug. `score_verdict` kept its own copy of the metric that
+    compared `n_event_days_requested` against an int and tested `failed` for plain
+    truthiness. Live rows carry an int and a bool, so it worked; `csv.DictReader`
+    yields "50" and "False", so the filter matched nothing, every cell was dropped,
+    and the table printed nan means with 0 wins -- which `overall` then reported as a
+    FAIL on a run that had PASSED. One `_metric` now serves both paths.
+    """
+    from src.censoring.run_tb import score_verdict
+
+    live = []
+    for seed in (45, 46, 47, 48, 49):
+        live.append(_tb_row("step", "M2", seed, 0.001))
+        live.append(_tb_row("step", "B3-CV", seed, 0.009))   # M2 wins every cell
+    from_csv = _as_csv_dictreader_would(live, tmp_path)
+
+    v_live = [v for v in score_verdict(live, 50) if v["rival"] == "B3-CV"
+              and v["r_shape"] == "step"][0]
+    v_csv = [v for v in score_verdict(from_csv, 50) if v["rival"] == "B3-CV"
+             and v["r_shape"] == "step"][0]
+
+    assert v_live["n_effective"] == 5, "the live path must see all five cells"
+    assert v_csv["n_effective"] == 5, "the CSV path dropped every cell (the bug)"
+    assert v_csv["wins"] == v_live["wins"] == 5
+    assert v_csv["m2_mean"] == pytest.approx(v_live["m2_mean"])
+    assert v_csv["rival_mean"] == pytest.approx(v_live["rival_mean"])
+
+
+def test_a_failed_fit_from_csv_counts_as_a_loss_not_as_a_success(tmp_path):
+    """`failed` arrives as the string "False", which is truthy. Reading it that way
+    marked every successful fit as failed; reading it as a plain bool would mark every
+    failed one as a success. Both directions are wrong, so the string is parsed."""
+    from src.censoring.run_tb import score_verdict
+
+    live = []
+    for seed in (45, 46, 47, 48, 49):
+        live.append(_tb_row("step", "M2", seed, 0.001))
+        live.append(_tb_row("step", "B3-CV", seed, float("nan"), failed=True))
+    from_csv = _as_csv_dictreader_would(live, tmp_path)
+
+    v = [x for x in score_verdict(from_csv, 50)
+         if x["rival"] == "B3-CV" and x["r_shape"] == "step"][0]
+    assert v["n_rival_failed"] == 5, "the rival's failures must be counted as failures"
+    assert v["wins"] == 5, "a failed rival loses every cell; M2 wins all five"
+
+
+def test_the_level_filter_matches_across_types(tmp_path):
+    """"50" and 50 must select the same rows, and a different level must select none."""
+    from src.censoring.run_tb import _metric
+
+    live = [_tb_row("step", "M2", s, 0.001) for s in (45, 46)]
+    from_csv = _as_csv_dictreader_would(live, tmp_path)
+
+    assert len(_metric(live, 50, "step", "M2")) == 2
+    assert len(_metric(from_csv, 50, "step", "M2")) == 2
+    assert len(_metric(from_csv, 20, "step", "M2")) == 0

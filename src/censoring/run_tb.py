@@ -241,28 +241,43 @@ def _safe_mean(vals) -> float:
     return float(np.mean(f)) if f else float("nan")
 
 
+def _metric(rows: list[dict], n_level, shape: str, method: str) -> dict:
+    """`int_abs_r` per cell for one shape and method, with failures as +inf.
+
+    One implementation, two consumers. There were two: `score_verdict` carried its own
+    copy that compared `r["n_event_days_requested"]` against an int and tested
+    `r["failed"]` for plain truthiness. Live rows hold an int and a bool, so both
+    worked there. `csv.DictReader` yields "50" and "False": the filter then matched no
+    row at all, every cell was dropped, and the verdict table printed nan means with
+    0 wins and n_eff 0 -- which `overall` reported as a FAIL on a run that had PASSED.
+    `paired_diffs` had already been made string-safe and this copy was left behind.
+
+    Rows reach this function from either source, so the normalisation lives here and
+    nowhere else: str() for the level and the failure flag, float() for the metric.
+    """
+    tag = "all" if n_level is None else n_level
+    out: dict[tuple, float] = {}
+    for r in rows:
+        if (r["r_shape"] != shape or r["method"] != method
+                or str(r["n_event_days_requested"]) != str(tag)):
+            continue
+        failed = str(r["failed"]).lower() in ("true", "1")
+        key = (r["censoring_rate"], r["gamma"], r["seed"])
+        out[key] = float("inf") if failed else float(r["int_abs_r"])
+    return out
+
+
 def score_verdict(rows: list[dict], n_level, alpha: float = 0.05) -> list[dict]:
     """Paired sign tests per shape per rival, on one n-level.
 
     A failed fit scores as a loss for that method, so robustness is part of the
     comparison rather than a way out of it.
     """
-    def metric(shape, method):
-        out = {}
-        for r in rows:
-            if r["r_shape"] != shape or r["method"] != method:
-                continue
-            if r["n_event_days_requested"] != ("all" if n_level is None else n_level):
-                continue
-            key = (r["censoring_rate"], r["gamma"], r["seed"])
-            out[key] = float("inf") if r["failed"] else r["int_abs_r"]
-        return out
-
     verdicts = []
     for shape in SHAPES:
-        m2 = metric(shape, "M2")
+        m2 = _metric(rows, n_level, shape, "M2")
         for rival in PRIMARY_RIVALS + REPORTED_RIVALS:
-            rv = metric(shape, rival)
+            rv = _metric(rows, n_level, shape, rival)
             keys = sorted(set(m2) & set(rv))
             # inf - inf is nan: both failed, no information, excluded as non-finite
             diffs = np.array([m2[k] - rv[k] for k in keys], dtype=float)
@@ -278,18 +293,8 @@ def score_verdict(rows: list[dict], n_level, alpha: float = 0.05) -> list[dict]:
 
 def paired_diffs(rows: list[dict], n_level, shape: str, left: str, right: str):
     """metric(left) - metric(right) over the cells both appear in. Lower favours left."""
-    tag = "all" if n_level is None else n_level
-    def metric(method):
-        out = {}
-        for r in rows:
-            if (r["r_shape"] != shape or r["method"] != method
-                    or str(r["n_event_days_requested"]) != str(tag)):
-                continue
-            failed = str(r["failed"]).lower() in ("true", "1")
-            key = (r["censoring_rate"], r["gamma"], r["seed"])
-            out[key] = float("inf") if failed else float(r["int_abs_r"])
-        return out
-    a, b = metric(left), metric(right)
+    a = _metric(rows, n_level, shape, left)
+    b = _metric(rows, n_level, shape, right)
     keys = sorted(set(a) & set(b))
     return np.array([a[k] - b[k] for k in keys], dtype=float), keys
 
