@@ -1001,3 +1001,83 @@ cross-validation, which is the dominant cost, and push the run past the alternat
 it was chosen to beat. Reported, **gates nothing**, written to its own CSV.
 
 Order from here: PASS 1 → sensitivity arm at n = 50 → PASS 2 → T-A → T-D → verdict.
+
+### T-B note, 2 November 2026 — the sensitivity arm was specified but not implemented
+
+Not an amendment and not a criterion change. `docs/09` stays frozen.
+
+The scheduling correction of 1 November 2026 placed the sensitivity arm after PASS 1
+and before PASS 2. On 2 November, with PASS 1 at 60 of 135 cells, the arm was found to
+have **no implementation**: `run_tb.py --pass` offers only `primary` and `secondary`,
+and neither carries the `y − offset_hat` refit. The arm's own docstring line
+("`--pass secondary`   n in {20, 100, all} + arms") promised arms that did not exist.
+Had PASS 1 been left to finish unattended, the next registered step would have had no
+runner.
+
+It is now implemented as `src/censoring/run_tb_sensitivity.py`, a **separate module**.
+`run_tb.py` was executing PASS 1 at the time and is the pre-registered runner; editing
+it mid-run would have risked the registered artefact for no gain. Every criterion,
+threshold and subsampling primitive is imported from it unchanged.
+
+#### The shift is applied to the observed output, not to one regression target
+
+The specification says "every method is refitted on `y` and on `y − offset_hat`" and
+does not say how. Each method builds `y = 1 − G/A_hat` for itself, inside itself, so
+there are two readings and they measure different things.
+
+**Chosen:** shift `G` by `offset·A_hat` once per cell. Then
+`1 − (G + offset·A_hat)/A_hat = y − offset` exactly, for every method, and each method
+derives everything else from the corrected output — including B3's
+`residual = max(0, A_hat − G)`, which is where B3's response actually comes from.
+
+**Rejected:** shift only the regression target and leave B3's residual on the
+unadjusted `G`. The arm's stated rationale is the **asymmetry** between a response
+confined to the simplex and a binned mean free to return a negative bin. Exempting
+B3's residual from the adjustment would exempt B3 from precisely the asymmetry being
+tested. The rejected reading measures something; it does not measure that.
+
+`A_hat` is fitted on the original `G` and reused unchanged — the offset is measured
+*from* `A_hat`, so refitting on the corrected output would be circular. The censored
+mask is `c_true > 0`, which no change to `G` can touch, so cells, event-days,
+subsample and fit mask are bit-identical to PASS 1.
+
+#### Only the adjusted arm is computed
+
+The unadjusted arm is already in `results/21_tb_primary.csv`. Recomputing it would
+spend a further ~5 hours reproducing numbers that are deterministic given the seeds.
+The arm therefore computes the adjusted side only and compares its verdict against
+PASS 1's. `--verify-cells N` recomputes the unadjusted arm on the first N cells and
+reports any disagreement, which is the cheap form of that assumption's test.
+
+#### Disclosure — an interim partial verdict was computed, and is not interpretable
+
+While verifying that the arm's reporting path could read PASS 1's CSV at all, the
+verdict function was run against the **partial** `21_tb_primary.csv` (406 rows, 58 of
+135 cells) and printed an interim verdict. This is recorded because a pre-registered
+programme must be able to answer truthfully whether interim results were seen.
+
+It carries no weight, and nothing was or may be changed in response to it:
+
+- The cells are generated in a fixed order with the censoring rate as the outer loop,
+  so at 43% the subset contains rates 0.10 and 0.20 and **none of rate 0.40**. It is a
+  systematically incomplete stratum, not a random subsample, and a sign test over it
+  estimates nothing the full grid will report.
+- Hard rule 20 forbids claims from provisional subsets. The interim figure is not
+  quoted here, is not a finding, and does not appear in any result table.
+- `docs/09` is frozen. No criterion, threshold, grid or method may move in response to
+  a partial read, and none did.
+
+The binding T-B verdict is the one `overall()` returns on the complete 945-row
+`results/21_tb_primary.csv`, under Amendment 3 section 0.3.
+
+#### The arm and PASS 2 must run on the same machine as PASS 1
+
+Offloading either to another machine was considered and rejected. `N_SECONDARY` is
+`(20, 100, None)`; n = 50 exists only in PASS 1, so every cross-level and cross-arm
+comparison is against a PASS 1 number. The nested design's claim is that a difference
+between levels "is attributable to the response estimation and nothing else" — a claim
+that fails the moment the levels are computed on different Python, torch and BLAS
+builds, because any difference then admits a platform explanation. Measured cost of
+the alternative, on a one-cell probe: the cloud VM available to this session ran
+roughly **four times slower** than the laptop, so the offload would have been slower
+as well as confounded.
