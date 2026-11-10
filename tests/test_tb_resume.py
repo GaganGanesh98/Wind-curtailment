@@ -103,13 +103,38 @@ def test_completed_cells_on_missing_file(tmp_path):
     assert completed_cells(tmp_path / "nope.csv", 3) == set()
 
 
-def test_real_partial_file_is_clean_and_has_82_cells():
-    """The actual T-B file: 82 complete cells, no partial cell, 7 methods each."""
+def test_the_real_tb_file_never_duplicates_a_cell():
+    """Integrity of results/21_tb_primary.csv at whatever stage the run has reached.
+
+    Replaces an assertion that pinned the file at 82 complete cells (9 Nov 2026).
+    That was a snapshot of a run in progress, and the resume run completed it to 135,
+    so the test failed for the right reason: the world moved. How far the run has got
+    is not a property worth asserting. What is: appending must never duplicate a row,
+    and no cell may hold more methods than the grid defines. Both hold while a run is
+    in flight, so this does not break if the suite is run mid-grid -- only the cell
+    currently being written may be short.
+    """
+    import collections
+    import csv
     from pathlib import Path
+
     p = Path(__file__).resolve().parents[1] / "results" / "21_tb_primary.csv"
     if not p.exists():
         pytest.skip("21_tb_primary.csv not present")
-    done = completed_cells(p, 7)          # raises if any cell is partial
-    assert len(done) == 82
-    assert cell_key(0.2, 1.0, "logistic", 46) in done      # cell 82, last written
-    assert cell_key(0.2, 1.0, "logistic", 47) not in done  # cell 83, the next one
+    with open(p, encoding="utf-8", newline="") as fh:
+        rows = list(csv.DictReader(fh))
+    if not rows:
+        pytest.skip("21_tb_primary.csv holds only a header")
+
+    key = lambda r: (r["censoring_rate"], r["gamma"], r["r_shape"], r["seed"])
+    pairs = collections.Counter((key(r), r["method"]) for r in rows)
+    per_cell = collections.Counter(key(r) for r in rows)
+
+    assert max(pairs.values()) == 1, (
+        f"{sum(n - 1 for n in pairs.values() if n > 1)} duplicated (cell, method) "
+        f"row(s) -- an append wrote over a cell that was already there"
+    )
+    assert max(per_cell.values()) <= 7, "a cell holds more than the 7 T-B methods"
+    assert len(per_cell) <= 135, f"{len(per_cell)} cells exceeds the 135 in the grid"
+    short = [k for k, n in per_cell.items() if n != 7]
+    assert len(short) <= 1, f"{len(short)} incomplete cells, expected at most 1: {short[:5]}"

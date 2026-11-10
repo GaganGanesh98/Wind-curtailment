@@ -1,0 +1,347 @@
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+T-B primary: 135 cells, levels=(50,), writing results/21_tb_primary.csv
+  [  1/135] rate 10% gamma 0.0 step      seed 45   270.3s   elapsed   4.5m  eta 603.7m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [  2/135] rate 10% gamma 0.0 step      seed 46   288.0s   elapsed   9.3m  eta 618.8m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [  3/135] rate 10% gamma 0.0 step      seed 47   469.9s   elapsed  17.1m  eta 754.1m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [  4/135] rate 10% gamma 0.0 step      seed 48   271.3s   elapsed  21.7m  eta 709.3m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [  5/135] rate 10% gamma 0.0 step      seed 49   300.5s   elapsed  26.7m  eta 693.3m
+  [  6/135] rate 10% gamma 0.0 logistic  seed 45   153.7s   elapsed  29.2m  eta 628.4m
+  [  7/135] rate 10% gamma 0.0 logistic  seed 46   176.1s   elapsed  32.2m  eta 588.1m
+  [  8/135] rate 10% gamma 0.0 logistic  seed 47   492.9s   elapsed  40.4m  eta 641.0m
+  [  9/135] rate 10% gamma 0.0 logistic  seed 48   154.8s   elapsed  43.0m  eta 601.4m
+  [ 10/135] rate 10% gamma 0.0 logistic  seed 49   164.5s   elapsed  45.7m  eta 571.3m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 11/135] rate 10% gamma 0.0 half      seed 45   179.0s   elapsed  48.7m  eta 548.8m
+  [ 12/135] rate 10% gamma 0.0 half      seed 46   179.6s   elapsed  51.7m  eta 529.7m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 13/135] rate 10% gamma 0.0 half      seed 47   486.8s   elapsed  59.8m  eta 561.1m
+  [ 14/135] rate 10% gamma 0.0 half      seed 48   195.5s   elapsed  63.0m  eta 544.9m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 15/135] rate 10% gamma 0.0 half      seed 49   236.0s   elapsed  67.0m  eta 535.9m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 16/135] rate 10% gamma 0.5 step      seed 45   213.0s   elapsed  70.5m  eta 524.6m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 17/135] rate 10% gamma 0.5 step      seed 46   306.2s   elapsed  75.6m  eta 525.0m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 18/135] rate 10% gamma 0.5 step      seed 47   274.2s   elapsed  80.2m  eta 521.3m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 19/135] rate 10% gamma 0.5 step      seed 48   226.3s   elapsed  84.0m  eta 512.7m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 20/135] rate 10% gamma 0.5 step      seed 49   269.8s   elapsed  88.5m  eta 508.7m
+  [ 21/135] rate 10% gamma 0.5 logistic  seed 45   135.4s   elapsed  90.7m  eta 492.5m
+  [ 22/135] rate 10% gamma 0.5 logistic  seed 46   203.3s   elapsed  94.1m  eta 483.4m
+  [ 23/135] rate 10% gamma 0.5 logistic  seed 47   178.1s   elapsed  97.1m  eta 472.8m
+  [ 24/135] rate 10% gamma 0.5 logistic  seed 48   137.8s   elapsed  99.4m  eta 459.6m
+  [ 25/135] rate 10% gamma 0.5 logistic  seed 49   171.2s   elapsed 102.2m  eta 449.8m
+  [ 26/135] rate 10% gamma 0.5 half      seed 45   159.3s   elapsed 104.9m  eta 439.7m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 27/135] rate 10% gamma 0.5 half      seed 46   250.3s   elapsed 109.1m  eta 436.3m
+  [ 28/135] rate 10% gamma 0.5 half      seed 47   205.6s   elapsed 112.5m  eta 429.9m
+  [ 29/135] rate 10% gamma 0.5 half      seed 48   158.8s   elapsed 115.1m  eta 420.8m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 30/135] rate 10% gamma 0.5 half      seed 49   234.9s   elapsed 119.1m  eta 416.7m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 31/135] rate 10% gamma 1.0 step      seed 45   258.8s   elapsed 123.4m  eta 413.9m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 32/135] rate 10% gamma 1.0 step      seed 46   254.0s   elapsed 127.6m  eta 410.7m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 33/135] rate 10% gamma 1.0 step      seed 47   229.3s   elapsed 131.4m  eta 406.2m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 34/135] rate 10% gamma 1.0 step      seed 48   285.9s   elapsed 136.2m  eta 404.5m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 35/135] rate 10% gamma 1.0 step      seed 49   231.2s   elapsed 140.0m  eta 400.1m
+  [ 36/135] rate 10% gamma 1.0 logistic  seed 45   169.1s   elapsed 142.9m  eta 392.9m
+  [ 37/135] rate 10% gamma 1.0 logistic  seed 46   152.9s   elapsed 145.4m  eta 385.1m
+  [ 38/135] rate 10% gamma 1.0 logistic  seed 47   135.9s   elapsed 147.7m  eta 376.9m
+  [ 39/135] rate 10% gamma 1.0 logistic  seed 48   159.0s   elapsed 150.3m  eta 370.0m
+  [ 40/135] rate 10% gamma 1.0 logistic  seed 49   140.4s   elapsed 152.7m  eta 362.6m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 41/135] rate 10% gamma 1.0 half      seed 45   228.9s   elapsed 156.5m  eta 358.7m
+  [ 42/135] rate 10% gamma 1.0 half      seed 46   163.1s   elapsed 159.2m  eta 352.5m
+  [ 43/135] rate 10% gamma 1.0 half      seed 47   154.7s   elapsed 161.8m  eta 346.1m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 44/135] rate 10% gamma 1.0 half      seed 48   223.6s   elapsed 165.5m  eta 342.3m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 45/135] rate 10% gamma 1.0 half      seed 49   170.4s   elapsed 168.3m  eta 336.7m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 46/135] rate 20% gamma 0.0 step      seed 45   293.5s   elapsed 173.2m  eta 335.2m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 47/135] rate 20% gamma 0.0 step      seed 46   250.9s   elapsed 177.4m  eta 332.2m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 48/135] rate 20% gamma 0.0 step      seed 47   325.8s   elapsed 182.8m  eta 331.4m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 49/135] rate 20% gamma 0.0 step      seed 48   250.1s   elapsed 187.0m  eta 328.2m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 50/135] rate 20% gamma 0.0 step      seed 49   287.7s   elapsed 191.8m  eta 326.1m
+  [ 51/135] rate 20% gamma 0.0 logistic  seed 45   166.5s   elapsed 194.6m  eta 320.5m
+  [ 52/135] rate 20% gamma 0.0 logistic  seed 46   136.7s   elapsed 196.9m  eta 314.2m
+  [ 53/135] rate 20% gamma 0.0 logistic  seed 47   185.8s   elapsed 200.0m  eta 309.4m
+  [ 54/135] rate 20% gamma 0.0 logistic  seed 48   132.8s   elapsed 202.2m  eta 303.3m
+  [ 55/135] rate 20% gamma 0.0 logistic  seed 49   214.3s   elapsed 205.7m  eta 299.3m
+  [ 56/135] rate 20% gamma 0.0 half      seed 45   188.2s   elapsed 208.9m  eta 294.7m
+  [ 57/135] rate 20% gamma 0.0 half      seed 46   166.9s   elapsed 211.7m  eta 289.6m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 58/135] rate 20% gamma 0.0 half      seed 47   227.1s   elapsed 215.4m  eta 286.0m
+  [ 59/135] rate 20% gamma 0.0 half      seed 48   164.7s   elapsed 218.2m  eta 281.1m
+  [ 60/135] rate 20% gamma 0.0 half      seed 49   260.6s   elapsed 222.5m  eta 278.2m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 61/135] rate 20% gamma 0.5 step      seed 45   366.0s   elapsed 228.6m  eta 277.4m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 62/135] rate 20% gamma 0.5 step      seed 46   282.6s   elapsed 233.3m  eta 274.7m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 63/135] rate 20% gamma 0.5 step      seed 47   286.6s   elapsed 238.1m  eta 272.1m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 64/135] rate 20% gamma 0.5 step      seed 48   271.1s   elapsed 242.6m  eta 269.2m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 65/135] rate 20% gamma 0.5 step      seed 49   228.3s   elapsed 246.4m  eta 265.4m
+  [ 66/135] rate 20% gamma 0.5 logistic  seed 45   262.6s   elapsed 250.8m  eta 262.2m
+  [ 67/135] rate 20% gamma 0.5 logistic  seed 46   144.5s   elapsed 253.2m  eta 257.0m
+  [ 68/135] rate 20% gamma 0.5 logistic  seed 47   158.2s   elapsed 255.9m  eta 252.1m
+  [ 69/135] rate 20% gamma 0.5 logistic  seed 48   147.7s   elapsed 258.3m  eta 247.1m
+  [ 70/135] rate 20% gamma 0.5 logistic  seed 49   132.6s   elapsed 260.5m  eta 241.9m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 71/135] rate 20% gamma 0.5 half      seed 45   365.6s   elapsed 266.6m  eta 240.3m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 72/135] rate 20% gamma 0.5 half      seed 46   198.8s   elapsed 269.9m  eta 236.2m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 73/135] rate 20% gamma 0.5 half      seed 47   246.2s   elapsed 274.0m  eta 232.7m
+  [ 74/135] rate 20% gamma 0.5 half      seed 48   179.6s   elapsed 277.0m  eta 228.4m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 75/135] rate 20% gamma 0.5 half      seed 49   183.5s   elapsed 280.1m  eta 224.1m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 76/135] rate 20% gamma 1.0 step      seed 45   277.5s   elapsed 284.7m  eta 221.0m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 77/135] rate 20% gamma 1.0 step      seed 46   338.4s   elapsed 290.4m  eta 218.7m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 78/135] rate 20% gamma 1.0 step      seed 47   272.6s   elapsed 294.9m  eta 215.5m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 79/135] rate 20% gamma 1.0 step      seed 48   267.4s   elapsed 299.4m  eta 212.2m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 80/135] rate 20% gamma 1.0 step      seed 49   248.8s   elapsed 303.5m  eta 208.7m
+  [ 81/135] rate 20% gamma 1.0 logistic  seed 45   126.2s   elapsed 305.6m  eta 203.7m
+  [ 82/135] rate 20% gamma 1.0 logistic  seed 46   209.5s   elapsed 309.1m  eta 199.8m
+  [ 83/135] rate 20% gamma 1.0 logistic  seed 47   176.4s   elapsed 312.0m  eta 195.5m
+  [ 84/135] rate 20% gamma 1.0 logistic  seed 48   177.7s   elapsed 315.0m  eta 191.3m
+  [ 85/135] rate 20% gamma 1.0 logistic  seed 49   155.0s   elapsed 317.6m  eta 186.8m
+  [ 86/135] rate 20% gamma 1.0 half      seed 45   194.0s   elapsed 320.8m  eta 182.8m
+  [ 87/135] rate 20% gamma 1.0 half      seed 46   232.1s   elapsed 324.7m  eta 179.1m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 88/135] rate 20% gamma 1.0 half      seed 47   204.6s   elapsed 328.1m  eta 175.2m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 89/135] rate 20% gamma 1.0 half      seed 48   216.6s   elapsed 331.7m  eta 171.4m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 90/135] rate 20% gamma 1.0 half      seed 49   224.7s   elapsed 335.5m  eta 167.7m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 91/135] rate 40% gamma 0.0 step      seed 45   397.8s   elapsed 342.1m  eta 165.4m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 92/135] rate 40% gamma 0.0 step      seed 46   440.9s   elapsed 349.4m  eta 163.3m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 93/135] rate 40% gamma 0.0 step      seed 47   359.8s   elapsed 355.4m  eta 160.5m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 94/135] rate 40% gamma 0.0 step      seed 48   403.1s   elapsed 362.1m  eta 158.0m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [ 95/135] rate 40% gamma 0.0 step      seed 49   346.1s   elapsed 367.9m  eta 154.9m
+  [ 96/135] rate 40% gamma 0.0 logistic  seed 45   161.6s   elapsed 370.6m  eta 150.6m
+  [ 97/135] rate 40% gamma 0.0 logistic  seed 46   437.6s   elapsed 377.9m  eta 148.0m
+  [ 98/135] rate 40% gamma 0.0 logistic  seed 47   202.3s   elapsed 381.3m  eta 143.9m
+  [ 99/135] rate 40% gamma 0.0 logistic  seed 48   180.6s   elapsed 384.3m  eta 139.7m
+  [100/135] rate 40% gamma 0.0 logistic  seed 49   172.3s   elapsed 387.2m  eta 135.5m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [101/135] rate 40% gamma 0.0 half      seed 45   227.8s   elapsed 390.9m  eta 131.6m
+  [102/135] rate 40% gamma 0.0 half      seed 46   442.3s   elapsed 398.3m  eta 128.9m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [103/135] rate 40% gamma 0.0 half      seed 47   248.3s   elapsed 402.5m  eta 125.0m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [104/135] rate 40% gamma 0.0 half      seed 48   323.5s   elapsed 407.9m  eta 121.6m
+  [105/135] rate 40% gamma 0.0 half      seed 49   219.5s   elapsed 411.5m  eta 117.6m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [106/135] rate 40% gamma 0.5 step      seed 45   302.4s   elapsed 416.6m  eta 114.0m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [107/135] rate 40% gamma 0.5 step      seed 46   329.3s   elapsed 422.0m  eta 110.4m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [108/135] rate 40% gamma 0.5 step      seed 47   296.2s   elapsed 427.0m  eta 106.7m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [109/135] rate 40% gamma 0.5 step      seed 48   317.1s   elapsed 432.3m  eta 103.1m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [110/135] rate 40% gamma 0.5 step      seed 49   272.4s   elapsed 436.8m  eta  99.3m
+  [111/135] rate 40% gamma 0.5 logistic  seed 45   145.1s   elapsed 439.2m  eta  95.0m
+  [112/135] rate 40% gamma 0.5 logistic  seed 46   219.9s   elapsed 442.9m  eta  90.9m
+  [113/135] rate 40% gamma 0.5 logistic  seed 47   141.7s   elapsed 445.2m  eta  86.7m
+  [114/135] rate 40% gamma 0.5 logistic  seed 48   153.4s   elapsed 447.8m  eta  82.5m
+  [115/135] rate 40% gamma 0.5 logistic  seed 49   120.1s   elapsed 449.8m  eta  78.2m
+  [116/135] rate 40% gamma 0.5 half      seed 45   188.9s   elapsed 453.0m  eta  74.2m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [117/135] rate 40% gamma 0.5 half      seed 46   288.3s   elapsed 457.8m  eta  70.4m
+  [118/135] rate 40% gamma 0.5 half      seed 47   172.5s   elapsed 460.6m  eta  66.4m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [119/135] rate 40% gamma 0.5 half      seed 48   208.6s   elapsed 464.1m  eta  62.4m
+  [120/135] rate 40% gamma 0.5 half      seed 49   187.0s   elapsed 467.2m  eta  58.4m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [121/135] rate 40% gamma 1.0 step      seed 45   343.8s   elapsed 473.0m  eta  54.7m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [122/135] rate 40% gamma 1.0 step      seed 46   384.2s   elapsed 479.4m  eta  51.1m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [123/135] rate 40% gamma 1.0 step      seed 47   354.6s   elapsed 485.3m  eta  47.3m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [124/135] rate 40% gamma 1.0 step      seed 48   288.2s   elapsed 490.1m  eta  43.5m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [125/135] rate 40% gamma 1.0 step      seed 49   269.9s   elapsed 494.6m  eta  39.6m
+  [126/135] rate 40% gamma 1.0 logistic  seed 45   172.6s   elapsed 497.4m  eta  35.5m
+  [127/135] rate 40% gamma 1.0 logistic  seed 46   245.2s   elapsed 501.5m  eta  31.6m
+  [128/135] rate 40% gamma 1.0 logistic  seed 47   183.1s   elapsed 504.6m  eta  27.6m
+  [129/135] rate 40% gamma 1.0 logistic  seed 48   128.5s   elapsed 506.7m  eta  23.6m
+  [130/135] rate 40% gamma 1.0 logistic  seed 49   120.1s   elapsed 508.7m  eta  19.6m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [131/135] rate 40% gamma 1.0 half      seed 45   282.7s   elapsed 513.4m  eta  15.7m
+  [132/135] rate 40% gamma 1.0 half      seed 46   287.6s   elapsed 518.2m  eta  11.8m
+/Users/gagan/msc-thesis-wind-curtailment/src/censoring/m2.py:356: UserWarning: Solution may be inaccurate. Try another solver, adjusting the solver settings, or solve with verbose=True for more information.
+  prob.solve()
+  [133/135] rate 40% gamma 1.0 half      seed 47   252.1s   elapsed 522.4m  eta   7.9m
+  [134/135] rate 40% gamma 1.0 half      seed 48   152.8s   elapsed 525.0m  eta   3.9m
+  [135/135] rate 40% gamma 1.0 half      seed 49   169.6s   elapsed 527.8m  eta   0.0m
+
+====================================================================================================
+T-B at n_event_days = 50
+====================================================================================================
+  shape     rival         M2 mean     rival   wins  n_eff  thr        p  ties  M2 fail riv fail  verdict
+  step      B3-CV         0.00013   0.00199     45     45   30   0.0000     0        0        0  PASS  (decisive)
+  step      B6            0.00013   0.01287     45     45   30   0.0000     0        0        0  PASS  (decisive)
+  step      B3@8          0.00013   0.00193     45     45   30   0.0000     0        0        0  PASS
+  step      B3-H          0.00013   0.00180     45     45   30   0.0000     0        0        0  PASS
+  step      M2-noPool     0.00013   0.00013     32     44   29   0.0037     1        0        0  PASS
+  step      M2-noAtom     0.00013   0.01050     45     45   30   0.0000     0        0        0  PASS
+  logistic  B3-CV         0.01176   0.02582     41     45   30   0.0000     0        0        0  PASS  (decisive)
+  logistic  B6            0.01176   0.03678     45     45   30   0.0000     0        0        0  PASS  (decisive)
+  logistic  B3@8          0.01176   0.19963     45     45   30   0.0000     0        0        0  PASS
+  logistic  B3-H          0.01176   0.04129     45     45   30   0.0000     0        0        0  PASS
+  logistic  M2-noPool     0.01176   0.01458     28     45   30   0.1352     0        0        0  no
+  logistic  M2-noAtom     0.01176   0.01199     26     45   30   0.3713     0        0        0  no
+  half      B3-CV         0.01106   0.01064     22     45   30   1.0000     0        0        0  no  (decisive)
+  half      B6            0.01106   0.02878     36     45   30   0.0001     0        0        0  PASS  (decisive)
+  half      B3@8          0.01106   0.01051     21     45   30   0.7660     0        0        0  no
+  half      B3-H          0.01106   0.01062     19     45   30   0.3713     0        0        0  no
+  half      M2-noPool     0.01106   0.01499     38     44   29   0.0000     1        0        0  PASS
+  half      M2-noAtom     0.01106   0.03180     45     45   30   0.0000     0        0        0  PASS
+
+  COMPONENT ATTRIBUTION (Amendment 3 0.3: ablation vs B3-CV, reported, decides nothing)
+    shape     left       vs        wins  n_eff  thr        p  note
+    step      M2-noPool  B3-CV       45     45   30   0.0000  pre-registered
+    step      M2-noAtom  B3-CV        0     45   30   0.0000  pre-registered
+    step      M2         B3-CV       45     45   30   0.0000  context
+    logistic  M2-noPool  B3-CV       37     45   30   0.0000  pre-registered
+    logistic  M2-noAtom  B3-CV       44     45   30   0.0000  pre-registered
+    logistic  M2         B3-CV       41     45   30   0.0000  context
+    half      M2-noPool  B3-CV        5     45   30   0.0000  pre-registered
+    half      M2-noAtom  B3-CV        0     45   30   0.0000  pre-registered
+    half      M2         B3-CV       22     45   30   1.0000  context
+
+  Pre-registered rule (Amendment 3 section 0.3 T-B), applied verbatim:
+    M2 beats logistic vs B3-CV      True
+    M2 beats logistic vs B6         True
+    M2 beats step vs B3-CV          True
+    M2 beats step vs B6             True
+    M2 not significantly worse on half vs B3-CV    True   [GATES]
+    (reported only) half vs B6                  True
+
+  T-B VERDICT at n = 50: PASS
