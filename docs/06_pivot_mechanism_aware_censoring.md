@@ -1,8 +1,61 @@
 # 06 — Pivot: from forecast correction to mechanism-aware censored learning
 
-Version 1.8, 31 Oct 2026 (v1.7: commit 9454c8c; v1.6: commit 46026bf; v1.5: commit 8e3b708; v1.4: commit
+Version 1.9, 8 Nov 2026 (v1.8: commit d86e12d; v1.7: commit 9454c8c; v1.6: commit 46026bf; v1.5: commit 8e3b708; v1.4: commit
 4b9dc8c; v1.3: commit 2538e56; v1.2: commit 980cd30; v1.1 and v1: not committed).
 Working spec, not proposal prose.
+
+> **Numbering note.** The audit that prompted this revision called it "v1.4", tracking
+> the §3 I4 clause's own lineage (v1.2 pre-registered the day count, v1.3 made the
+> fallback pool r rather than s). But v1.4 is already taken by a whole-spec revision of
+> 30 Oct, and the doc versions the spec rather than the clause, so this is **v1.9**.
+
+**Changes in v1.9** (8 Nov 2026, after `docs/13_theta_audit.md`). **Nothing here is
+pre-registered.** v1.8's minute reads "No further gate changes without the student's
+written decision", and the two proposals below are gate changes. They are recorded so
+they can be adopted *before* the merged grid is scored — a fallback or a drop trigger
+chosen with the gate result in hand is not a pre-registration — and they take effect
+only on that written decision.
+
+- **§3 I4: the v1.3 clock fallback is retired as inexecutable.** It assumed the price
+  clock selects which price a cohort compares against. It does not: the clock selects
+  the **θ branch** (§3's own wording at `docs/06:266` and `s_k,t = 1[p_t < θ_k,t]` at
+  `:302`), and the comparison is always against the quarter-hour price. Once
+  indistinguishable cohorts are merged, the only quarter-hour-clock cohort is absorbed
+  into a group whose θ is 0 at every quarter-hour, every survivor carries the hour
+  macro, and the partition has **M = 1**. Measured, not inferred: the macro-aggregated
+  matrix `A_m = Σ_{k∈m} w_k s_k` has one row. Replaced by a three-tier ladder on the θ
+  regime, below.
+- **§3 I4: the drop trigger is replaced.** `exposure_differs_by_day` asks whether
+  cohorts differ *somewhere*; it is satisfied by one differing pair while every other
+  pair is identical, and it cannot see rank. All 81 stored gate cells pass it and fail
+  a criterion that tests identification. New trigger: full rank on the feature block
+  `[s | depth]`, every cohort pair differing on at least 10 quarter-hours, and
+  `cond(s) ≤ 100`. The day count is **demoted to a reported diagnostic**.
+- **I4 is not robustly identified on real data (v1.9).** v1.8 already said separation is
+  gated by the premium and that the low AW setting "is far closer to [the threshold]
+  than the headline 55 suggests". The audit quantifies how much closer: θ is
+  **identically 0 fleet-wide** in 8 of 9 usable months at AW low, 4 of 9 at main, 7 of 9
+  under the base-tariff stress case, and 0 of 9 at high. At AW low every separating
+  quarter-hour falls in a **single month** (April 2026). See §3 I4 and
+  `docs/13_theta_audit.md`.
+- **The market-value series is verified (v1.9).** The MP = 0 shares depend on MV being
+  the wind market value rather than a base-load or monthly-average series, which would
+  be systematically too high and would drive MP to zero artefactually. The loader reads
+  the row `"MW Wind an Land"` from `Monatsmarktwerte_2026.csv`; recomputed independently
+  from the panel as the onshore-weighted average spot price, it sits below the simple
+  monthly mean in **9 of 9** months (capture rate 0.717–0.977, mean 0.826) and below the
+  recomputation in 9 of 9. It is the right series, and in the conservative direction: a
+  lower MV gives a *larger* premium, so MP = 0 occurs despite the more generous input.
+- **Study-window coverage is 92.9%, and was 69.4% because of a loader bug (v1.9).** θ needs
+  a published monthly market value. `read_published` was hard-coded to
+  `Monatsmarktwerte_2026.csv` while the 2025 file sat unread beside it, so Oct–Dec 2025 were
+  silently dropped and every real-data θ figure covered nine months of 2026. Fixed to read
+  all year files: **12 of 13** months, 35,040 of 37,732 quarter-hours, exposed quarter-hours
+  1,853 → 2,052. Only Oct 2026 is legitimately absent (incomplete, and published after month
+  end). The gap survived because nothing asserted coverage;
+  `tests/test_market_value_coverage.py` now does. **The identification verdict is unchanged**
+  — Nov and Dec 2025 have no negative-price quarter-hours, so the whole gain is Oct 2025.
+  `docs/14_mv_coverage_fix.md`.
 
 **Changes in v1.8** (31 Oct 2026, student decision).
 
@@ -325,7 +378,70 @@ rule changes.
 - I1 — no curtailment without incentive: if all s_k,t = 0 then c_t = 0. Test: placebo residuals on positive-price QHs. The current panel shows +0.9% to +2.8% relative bias at positive prices, so A must model the TSO forecast's own bias. **Split the placebo (v1.5):** report it separately for 0–5 €/MWh and > 5 €/MWh, because Hirth (2026, Table 3) finds 4.2% wind curtailment already in the 0–5 band. Intraday-driven curtailment (positive day-ahead, negative intraday price; Hirth Table A9) also violates I1 and is unobservable at D−1: in T2 it is irreducible noise and is reported as such; in T1 it can be stratified if a public intraday price series exists ([VERIFY] Netztransparenz ID-AEP).
 - I2 — overlap: censored QHs have weather/forecast conditions that also occur uncensored. **Checked 29 Oct 2026 (DE):** positive-price QHs exist at every DA forecast level — 7,479 QHs at 20–30 GW, 3,284 at 30–40 GW, but only **948 QHs on 36 days above 40 GW**, where 253 negative QHs sit. Report results separately above 40 GW.
 - I3 — monotonicity: r_k is non-decreasing in price depth (constraint built into the model).
-- I4 — separability of cohorts: the two price clocks (quarter-hour vs hourly mean plus run length) create QHs where one cohort is exposed and another is not. This regulatory mismatch is the identifying variation. If K cohorts are not separable, collapse to two cohorts (QH-clock vs hourly-clock). **Pre-registered test (v1.2):** before any modelling on real data, count the Berlin-local event-days on which the cohort exposure vectors s_k actually differ. Fewer than **10** such days and the K-cohort model is abandoned for the two-cohort one, with the count reported either way. **The collapse pools the response, not the exposure (v1.3):** s_k,t is still computed per legal cohort (rule-table row) and aggregated into each macro-cohort's exposed capacity share; only r is shared within a macro-cohort. The staircase cohort sits at 2 h throughout 2026, but the hourly-clock cohorts still differ by run-length threshold (6 h, 4 h, 2 h), and that variation is kept.
+- I4 — separability of cohorts: cohorts enter `c = Σ_k w_k s_k r*(depth_k)` only through
+  the pair `(s_k, depth_k)`, and that pair depends on the cohort only through **θ_k on the
+  exposed set**. Two cohorts whose θ agrees wherever either is exposed are therefore
+  bit-identical in every feature a model can see, for any price series. The identifying
+  variation is **θ separation**, which has three channels: the gap between θ = 0 (support
+  zeroed, by §51 or by the end of support) and θ = −MP; the run-length thresholds that flip
+  a cohort between them; and the spread of MP across cohorts.
+
+  **Tiered fallback (v1.9, PROPOSED — see the v1.9 note; not pre-registered).** Each tier is
+  entered only when the tier above fails the drop trigger, and the tier actually used is
+  reported with the result.
+
+  | tier | structure | measured conditioning |
+  |---|---|---|
+  | 1 | K cohorts, response per cohort | benchmark rank 6/8 unmerged, 6/6 merged; real panel 7/8 (`low`/`main`/`high`), 6/8 (`stress`) |
+  | 2 | macro-cohorts by **θ regime** — always 0 / switching / never 0 — pooling r within a macro, `s_k` still per legal cohort | benchmark M = 3, cond 6.2; real panel M = 2, cond 6.7 ("never 0" empty) |
+  | 3 | one shared monotone r over per-cohort exposures | always available |
+
+  Tier 2 replaces v1.3's clock partition, which is inexecutable after merging (M = 1).
+  **Tier 2 is identified, not strongly identified:** its weakest pair of macro profiles
+  differs by a mean of **0.0137** on the benchmark and **0.0191** on the real panel, against
+  0.0407 for the clock partition before merging. It will run; what it recovers will be
+  imprecise, and that goes in the write-up rather than a footnote.
+
+  **Tier 3 changes the claim, not just the estimator.** With one shared r the result is a
+  statement about the *structural* form — censoring is price-driven and monotone in depth —
+  and no longer about cohort heterogeneity. RQ2's "and r_k" clause cannot be answered from
+  tier 3, and any cohort-level number reported from it would be the shared curve relabelled.
+
+  **Drop trigger (v1.9, replaces the v1.2 day count).** Evaluated on the evaluation window,
+  per AW setting, before any modelling: (i) full rank on the feature block `[s | depth]`,
+  with `rank(s)` reported alongside — not `rank(s) == K`, which fails a pair that is weakly
+  identified through depth but genuinely identified; (ii) every cohort pair differing on at
+  least **10** quarter-hours, inheriting v1.2's figure but applied per pair rather than as a
+  day count; (iii) `cond(s) ≤ 100`, a backstop calibrated so a design whose worst pair
+  differs on 0 or 1 quarter-hours is rejected. **Not `cond(w·s)`** — it is nearly blind to
+  near-collinearity (543.6 with one differing quarter-hour against 602.2 untouched, and it
+  *falls* as duplication worsens); report it, never gate on it. Cohorts are merged on the
+  realised `(s, depth)` block before the trigger is read, with the legal labels kept as
+  metadata; **not** on θ, which is sufficient but not necessary and misses the collinear
+  pair entirely at AW `high`.
+
+  **Where tier 1 actually stands on real data (v1.9).** θ is identically 0 fleet-wide — no
+  cohort structure of any kind — in **8 of 9** usable months at AW `low`, **4 of 9** at
+  `main`, **7 of 9** under the base-tariff stress case, and **0 of 9** at `high`. At `low`
+  all 492 separating quarter-hours fall in one month. Of the three channels, the premium
+  spread is much the richest (mean 4.4–7.0 distinct θ values where live) while the trigger
+  and support-status channels are binary by construction (2.0) — so separation rests on the
+  channel that disappears whenever MV ≥ AW. **Tier 1 is identified at `high`, weakly at
+  `main`, and not identified at `low` or under stress.** Since rule 19 requires the result
+  to be stable across all three AW settings, tier 1 is **not robustly identified**, and
+  which tier the thesis runs on is a supervisor decision rather than an outcome of the gate.
+  `docs/13_theta_audit.md`.
+
+  **Superseded wordings, kept for audit.** *v1.2* (replaced 8 Nov): "before any modelling on
+  real data, count the Berlin-local event-days on which the cohort exposure vectors s_k
+  actually differ. Fewer than **10** such days and the K-cohort model is abandoned for the
+  two-cohort one, with the count reported either way." — the count is retained as a
+  **reported diagnostic**; it no longer triggers anything, because it is satisfied by a
+  single differing pair and cannot see rank. *v1.3* (replaced 8 Nov): "the two-cohort
+  fallback **pools the response r, not the exposure s**; the run-length thresholds (6 h, 4 h,
+  2 h) remain identifying variation." — pooling r and not s carries over to tier 2 unchanged;
+  what is retired is the **clock** partition it pooled over. The run-length thresholds remain
+  identifying variation, now as one of the three θ channels, and are the binary one.
 
 **I4 on real data — cohort separation is gated by the market premium (v1.8,
 31 Oct 2026).** The pre-registered rule-18 count was run on real 2026 data with
@@ -710,7 +826,7 @@ All entries are **[VERIFY]** — check each at the publisher before citing, foll
 ## 10. Risks and fall-backs
 
 - I2 overlap weak above 40 GW → report that region separately; add hourly history.
-- Cohorts not separable → two-cohort model (QH clock vs hourly clock), pooling r but not s (§3 I4).
+- Cohorts not separable → drop a tier: macro-cohorts by **θ regime**, pooling r but not s; then one shared r. The v1.3 clock partition is retired as inexecutable after merging (v1.9, §3 I4).
 - MaStR award-number join weak → §51 cohort shares still come from commissioning date and size (that is what the rule table keys on), but AW is **never** imputed from commissioning year (rule 19): STOP and decide. E1 does not depend on MaStR. (v1.3)
 - Week-6 checkpoint fails (§7) → two-cohort / single-response refit by 15 Jan 2027; if that fails too, supervisor decision before further real-data work. (v1.3)
 - Wang & Wang turns out to cover the price-driven case → keep the fleet-level, signal-driven and regulatory-transfer angle; tighten the claim.

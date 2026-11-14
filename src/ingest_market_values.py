@@ -126,7 +126,19 @@ import polars as pl
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PANEL = REPO_ROOT / "data" / "processed" / "panel_qh.parquet"
-PUBLISHED = REPO_ROOT / "data" / "raw" / "netztransparenz" / "Monatsmarktwerte_2026.csv"
+PUBLISHED_DIR = REPO_ROOT / "data" / "raw" / "netztransparenz"
+PUBLISHED_GLOB = "Monatsmarktwerte_*.csv"
+#: Kept for reference. Until 8 Nov 2026 `read_published` defaulted to THIS FILE
+#: ALONE, so the 2025 values -- already on disk, all twelve months -- were never
+#: read, and every real-data theta figure silently covered nine months of 2026
+#: instead of the stated study window. docs/14_mv_coverage_fix.md.
+PUBLISHED = PUBLISHED_DIR / "Monatsmarktwerte_2026.csv"
+
+#: Netztransparenz publishes the monthly market value after the month ends. Observed,
+#: not assumed: the 2026 file downloaded 31 Oct 2026 carried values through Sep 2026,
+#: so the previous complete month is available within about a month. Only the panel's
+#: final (possibly partial) month is therefore legitimately absent.
+MV_PUBLICATION_LAG_MONTHS = 1
 RESULTS_DIR = REPO_ROOT / "results"
 
 # Rule 17: how many days of the current month must be available before the
@@ -138,8 +150,35 @@ MONTHS_DE = {"Jan": 1, "Feb": 2, "Mär": 3, "Mrz": 3, "Apr": 4, "Mai": 5, "Jun":
 CT_PER_KWH_TO_EUR_PER_MWH = 10.0
 
 
-def read_published(path: Path = PUBLISHED) -> pl.DataFrame:
-    """The published MW Wind an Land. Semicolon-separated, decimal comma, ct/kWh."""
+def read_published(path: Path | None = None) -> pl.DataFrame:
+    """The published MW Wind an Land, across ALL year files on disk.
+
+    Semicolon-separated, decimal comma, ct/kWh. The year comes from each column
+    header, not from the filename, so globbing is safe.
+
+    Pass `path` to read a single file (used by the tests). The default reads every
+    `Monatsmarktwerte_*.csv` in the reference directory: reading only the 2026 file,
+    as this did until 8 Nov 2026, dropped Oct-Dec 2025 from every real-data theta
+    figure even though the 2025 file was already on disk.
+    """
+    paths = [path] if path is not None else sorted(PUBLISHED_DIR.glob(PUBLISHED_GLOB))
+    if not paths:
+        raise FileNotFoundError(
+            f"no {PUBLISHED_GLOB} in {PUBLISHED_DIR}")
+    frames = [_read_one_published(q) for q in paths]
+    out = pl.concat(frames, how="diagonal") if len(frames) > 1 else frames[0]
+    # A month must not appear twice with different values; a silent overwrite here
+    # would be worse than the gap this function was fixed to close.
+    dup = (out.group_by(["year", "month"])
+              .agg(pl.col("mv_wind_onshore").n_unique().alias("n"))
+              .filter(pl.col("n") > 1))
+    if dup.height:
+        raise ValueError(
+            f"conflicting published market values for {dup.to_dicts()} across {paths}")
+    return out.unique(subset=["year", "month"]).sort(["year", "month"])
+
+
+def _read_one_published(path: Path) -> pl.DataFrame:
     if not path.exists():
         raise FileNotFoundError(f"{path} not found")
     text = path.read_text(encoding="utf-8-sig")
