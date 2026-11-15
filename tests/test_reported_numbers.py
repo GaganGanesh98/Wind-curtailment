@@ -39,6 +39,7 @@ P3 = REPO_ROOT / "artifacts" / "P3"
 Q0 = REPO_ROOT / "artifacts" / "Q0"
 Q0B = REPO_ROOT / "artifacts" / "Q0b"
 Q1D = REPO_ROOT / "artifacts" / "Q1"
+Q0C = REPO_ROOT / "artifacts" / "Q0c"
 QS_FILE = (REPO_ROOT / "data" / "raw" / "netztransparenz"
            / "hochrechnung_wind_onshore_qualitaetsgesichert"
            / "online_hochrechnung_wind_onshore_qs_2025-10-01_2026-10-31_dl2026-11-15.csv")
@@ -490,6 +491,32 @@ def _q1_checks():
     return out
 
 
+def _q0c_checks():
+    """`docs/Q0c_results.md`."""
+    v = pl.read_csv(Q0C / "q0c_volume.csv")
+
+    def V(stat, col):
+        q = v.filter(pl.col("statistic") == stat)
+        if q.height != 1:
+            raise AssertionError(f"Q0c {stat}: {q.height} rows")
+        return q[col][0]
+
+    out = []
+    for stat, (p, lo, hi) in (("signed", (1.644, 1.162, 2.200)),
+                              ("clipped_at_zero", (1.664, 1.187, 2.216))):
+        out += [(f"Q0c {stat} volume TWh", V(stat, "volume_twh"), p, 5e-4),
+                (f"Q0c {stat} CI lo", V(stat, "ci_lo_twh"), lo, 5e-4),
+                (f"Q0c {stat} CI hi", V(stat, "ci_hi_twh"), hi, 5e-4),
+                (f"Q0c {stat} verdict is NOT TESTABLE",
+                 float(V(stat, "verdict") == "NOT TESTABLE at national scale"), 1.0, 0)]
+    out += [("Q0c negative-price QHs", V("signed", "n_neg_qh"), 1860, 0),
+            ("Q0c event-days", V("signed", "n_event_days"), 92, 0),
+            ("Q0c QHs with negative residual", V("signed", "share_qh_resid_negative"), 0.055, 5e-4)]
+    for a in ("50Hertz", "Amprion", "TransnetBW"):
+        out.append((f"Q0c {a} negative-price QHs", V("signed", f"n_neg_qh_{a}"), 1860, 0))
+    return out
+
+
 def _collect():
     """All checks whose artifacts are on disk, as (id, got, want, tol)."""
     out, skipped = [], []
@@ -519,6 +546,10 @@ def _collect():
     else:
         skipped.append("Q0b")
     out += _qs_file_checks()
+    if (Q0C / "q0c_volume.csv").exists():
+        out += _q0c_checks()
+    else:
+        skipped.append("Q0c")
     if (Q1D / "q1_summary_by_level.csv").exists():
         out += _q1_checks()
     else:
