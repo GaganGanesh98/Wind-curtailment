@@ -491,6 +491,18 @@ def _q1_checks():
     return out
 
 
+def _open_list_checks():
+    """`docs/R1_reconciliation.md` section 6 item 6: TenneT correlation, re-measured."""
+    ag = pl.read_csv(Q0B / "q0b_h_agreement.csv")
+    out = []
+    for series, n, c in (("operational", 5422, 0.9913), ("quality-assured", 35673, 0.9914)):
+        q = ag.filter((pl.col("series") == series) & (pl.col("area") == "TenneT")
+                      & (pl.col("sample") == "price >= 0"))
+        out += [(f"R1 open-6 TenneT {series} QHs", q["n_qh"][0], n, 0),
+                (f"R1 open-6 TenneT {series} corr", q["corr_H_G"][0], c, 5e-5)]
+    return out
+
+
 def _q0c_checks():
     """`docs/Q0c_results.md`."""
     v = pl.read_csv(Q0C / "q0c_volume.csv")
@@ -543,6 +555,7 @@ def _collect():
                            load(Q0B / "q0b_verdicts.csv"),
                            load(Q0B / "q0b_h_agreement.csv"))
         out += _amendment1_checks()
+        out += _open_list_checks()
     else:
         skipped.append("Q0b")
     out += _qs_file_checks()

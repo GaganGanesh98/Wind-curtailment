@@ -242,3 +242,20 @@ Working tree there: `src/censoring/m2.py` and `src/censoring/tb_methods.py` modi
 4. Decide whether a 2024-onwards kill test is wanted as a new artifact (§1.2).
 5. Merge `1f08fce` and `5aa5313` into the Phase P branch, or let them meet on merge
    back (§3).
+6. **The TenneT correlation in `docs/06` traces to the wrong series** (added 15 November
+   2026, student's instruction). `docs/06` line 769 gives TenneT's projection-to-output
+   correlation as "0.99+". Q0 Amendment 1 traced that figure to
+   `results/34_hochrechnung_check.csv`, TenneT 0.9923, which is the *Hochrechnung
+   Windenergie* export `docs/06` itself labels the wrong series, 1.57% of the fleet. The
+   checker module that produced `results/34` no longer imports.
+   **Re-measured with working code** on the series Anchor H is, at positive prices
+   (`artifacts/Q0b/q0b_h_agreement.csv`, `corr_H_G`, TenneT, `price >= 0`):
+
+   | series | quarter-hours | correlation |
+   |---|---|---|
+   | operational | 5,422 | 0.9913 |
+   | quality-assured | 35,673 | 0.9914 |
+
+   The re-measured value is also above 0.99, so the number in `docs/06` stands while its
+   source does not. **Remaining action: re-cite `docs/06` line 769 to the Q0b artifact.**
+   `docs/06` is the spec, so the edit is the student's call and is not made here.
