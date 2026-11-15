@@ -64,8 +64,55 @@ def git_head() -> str:
         return "unknown"
 
 
-def load_panel():
-    """Price, forecast, output and dates for the window, with theta per setting."""
+THREE_AREA = "50Hertz+Amprion+TransnetBW"
+POTENTIALS = ("F", "H")
+
+
+def _three_area_series(obs: pl.DataFrame) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """G, F and H summed over 50Hertz, Amprion and TransnetBW, aligned to `obs`.
+
+    The quarter-hours are Q0b's (`q0b_validate_h.load_frames`, quality-assured): those
+    on which all three areas report G, F and H. Elsewhere the series are NaN, so the
+    caller's finiteness mask drops them -- in BOTH potential arms (Q5 pre-registration
+    section 2).
+    """
+    from src.potential.q0b_validate_h import AGG_NAME, load_frames
+    agg = load_frames("quality-assured")[AGG_NAME].select(
+        ["ts_utc", "act_onshore_mw", "da_onshore_mw", "hr_mw"])
+    j = obs.select("ts_utc").join(agg, on="ts_utc", how="left")
+    if j.height != obs.height or (j["ts_utc"] != obs["ts_utc"]).any():
+        raise ValueError("three-area series do not align with the national panel")
+    return tuple(j[c].to_numpy().astype(float)
+                 for c in ("act_onshore_mw", "da_onshore_mw", "hr_mw"))
+
+
+def _region_shares(cohorts, region: str) -> np.ndarray:
+    """Capacity share per cohort: P3's national shares, or the three areas' MW summed."""
+    if region == AREA:
+        return np.array([c.capacity_share for c in cohorts], dtype=float)
+    areas = THREE_AREA.split("+")
+    with open(REPO_ROOT / "results" / "30_mastr_cohort_shares.csv", newline="",
+              encoding="utf-8") as fh:
+        rows = [r for r in csv.DictReader(fh) if r["area"] in areas]
+    mw = {c.cohort_id: 0.0 for c in cohorts}
+    for r in rows:
+        mw[r["cohort"]] += float(r["capacity_mw"])
+    v = np.array([mw[c.cohort_id] for c in cohorts], dtype=float)
+    return v / v.sum()
+
+
+def load_panel(region: str = AREA, potential: str = "F"):
+    """Price, potential, output and dates for the window, with theta per setting.
+
+    Defaults reproduce P3 (`region = DE`, `potential = F`). Q5 calls it with the
+    three-area region and `potential` F or H; theta, prices and the clock stay national
+    (the rules and prices are), and only G, the potential and the shares change.
+    """
+    if region not in (AREA, THREE_AREA) or potential not in POTENTIALS:
+        raise ValueError(f"unknown region {region!r} or potential {potential!r}")
+    if region == AREA and potential != "F":
+        raise ValueError("a DE-wide projection potential is blocked by T-D(vii) "
+                         "(docs/Q_STOP_Q0c.md)")
     cohorts, price_all, mv_mask, dates_all, theta_for = _real_panel_theta()
 
     obs = (pl.scan_parquet(PANEL).filter(pl.col("area") == AREA)
@@ -79,9 +126,16 @@ def load_panel():
     np.testing.assert_allclose(obs["price_eur_mwh"].to_numpy(), price_all, atol=1e-9)
 
     bdate = obs["berlin_date"].to_numpy().astype(str)
-    f = obs["da_onshore_mw"].to_numpy().astype(float)
-    g = obs["act_onshore_mw"].to_numpy().astype(float)
-    finite = np.isfinite(f) & np.isfinite(g) & (f > 0)
+    if region == AREA:
+        f = obs["da_onshore_mw"].to_numpy().astype(float)
+        g = obs["act_onshore_mw"].to_numpy().astype(float)
+        finite = np.isfinite(f) & np.isfinite(g) & (f > 0)
+    else:
+        g, f_da, h = _three_area_series(obs)
+        # The same quarter-hours in both arms: every series finite, both potentials > 0.
+        finite = (np.isfinite(g) & np.isfinite(f_da) & np.isfinite(h)
+                  & (f_da > 0) & (h > 0))
+        f = f_da if potential == "F" else h
     keep = (bdate >= MTU15_FIRST_DELIVERY_DAY) & mv_mask & finite
     clock = build_clock_features(obs["ts_utc"].to_numpy().astype("int64") * 1_000_000,
                                  price_all)
@@ -90,7 +144,8 @@ def load_panel():
     return {
         "cohorts": cohorts, "theta_for": theta_for, "price": price_all, "f": f, "g": g,
         "bdate": bdate, "keep": keep, "runlen": runlen,
-        "shares": np.array([c.capacity_share for c in cohorts], dtype=float),
+        "shares": _region_shares(cohorts, region),
+        "area": region, "potential": potential,
         "ids": tuple(c.cohort_id for c in cohorts),
         "n_dropped_non_finite": int((~finite & (bdate >= MTU15_FIRST_DELIVERY_DAY)
                                      & mv_mask).sum()),
@@ -108,7 +163,7 @@ def run_arm(panel, setting: str, sel: np.ndarray, label: str, recalibrate: bool)
     depth = np.maximum(0.0, theta - price[None, :]) * s
     runlen = panel["runlen"][:, sel]
 
-    c_hat_full = 1.0 - g / np.maximum(f, 1e-9)
+    c_hat_full = 1.0 - g / np.maximum(f, 1e-9)        # f is the potential: F, or H in Q5
     offset = 0.0
     if recalibrate:
         safe = price > SAFE_FLOOR
@@ -116,8 +171,9 @@ def run_arm(panel, setting: str, sel: np.ndarray, label: str, recalibrate: bool)
         c_hat_full = c_hat_full - offset
 
     base = {
-        "area": AREA, "setting": setting, "period": label,
-        "c_hat": ("1 - G/F, recalibrated on price > 5" if recalibrate else "1 - G/F"),
+        "area": panel.get("area", AREA), "setting": setting, "period": label,
+        "c_hat": (f"1 - G/{panel.get('potential', 'F')}, recalibrated on price > 5"
+                  if recalibrate else f"1 - G/{panel.get('potential', 'F')}"),
         "recalibration_offset": offset, "n_qh_period": int(sel.sum()),
         "n_neg_qh": int((price < 0).sum()),
         "n_event_days": int(np.unique(bdate[price < 0]).size),
