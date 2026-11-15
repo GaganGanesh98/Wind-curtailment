@@ -143,8 +143,24 @@ Full test suite:
 bash demo/run_full_suite.sh
 ```
 
+### 5.1 Demo steps and measured times
+
 <!-- numbers-check: skip -->
-Measured step times on the student's laptop are recorded in §5.1 when the demo is run (Phase S6).
+Measured on the student's laptop, 15 Nov 2026, commit 230d5ea, wall clock in whole
+seconds as printed by the script. Run a single step with `bash demo/run_demo.sh 4`.
+
+| Step | What it shows | Time |
+|---|---|---|
+| 1 | environment: Python, packages, data on disk, git commit | 2 s |
+| 2 | kill test re-run on the committed window (from 2025-10-01); prints the DE table and confirms the five output files are byte-identical to `results/` | 1 s |
+| 3 | `pytest tests/test_reported_numbers.py -q`: 738 quoted figures re-derived | 1 s |
+| 4 | one synthetic cell (Arm O, rate 0.2, γ 0.5, logistic, seed 45): true value, identified set and coverage per functional | 5 s |
+| 5 | findings figures F1–F8 regenerated into `demo/output/findings/` | 1 s |
+| 6 | the experiment timeline (§3 of this file) | 1 s |
+| full suite | `bash demo/run_full_suite.sh` | about 255 s |
+
+The demo writes only to `demo/output/` (git-ignored). It stops with an error if
+anything under `results/` or `artifacts/` changed while it ran.
 <!-- /numbers-check -->
 
 ### Rebuild the data from scratch

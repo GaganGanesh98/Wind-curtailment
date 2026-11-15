@@ -7,3 +7,6 @@ __pycache__/
 *.pyc
 .DS_Store
 /untitled folder/
+
+# Phase S6: live demo output, regenerated on every run.
+/demo/output/

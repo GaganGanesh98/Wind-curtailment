@@ -2,6 +2,7 @@
 
     python -m src.identification.run_p3_synthetic --arm O
     python -m src.identification.run_p3_synthetic --arm D --limit 27
+    python -m src.identification.run_p3_synthetic --smoke   # one cell, prints truth vs set
 
 Arm O sets `c_hat = c_true`, so the only error is the discretisation and the geometry;
 the pre-registered >= 95% coverage target applies here. Arm D sets
@@ -343,6 +344,33 @@ def run_cell(rate: float, gamma: float, shape: str, seed: int, hetero: str,
     return score_cell(prep, c_hat_full, potential, arm=arm, stage_a_note=stage_a_note)
 
 
+def smoke(out_path: Path) -> None:
+    """One small synthetic cell end to end, with a known truth (`docs/P3_results.md` Arm O)."""
+    rate, gamma, shape, seed, hetero = 0.20, 0.5, "logistic", 45, "homogeneous"
+    rows = run_cell(rate, gamma, shape, seed, hetero, "O")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({k: row.get(k) for k in writer.fieldnames})
+    print(f"cell: {hetero}, censoring rate {rate}, gamma {gamma}, shape {shape}, seed {seed}, "
+          f"Arm O (exact potential)")
+    print(f"{'functional':<11}{'true value':>12}   {'identified set':<26}{'covered':>8}")
+    for r in rows:
+        if not r.get("defined"):
+            print(f"{r['lam']:<11}{'':>12}   {'undefined':<26}")
+            continue
+        cov = r["covered"] if r["covered"] is not None else r["covered_one_sided"]
+        iv = f"[{r['lo']:.4f}, {r['hi']:.4f}]"
+        print(f"{r['lam']:<11}{r['truth']:>12.4f}   {iv:<26}{str(cov):>8}")
+    scored = [r for r in rows if r.get("defined")]
+    n_cov = sum(bool(r["covered"] if r["covered"] is not None else r["covered_one_sided"])
+                for r in scored)
+    print(f"coverage: {n_cov} of {len(scored)} defined functionals contain the truth")
+    print(f"wrote {out_path}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--arm", choices=("O", "D"), default="O")
@@ -350,7 +378,13 @@ def main() -> None:
     ap.add_argument("--gammas", default="", help="comma-separated subset of gammas")
     ap.add_argument("--seeds", default="", help="comma-separated subset of seeds")
     ap.add_argument("--out", default="")
+    ap.add_argument("--smoke", action="store_true",
+                    help="one Arm O cell; print truth, identified set and coverage; "
+                         "write to demo/output/ unless --out is given, never to artifacts/")
     args = ap.parse_args()
+    if args.smoke:
+        smoke(Path(args.out) if args.out else REPO_ROOT / "demo" / "output" / "p3_smoke_cell.csv")
+        return
 
     gammas = tuple(float(x) for x in args.gammas.split(",")) if args.gammas else GAMMAS
     seeds = tuple(int(x) for x in args.seeds.split(",")) if args.seeds else SEEDS
