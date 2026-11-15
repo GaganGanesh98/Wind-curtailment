@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Live demo, Phase S6. Six steps, each under two minutes on the student's laptop.
+# Live demo, Phases S6 and C3. Seven steps, each under two minutes on the student's laptop.
 # Writes only to demo/output/ (git-ignored); never to results/ or artifacts/.
 #
 #   bash demo/run_demo.sh          all steps
@@ -11,7 +11,7 @@ PY=.venv/bin/python
 OUT=demo/output
 mkdir -p "$OUT"
 STEPS=("$@")
-[ ${#STEPS[@]} -eq 0 ] && STEPS=(1 2 3 4 5 6)
+[ ${#STEPS[@]} -eq 0 ] && STEPS=(1 2 3 4 5 6 7)
 BEFORE=$(git status --porcelain -- results artifacts)
 
 header() { printf '\n==== Step %s: %s ====\n' "$1" "$2"; }
@@ -71,6 +71,11 @@ step5() {
 step6() {
   header 6 "print the experiment timeline"
   awk '/^## 3\. Experiment timeline/{p=1} /^## 4\./{p=0} p' docs/00_START_HERE.md
+}
+
+step7() {
+  header 7 "print the conclusions table: what public data can and cannot tell us"
+  $PY -m src.build_conclusions_table --print
 }
 
 for s in "${STEPS[@]}"; do
