@@ -41,6 +41,7 @@ Q0B = REPO_ROOT / "artifacts" / "Q0b"
 Q1D = REPO_ROOT / "artifacts" / "Q1"
 Q0C = REPO_ROOT / "artifacts" / "Q0c"
 Q5D = REPO_ROOT / "artifacts" / "Q5"
+Q6D = REPO_ROOT / "artifacts" / "Q6"
 QS_FILE = (REPO_ROOT / "data" / "raw" / "netztransparenz"
            / "hochrechnung_wind_onshore_qualitaetsgesichert"
            / "online_hochrechnung_wind_onshore_qs_2025-10-01_2026-10-31_dl2026-11-15.csv")
@@ -595,6 +596,60 @@ def _q5_checks():
     return out
 
 
+def _q6a_checks():
+    """`docs/Q6_results.md`, Q6a."""
+    d = pl.read_csv(Q6D / "q6a_cells.csv", infer_schema_length=0)
+
+    def C(pb, rb, col, variant="G/H"):
+        q = d.filter((pl.col("price_band") == pb) & (pl.col("run_band") == rb)
+                     & (pl.col("variant") == variant))
+        if q.height != 1:
+            raise AssertionError(f"Q6a {pb}/{rb}/{variant}: {q.height} rows")
+        return float(q[col][0])
+
+    def V(variant, col):
+        q = d.filter((pl.col("price_band") == "ALL") & (pl.col("variant") == variant))
+        return q[col][0]
+
+    out = []
+    for variant in ("G/H", "(G+R)/H"):
+        out += [(f"Q6a {variant} verdict PRESENT", float(V(variant, "verdict") == "PRESENT"), 1.0, 0),
+                (f"Q6a {variant} testable cells", float(V(variant, "n_testable_cells")), 8, 0),
+                (f"Q6a {variant} heterogeneous cells", float(V(variant, "n_heterogeneous_cells")), 8, 0)]
+    gh = d.filter((pl.col("variant") == "G/H") & (pl.col("price_band") != "ALL"))
+    out += [("Q6a quarter-hours in cells", gh["n_qh"].cast(pl.Float64).sum(), 2059, 0),
+            ("Q6a occupied cells", gh.height, 10, 0)]
+    table = (("(-5,0)", "0.25-1h", 33, 0.167, 0.0100, 0.0030, 3.3, 0.0019, 0.0120, 0.119),
+             ("(-5,0)", "1-3h", 18, 0.275, 0.0253, 0.0023, 11.0, 0.0100, 0.0345, 0.212),
+             ("(-5,0)", "3-6h", 42, 0.298, 0.0112, 0.0022, 5.2, 0.0039, 0.0143, 0.149),
+             ("(-5,0)", ">6h", 30, 0.282, 0.0090, 0.0023, 4.0, 0.0033, 0.0100, 0.131),
+             ("[-20,-5]", "3-6h", 12, 0.386, 0.0175, 0.0017, 10.6, 0.0029, 0.0272, 0.209),
+             ("[-20,-5]", ">6h", 25, 0.458, 0.0132, 0.0013, 10.3, 0.0061, 0.0170, 0.205),
+             ("[-50,-20]", ">6h", 16, 0.578, 0.0101, 0.0008, 13.0, 0.0034, 0.0147, 0.229),
+             ("<=-50", ">6h", 12, 0.712, 0.0060, 0.0004, 16.6, 0.0019, 0.0089, 0.257),
+             ("[-50,-20]", "3-6h", 4, 0.426, 0.0134, 0.0014, 9.3, -0.0010, 0.0186, 0.196))
+    for pb, rb, nd, cb, vb, vm, ratio, lo, hi, be in table:
+        k = f"Q6a {pb} {rb}"
+        out += [(f"{k} days", C(pb, rb, "n_event_days"), nd, 0),
+                (f"{k} c_bar", C(pb, rb, "c_bar"), cb, 5e-4),
+                (f"{k} V_between", C(pb, rb, "v_between"), vb, 5e-5),
+                (f"{k} V_meas", C(pb, rb, "v_meas"), vm, 5e-5),
+                (f"{k} ratio", C(pb, rb, "ratio_between_over_meas"), ratio, 0.05),
+                (f"{k} CI lo", C(pb, rb, "excess_ci_lo"), lo, 5e-5),
+                (f"{k} CI hi", C(pb, rb, "excess_ci_hi"), hi, 5e-5),
+                (f"{k} break-even sigma", C(pb, rb, "break_even_sigma"), be, 5e-4)]
+        if nd >= 5:
+            out += [(f"{k} iid V_meas smaller", float(C(pb, rb, "v_meas_iid") < C(pb, rb, "v_meas")), 1.0, 0),
+                    (f"{k} (G+R) V_between larger",
+                     float(C(pb, rb, "v_between", "(G+R)/H") > C(pb, rb, "v_between")), 1.0, 0)]
+    out.append(("Q6a C(-20,-5] 1-3h single day", C("[-20,-5]", "1-3h", "n_event_days"), 1, 0))
+    testable = [r for r in table if r[2] >= 5]
+    out += [("Q6a break-even below 0.18", float(sum(r[9] < 0.18 for r in testable)), 3, 0)]
+    ratios = [C(pb, rb, "v_between", "(G+R)/H") / C(pb, rb, "v_between") for pb, rb, nd, *_ in testable]
+    out.append(("Q6a max (G+R) variance factor (up to 25)", float(max(ratios) <= 25.0 and max(ratios) > 24.0), 1.0, 0))
+    return out
+
+
 def _collect():
     """All checks whose artifacts are on disk, as (id, got, want, tol)."""
     out, skipped = [], []
@@ -633,6 +688,10 @@ def _collect():
         out += _q5_checks()
     else:
         skipped.append("Q5")
+    if (Q6D / "q6a_cells.csv").exists():
+        out += _q6a_checks()
+    else:
+        skipped.append("Q6a")
     if (Q1D / "q1_summary_by_level.csv").exists():
         out += _q1_checks()
     else:
