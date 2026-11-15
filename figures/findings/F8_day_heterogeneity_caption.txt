@@ -1,0 +1,5 @@
+F8_day_heterogeneity
+
+Q6a: between-day variance of the curtailed share per testable cell (95% interval) against the variance that measurement error at Anchor H's σ alone would produce.
+
+Source: artifacts/Q6/q6a_cells.csv, rows primary and testable, columns v_between, v_meas, excess_ci_lo, excess_ci_hi (interval = v_meas + excess CI), price_band, run_band.

@@ -1,0 +1,5 @@
+F3_projection_vs_forecast_gap_by_band
+
+Q0b: share of the potential estimate not delivered and not redispatched, (P − G − R) / P, by negative price band, for the quality-assured projection H and the day-ahead forecast F. 50Hertz + Amprion + TransnetBW (TenneT excluded), 95% intervals.
+
+Source: artifacts/Q0b/q0b_gap_shares.csv, rows series = quality-assured, area = 50Hertz+Amprion+TransnetBW, set = band ..., columns estimator, gap_share, ci_lo, ci_hi.

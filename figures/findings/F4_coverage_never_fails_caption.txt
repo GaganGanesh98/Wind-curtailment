@@ -1,0 +1,5 @@
+F4_coverage_never_fails
+
+Coverage of the known truth by the identified sets in every synthetic setting that has a truth: P3 Arms O and D, every Q1 noise level, every Q6b setting. Dashed line: the pre-registered 95% target (binding for P3 Arm O).
+
+Source: artifacts/P3/p3_synthetic_arm_o.csv and p3_synthetic_arm_d.csv, column cov (via src/identification/summarise_p3.load); artifacts/Q1/q1_summary_by_level.csv, column level_coverage; artifacts/Q6/q6b_summary.csv, rows table = levels, column coverage.

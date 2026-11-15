@@ -1,0 +1,5 @@
+F5_exact_vs_estimated_potential
+
+P3: median width of the identified set per functional when the potential is exact (Arm O, seed 45) and when it is estimated (Arm D), log scale. λ₅ is in GWh and is left out.
+
+Source: artifacts/P3/p3_synthetic_arm_o.csv (seed = 45) and p3_synthetic_arm_d.csv, rows feasible, column width, median per lam.

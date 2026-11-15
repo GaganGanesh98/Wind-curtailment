@@ -1,0 +1,5 @@
+F1_problem_schematic
+
+The largest-error negative-price event-day in the kill-test window, Germany: TSO day-ahead wind forecast (a proxy for available power) against actual wind output, with the day-ahead price on the right axis. Shaded: negative-price quarter-hours.
+
+Source: Day chosen as rank 1 in results/02_worst_days_de.csv (column rank_by_total_error). Series from data/processed/panel_qh.parquet, area DE, columns da_wind_mw, act_wind_mw, price_eur_mwh; not in git, rebuilt by src/build_panel.py.
