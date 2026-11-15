@@ -650,6 +650,45 @@ def _q6a_checks():
     return out
 
 
+def _q6b_checks():
+    """`docs/Q6_results.md`, Q6b."""
+    sm = pl.read_csv(Q6D / "q6b_summary.csv")
+    raw = load(Q6D / "q6b_day_effect.csv")
+    lv = sm.filter(pl.col("table") == "levels")
+    sg = sm.filter(pl.col("table") == "signatures")
+    vd = sm.filter(pl.col("table") == "verdict")
+
+    def Lv(sr, sig, col):
+        q = lv.filter(((pl.col("sigma_r") - sr).abs() < 1e-9) & ((pl.col("sigma") - sig).abs() < 1e-9))
+        return float(q[col][0])
+
+    out = [("Q6b rows", raw.height, 3780, 0),
+           ("Q6b verdict NOT SUPPORTED", float(vd["verdict"][0] == "NOT SUPPORTED"), 1.0, 0),
+           ("Q6b no sigma_r meets S1", float(sg["s1"].cast(pl.String).str.to_lowercase().eq("true").sum()), 0, 0),
+           ("Q6b no sigma_r meets S2", float(sg["s2"].cast(pl.String).str.to_lowercase().eq("true").sum()), 0, 0),
+           ("Q6b Q5 fleet CP lo", vd["q5_fleet_cp_lo"][0], 0.060, 5e-4),
+           ("Q6b Q5 fleet CP hi", vd["q5_fleet_cp_hi"][0], 0.610, 5e-4)]
+    table = ((0.0, 1.000, 0.108, 0.039, 0.9966, 0.9964), (0.05, 1.000, 0.117, 0.060, 0.9966, 0.9950),
+             (0.10, 1.000, 0.143, 0.097, 0.9953, 0.9937), (0.20, 0.667, 0.210, 0.155, 0.9935, 0.9931),
+             (0.30, 0.593, 0.250, 0.208, 0.9930, 0.9926))
+    for sr, share, et, eh, ft, fh in table:
+        out += [(f"Q6b {sr} fleet share H", Lv(sr, 0.066, "fleet_share"), share, 5e-4),
+                (f"Q6b {sr} eps T", Lv(sr, 0.18, "median_eps"), et, 5e-4),
+                (f"Q6b {sr} eps H", Lv(sr, 0.066, "median_eps"), eh, 5e-4),
+                (f"Q6b {sr} floor T", Lv(sr, 0.18, "median_floor_ratio"), ft, 5e-5),
+                (f"Q6b {sr} floor H", Lv(sr, 0.066, "median_floor_ratio"), fh, 5e-5),
+                (f"Q6b {sr} coverage H", Lv(sr, 0.066, "coverage"), 1.0, 0),
+                (f"Q6b {sr} coverage T", Lv(sr, 0.18, "coverage"), 1.0, 0),
+                (f"Q6b {sr} fleet defined", Lv(sr, 0.066, "fleet_defined"), 108, 0)]
+    out += [("Q6b L2 at 0.20", Lv(0.20, 0.066, "L2_informative"), 18, 0),
+            ("Q6b L2 at 0.30", Lv(0.30, 0.066, "L2_informative"), 18, 0),
+            ("Q6b L1 at 0.20", Lv(0.20, 0.066, "L1_informative"), 54, 0),
+            ("Q6b L1 at 0.30", Lv(0.30, 0.066, "L1_informative"), 46, 0),
+            ("Q6b 0.30 inside Q5 fleet CP", float(0.060 <= Lv(0.30, 0.066, "fleet_share") <= 0.610), 1.0, 0),
+            ("Q6b 0.20 outside Q5 fleet CP", float(Lv(0.20, 0.066, "fleet_share") > 0.610), 1.0, 0)]
+    return out
+
+
 def _collect():
     """All checks whose artifacts are on disk, as (id, got, want, tol)."""
     out, skipped = [], []
@@ -692,6 +731,10 @@ def _collect():
         out += _q6a_checks()
     else:
         skipped.append("Q6a")
+    if (Q6D / "q6b_summary.csv").exists():
+        out += _q6b_checks()
+    else:
+        skipped.append("Q6b")
     if (Q1D / "q1_summary_by_level.csv").exists():
         out += _q1_checks()
     else:

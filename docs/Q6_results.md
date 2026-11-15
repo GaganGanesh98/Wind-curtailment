@@ -52,3 +52,57 @@ The pre-registration's caveats stand. **Heterogeneity is not shown to be behavio
 The day-to-day variation is real at Anchor H's measured noise, but it could come from
 anything that varies by day and is outside the cell definition: behaviour, the exposed
 cohort mix, or `H`'s own error if that is larger than 0.066.
+
+## Q6b — synthetic day effect: NOT SUPPORTED
+
+Code `src/identification/run_q6b.py` and `src/identification/summarise_q6b.py`, committed
+(`ec77b6a`) before Q6b ran. Artifacts `artifacts/Q6/q6b_day_effect.csv` (3,780 rows: 54
+cells × 5 day-effect levels × 2 noise levels × 7 functionals) and
+`artifacts/Q6/q6b_summary.csv`.
+
+Q6a found heterogeneity, so Q6b did not start from a weakened hypothesis.
+
+**Port check: passed.** At σ_r = 0, all 756 rows at σ = 0.066 and σ = 0.18 equal their
+Q1 rows in every compared field. A deliberate test confirmed the check can fail: with
+σ_r = 0.2 on one cell it flagged 51 differing fields across 7 rows.
+
+> **No σ_r meets either signature, let alone both. Verdict: NOT SUPPORTED.**
+
+| σ_r | fleet share informative at Anchor H | S1, inside [0.004, 0.117] | ε, T → H | floor ÷ residual, T → H | S2 |
+|---|---|---|---|---|---|
+| 0 (control) | 1.000 | no | 0.108 → 0.039 | 0.9966 → 0.9964 | no |
+| 0.05 | 1.000 | no | 0.117 → 0.060 | 0.9966 → 0.9950 | no |
+| 0.10 | 1.000 | no | 0.143 → 0.097 | 0.9953 → 0.9937 | no |
+| 0.20 | 0.667 | no | 0.210 → 0.155 | 0.9935 → 0.9931 | no |
+| 0.30 | 0.593 | no | 0.250 → 0.208 | 0.9930 → 0.9926 | no |
+
+Medians over the 54 cells. The fleet share counts informative (cell, functional) pairs
+over the 108 defined λ₁ and λ₂ pairs.
+
+- **S1 fails at every level.** The day effect lowers the fleet share from 1 to 0.593 at the
+  grid top, five times the band's upper edge. It works through λ₂ first: λ₂ is informative
+  in 18 of 54 cells from σ_r = 0.20, while λ₁ stays at 54 of 54 until σ_r = 0.30, where it
+  falls to 46.
+- **S2 fails at every level.** ε falls from Anchor T to Anchor H at every σ_r, but the
+  floor's share falls with it, as in Q1. Q5's signature, a floor share that rises when ε
+  falls, does not appear.
+- **The day effect raises ε.** At Anchor H, median ε goes from 0.039 at σ_r = 0 to 0.208 at
+  σ_r = 0.30. Q5's real ε under `H` was 0.107.
+- **Coverage of the realised truth is 100% at every level.** The bounds stay honest under
+  the day effect.
+
+**Beside the verdict, deciding nothing.** Against Q5's fleet-only 3 of 11, with Clopper–Pearson
+interval [0.060, 0.610], the share at σ_r = 0.30 and Anchor H, 0.593, falls inside it. No
+lower level does.
+
+**The σ_r grid is censored at the top for S1**, as Q1's σ\* was. The fleet share is still
+falling at 0.30, and Q6b does not say what a larger day effect would give. Extending the
+grid would be a pre-registration change. S2 shows no sign of turning anywhere on the grid.
+
+### What Q6 says together
+
+Q6a finds day-to-day variation in the real curtailed share that Anchor H's measured noise
+cannot produce. Q6b finds that a common day-level shift in r*, at any level up to 0.30, does
+not reproduce Q5's pair of signatures in the synthetic design. On this evidence the real
+floor carries day-level variation, and **a common day effect in r\* does not explain Q5.**
+Other forms of heterogeneity, such as day effects that differ by cohort, are not tested.
