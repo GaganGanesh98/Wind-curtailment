@@ -1,5 +1,5 @@
 F7_synthetic_vs_real
 
-Share informative per functional: synthetic cells at Anchor H's noise (Q1, σ = 0.066) against real functional-months with H as the potential (Q5, main setting, monthly arms).
+Share informative per functional: synthetic cells at Anchor H's noise (Q1, σ = 0.066) against real functional-months with H as the potential (Q5, main setting, monthly arms). Each bar is labelled k/n. Hatched grey bars are real functional-months where the identified set is undefined (n/a), shown as a share of all months; they are not counted as uninformative.
 
-Source: artifacts/Q1/q1_summary_by_level.csv, rows noise = iid, sigma = 0.066, column share_informative; artifacts/Q5/q5_real.csv, rows setting = main, period != window, potential = H, c_hat not recalibrated, informative defined, share of informative = True.
+Source: artifacts/Q1/q1_summary_by_level.csv, rows noise = iid, sigma = 0.066, column share_informative; artifacts/Q5/q5_real.csv, rows setting = main, period != window, potential = H, c_hat not recalibrated; informative True/False defined, empty undefined.

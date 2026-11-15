@@ -39,12 +39,17 @@ def _same(fresh: pl.DataFrame, committed: pl.DataFrame) -> None:
 
 
 @pytest.mark.skipif(not mf.PANEL.exists(), reason="processed panel not on disk")
-def test_f1_is_the_worst_day_and_its_error_matches():
+def test_f1_is_the_worst_day_with_f_g_and_h():
+    assert mf.f1_day() == "2026-04-05"                            # Easter Sunday 2026
+    # The day is rank 1 on DE total wind: re-derive its error from the panel.
+    de = pl.read_parquet(mf.PANEL).filter((pl.col("area") == "DE")
+                                          & (pl.col("berlin_date") == "2026-04-05")
+                                          & (pl.col("price_eur_mwh") < 0))
+    assert de.height == 69                                        # results/02_worst_days_de.csv
+    assert abs(float(de["e_mw"].sum()) - (-860200.9)) <= 0.1     # sum_e_mw_qh
     d = mf.f1_data()
-    assert d["berlin_date"][0] == "2026-04-05"
-    neg = d.filter(pl.col("price_eur_mwh") < 0)
-    assert neg.height == 69                                       # results/02_worst_days_de.csv
-    assert abs(float(neg["e_mw"].sum()) - (-860200.9)) <= 0.1     # sum_e_mw_qh
+    assert d.height == 96 and d["projection_h_mw"].null_count() == 0
+    assert d.filter(pl.col("price_eur_mwh") < 0).height == 69
     _same(d, _committed("F1_problem_schematic"))
 
 
@@ -60,8 +65,11 @@ def test_f2_kill_test_bands():
 
 def test_f3_gap_shares():
     d = mf.f3_data()
-    assert d.height == 8 and set(d["estimator"]) == {"H", "F"}
-    assert int(d.filter(pl.col("estimator") == "H")["n_qh"].sum()) == 2059
+    assert d.height == 10 and set(d["estimator"]) == {"H", "F"}
+    bands = d.filter(pl.col("set").str.starts_with("band"))
+    assert int(bands.filter(pl.col("estimator") == "H")["n_qh"].sum()) == 2059
+    ref = d.filter((pl.col("set") == "price >= 0") & (pl.col("estimator") == "H"))
+    assert ref["n_qh"][0] > 30000                                 # every price >= 0 QH
     _same(d, _committed("F3_projection_vs_forecast_gap_by_band"))
 
 
@@ -100,6 +108,8 @@ def test_f7_real_matches_q5_headline():
     d = mf.f7_data()
     assert int(d["q5_n"].sum()) == 59                             # Q5: 59 functional-months
     assert int(d["q5_n_informative"].sum()) == 3                  # informative under H: 3
+    assert int(d["q5_n_undefined"].sum()) == 11                   # Q5: eleven undefined pairs
+    assert (d["q1_n_informative"] / d["q1_n"] - d["q1_share"]).abs().max() < 1e-12
     _same(d, _committed("F7_synthetic_vs_real"))
 
 

@@ -1,5 +1,5 @@
 F6_noise_dial
 
-Q1: share of the 54 synthetic cells in which each functional is informative, against i.i.d. noise σ in the potential. Vertical lines: Anchor H (statutory projection) and Anchor T (day-ahead forecast). Where lines coincide (λ₄ and λ₅ at most levels) the later one is drawn on top; the data CSV has every value.
+Q1: share of the 54 synthetic cells in which each functional is informative, against i.i.d. noise σ in the potential. Vertical lines: the statutory projection H (σ is a lower bound on its error) and the TSO day-ahead forecast. λ₄ and λ₅ coincide at most levels, so they are drawn with different markers and a small horizontal offset. λ₇, one member of an exactly collinear pair, is not identified even at σ = 0: informative in 18 of 54 cells.
 
 Source: artifacts/Q1/q1_summary_by_level.csv, rows noise = iid, columns lam, sigma, share_informative; anchors from artifacts/Q0/q0_anchors.csv, column sigma (H: area DE excl. TenneT, price >= 0; T: area DE, onshore, price >= 0).

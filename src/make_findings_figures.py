@@ -38,6 +38,7 @@ BLUE, ORANGE, GREEN, VERMILION, SKY, PURPLE, GREY = (
 KILL_TEST_START = "2025-10-01"
 NEG_BANDS = ("<= -50", "-50 to -20", "-20 to -5", "-5 to 0")
 Q0B_BANDS = ("band <=-50", "band [-50,-20]", "band [-20,-5]", "band (-5,0)")
+Q0B_POSITIVE = "price >= 0"          # the reference set clause A compares against
 Q0B_AREA = "50Hertz+Amprion+TransnetBW"
 LAMS = ("L1", "L2", "L3", "L4", "L5", "L6", "L7")
 LAM_LABEL = {"L1": "λ₁ fleet", "L2": "λ₂ deep", "L3": "λ₃ cohort", "L4": "λ₄ group",
@@ -46,20 +47,32 @@ LAM_LABEL = {"L1": "λ₁ fleet", "L2": "λ₂ deep", "L3": "λ₃ cohort", "L4"
 
 # --------------------------------------------------------------------------- data
 
-def f1_data() -> pl.DataFrame:
-    """Largest-error event-day: day-ahead forecast vs actual wind, DE, with price."""
+def f1_day() -> str:
+    """The kill test's largest-error event-day (rank 1 by total negative-QH error, DE)."""
     worst = pl.read_csv(RES / "02_worst_days_de.csv").filter(pl.col("rank_by_total_error") == 1)
-    day = worst["berlin_date"][0]
-    p = (pl.read_parquet(PANEL)
-         .filter((pl.col("area") == "DE") & (pl.col("berlin_date") == day))
-         .sort("ts_utc"))
-    return p.select(
-        pl.col("ts_utc_dt").alias("ts_utc"), "berlin_date",
-        pl.col("da_wind_mw").alias("day_ahead_forecast_mw"),
-        pl.col("act_wind_mw").alias("actual_mw"),
-        pl.col("price_eur_mwh"),
-        pl.col("e_mw"),
-    )
+    return worst["berlin_date"][0]
+
+
+def f1_data() -> pl.DataFrame:
+    """That day, onshore, 50Hertz + Amprion + TransnetBW: forecast F, actual G, projection H.
+
+    Read through Q0b's own loader, so H, F, G and R are exactly the series Q0b used. H is
+    published per control area and onshore only; TenneT is excluded from the aggregate
+    (T-D(vii)), so all three lines cover the same three-area onshore fleet.
+    """
+    import contextlib
+    import io
+    from src.potential.q0b_validate_h import AGG_NAME, load_frames
+    with contextlib.redirect_stdout(io.StringIO()):          # the loader prints progress
+        agg = load_frames("quality-assured")[AGG_NAME]
+    day = f1_day()
+    return (agg.filter(pl.col("berlin_date") == day).sort("ts_utc")
+               .select(pl.from_epoch("ts_utc", time_unit="ms").alias("ts_utc"), "berlin_date",
+                       pl.col("da_onshore_mw").alias("day_ahead_forecast_mw"),
+                       pl.col("act_onshore_mw").alias("actual_mw"),
+                       pl.col("hr_mw").alias("projection_h_mw"),
+                       pl.col("rd_mw").alias("redispatch_mw"),
+                       "price_eur_mwh"))
 
 
 def f2_data() -> pl.DataFrame:
@@ -79,10 +92,11 @@ def f2_sample() -> pl.DataFrame:
 
 def f3_data() -> pl.DataFrame:
     """Q0b gap share (P - G - R) / P per negative band, P = projection H or forecast F."""
+    sets = (*Q0B_BANDS, Q0B_POSITIVE)
     g = pl.read_csv(ART / "Q0b" / "q0b_gap_shares.csv").filter(
         (pl.col("series") == "quality-assured") & (pl.col("area") == Q0B_AREA)
-        & pl.col("set").is_in(Q0B_BANDS))
-    order = {k: i for i, k in enumerate(Q0B_BANDS)}
+        & pl.col("set").is_in(sets))
+    order = {k: i for i, k in enumerate(sets)}
     return (g.with_columns(pl.col("set").replace_strict(order).alias("_o"))
              .sort(["_o", "estimator"], descending=[False, True]).drop("_o")
              .select(["set", "estimator", "n_qh", "n_days",
@@ -157,14 +171,20 @@ def f7_data() -> pl.DataFrame:
                      pl.col("n_informative").alias("q1_n_informative"),
                      pl.col("share_informative").alias("q1_share")]))
     q5 = pl.read_csv(ART / "Q5" / "q5_real.csv", infer_schema_length=0)
+    # Q5 functional-months: `informative` is True/False where the set is defined and empty
+    # where it is not; undefined months are counted separately, never as "not informative".
     q5 = (q5.filter((pl.col("setting") == "main") & (pl.col("period") != "window")
                     & (pl.col("potential") == "H")
-                    & pl.col("c_hat").str.contains("recalibrated").not_()
-                    & pl.col("informative").is_in(["True", "False"]))
-            .group_by("lam").agg(pl.len().alias("q5_n"),
-                                 (pl.col("informative") == "True").sum().alias("q5_n_informative")))
+                    & pl.col("c_hat").str.contains("recalibrated").not_())
+            .group_by("lam").agg(
+                pl.len().alias("q5_months"),
+                pl.col("informative").is_in(["True", "False"]).sum().alias("q5_n"),
+                (pl.col("informative") == "True").sum().alias("q5_n_informative")))
     return (q1.join(q5, on="lam", how="full", coalesce=True)
-              .with_columns((pl.col("q5_n_informative") / pl.col("q5_n")).alias("q5_share"))
+              .with_columns((pl.col("q5_months") - pl.col("q5_n")).alias("q5_n_undefined"),
+                            pl.when(pl.col("q5_n") > 0)
+                              .then(pl.col("q5_n_informative") / pl.col("q5_n"))
+                              .otherwise(None).alias("q5_share"))
               .sort("lam"))
 
 
@@ -185,12 +205,18 @@ def f8_data() -> pl.DataFrame:
 
 CAPTIONS = {
     "F1_problem_schematic": (
-        "The largest-error negative-price event-day in the kill-test window, Germany: TSO "
-        "day-ahead wind forecast (a proxy for available power) against actual wind output, "
-        "with the day-ahead price on the right axis. Shaded: negative-price quarter-hours.",
-        "Day chosen as rank 1 in results/02_worst_days_de.csv (column rank_by_total_error). "
-        "Series from data/processed/panel_qh.parquet, area DE, columns da_wind_mw, "
-        "act_wind_mw, price_eur_mwh; not in git, rebuilt by src/build_panel.py."),
+        "{day} (Easter Sunday) is the largest-error negative-price event-day of the kill-test "
+        "window, not a typical day: it carries {share:.1%} of all negative-quarter-hour "
+        "forecast error. Onshore wind, 50Hertz + Amprion + TransnetBW (TenneT excluded, "
+        "T-D(vii)): TSO day-ahead forecast F, actual output G and the quality-assured "
+        "projection H (Online-Hochrechnung), with the day-ahead price on the right axis. "
+        "Shaded: negative-price quarter-hours.",
+        "Day chosen as rank 1 in results/02_worst_days_de.csv (columns rank_by_total_error, "
+        "share_of_total_negative_qh_error; ranked on DE total wind). Series from "
+        "src/potential/q0b_validate_h.load_frames('quality-assured'), the three-area "
+        "aggregate Q0b uses: da_onshore_mw, act_onshore_mw, hr_mw, rd_mw, price_eur_mwh. "
+        "Inputs data/processed/panel_qh.parquet and data/raw/netztransparenz/"
+        "hochrechnung_wind_onshore_qualitaetsgesichert/ are not in git."),
     "F2_forecast_bias_by_price_band": (
         "Kill test: mean forecast error (actual minus day-ahead forecast) by negative price "
         "band, Germany, with 95% event-day bootstrap intervals. Window 2025-10-01 to "
@@ -199,12 +225,13 @@ CAPTIONS = {
         "mean_e_mw, ci_lo_mw, ci_hi_mw, qhs, days; totals from results/01_sample_size.csv, "
         "column value."),
     "F3_projection_vs_forecast_gap_by_band": (
-        "Q0b: share of the potential estimate not delivered and not redispatched, "
-        "(P − G − R) / P, by negative price band, for the quality-assured projection H and "
-        "the day-ahead forecast F. 50Hertz + Amprion + TransnetBW (TenneT excluded), 95% "
-        "intervals.",
+        "Q0b: share of the potential estimate not produced once redispatch is removed, "
+        "(P − G − R) / P, by negative price band and, as reference, over all quarter-hours "
+        "with price ≥ 0, for the quality-assured projection H and the day-ahead forecast F. "
+        "50Hertz + Amprion + TransnetBW (TenneT excluded), 95% intervals.",
         "artifacts/Q0b/q0b_gap_shares.csv, rows series = quality-assured, area = "
-        "50Hertz+Amprion+TransnetBW, set = band ..., columns estimator, gap_share, ci_lo, ci_hi."),
+        "50Hertz+Amprion+TransnetBW, set = band ... and price >= 0, columns estimator, "
+        "gap_share, ci_lo, ci_hi."),
     "F4_coverage_never_fails": (
         "Coverage of the known truth by the identified sets in every synthetic setting that "
         "has a truth: P3 Arms O and D, every Q1 noise level, every Q6b setting. Dashed line: "
@@ -220,19 +247,23 @@ CAPTIONS = {
         "feasible, column width, median per lam."),
     "F6_noise_dial": (
         "Q1: share of the 54 synthetic cells in which each functional is informative, against "
-        "i.i.d. noise σ in the potential. Vertical lines: Anchor H (statutory projection) and "
-        "Anchor T (day-ahead forecast). Where lines coincide (λ₄ and λ₅ at most levels) the "
-        "later one is drawn on top; the data CSV has every value.",
+        "i.i.d. noise σ in the potential. Vertical lines: the statutory projection H (σ is a "
+        "lower bound on its error) and the TSO day-ahead forecast. λ₄ and λ₅ coincide at most "
+        "levels, so they are drawn with different markers and a small horizontal offset. "
+        "λ₇, one member of an exactly collinear pair, is not identified even at σ = 0: "
+        "informative in {l7_k} of {l7_n} cells.",
         "artifacts/Q1/q1_summary_by_level.csv, rows noise = iid, columns lam, sigma, "
         "share_informative; anchors from artifacts/Q0/q0_anchors.csv, column sigma (H: area "
         "DE excl. TenneT, price >= 0; T: area DE, onshore, price >= 0)."),
     "F7_synthetic_vs_real": (
         "Share informative per functional: synthetic cells at Anchor H's noise (Q1, "
         "σ = 0.066) against real functional-months with H as the potential (Q5, main "
-        "setting, monthly arms).",
+        "setting, monthly arms). Each bar is labelled k/n. Hatched grey bars are real "
+        "functional-months where the identified set is undefined (n/a), shown as a share of "
+        "all months; they are not counted as uninformative.",
         "artifacts/Q1/q1_summary_by_level.csv, rows noise = iid, sigma = 0.066, column "
         "share_informative; artifacts/Q5/q5_real.csv, rows setting = main, period != window, "
-        "potential = H, c_hat not recalibrated, informative defined, share of informative = True."),
+        "potential = H, c_hat not recalibrated; informative True/False defined, empty undefined."),
     "F8_day_heterogeneity": (
         "Q6a: between-day variance of the curtailed share per testable cell (95% interval) "
         "against the variance that measurement error at Anchor H's σ alone would produce.",
@@ -260,16 +291,18 @@ def make_all(out: Path) -> list[Path]:
     matplotlib.use("Agg")
     import matplotlib.dates as mdates
     import matplotlib.pyplot as plt
+    from matplotlib.patches import Patch
     _style(plt)
     out.mkdir(parents=True, exist_ok=True)
     written = []
 
-    def save(fig, name: str, data: pl.DataFrame) -> None:
+    def save(fig, name: str, data: pl.DataFrame, **fmt) -> None:
         fig.tight_layout()
         fig.savefig(out / f"{name}.png", dpi=300)
         plt.close(fig)
         data.write_csv(out / f"{name}_data.csv")
         cap, src = CAPTIONS[name]
+        cap = cap.format(**fmt)
         (out / f"{name}_caption.txt").write_text(f"{name}\n\n{cap}\n\nSource: {src}\n",
                                                   encoding="utf-8")
         written.extend(out / f"{name}{s}" for s in (".png", "_data.csv", "_caption.txt"))
@@ -277,16 +310,19 @@ def make_all(out: Path) -> list[Path]:
     # F1
     if PANEL.exists():
         d = f1_data()
+        worst = pl.read_csv(RES / "02_worst_days_de.csv").filter(pl.col("rank_by_total_error") == 1)
         fig, ax = plt.subplots(figsize=(11, 5.5))
         t = d["ts_utc"].to_numpy()
         neg = d["price_eur_mwh"].to_numpy() < 0
         for i in np.flatnonzero(neg):
             ax.axvspan(t[i], t[i] + np.timedelta64(15, "m"), color=GREY, alpha=0.12, lw=0)
         ax.plot(t, d["day_ahead_forecast_mw"].to_numpy() / 1000, color=BLUE, lw=2.2,
-                label="day-ahead forecast (≈ available power)")
+                label="day-ahead forecast F")
+        ax.plot(t, d["projection_h_mw"].to_numpy() / 1000, color=GREEN, lw=2.2,
+                label="quality-assured projection H")
         ax.plot(t, d["actual_mw"].to_numpy() / 1000, color=VERMILION, lw=2.2,
-                label="actual output")
-        ax.set_ylabel("wind power, GW")
+                label="actual output G")
+        ax.set_ylabel("onshore wind, GW")
         ax.set_xlabel("time (UTC)")
         ax2 = ax.twinx()
         ax2.plot(t, d["price_eur_mwh"].to_numpy(), color=GREY, lw=1.4, ls="--",
@@ -297,9 +333,13 @@ def make_all(out: Path) -> list[Path]:
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
         h1, l1 = ax.get_legend_handles_labels()
         h2, l2 = ax2.get_legend_handles_labels()
-        ax.legend(h1 + h2, l1 + l2, loc="upper left", frameon=False)
-        ax.set_title(f"Germany, {d['berlin_date'][0]}: output falls below the forecast at negative prices")
-        save(fig, "F1_problem_schematic", d)
+        shade = Patch(facecolor=GREY, alpha=0.25, label="negative price")
+        ax.legend(h1 + h2 + [shade], l1 + l2 + ["negative price"], loc="lower left",
+                  frameon=False, fontsize=11)
+        ax.set_title(f"{d['berlin_date'][0]}, Easter Sunday: the largest-error event-day "
+                     "(three areas, onshore)")
+        save(fig, "F1_problem_schematic", d, day=d["berlin_date"][0],
+             share=float(worst["share_of_total_negative_qh_error"][0]))
 
     # F2
     d, s = f2_data(), f2_sample()
@@ -320,18 +360,24 @@ def make_all(out: Path) -> list[Path]:
 
     # F3
     d = f3_data()
-    fig, ax = plt.subplots(figsize=(9, 5.5))
+    sets = (*Q0B_BANDS, Q0B_POSITIVE)
+    fig, ax = plt.subplots(figsize=(10, 5.5))
     for k, (est, col, lab) in enumerate((("H", GREEN, "projection H"),
                                          ("F", BLUE, "day-ahead forecast F"))):
         q = d.filter(pl.col("estimator") == est)
-        x = np.arange(q.height) + (k - 0.5) * 0.25
+        pos = {s: i for i, s in enumerate(sets)}
+        x = np.array([pos[s] for s in q["set"]], dtype=float) + (k - 0.5) * 0.25
+        x[q["set"].to_numpy() == Q0B_POSITIVE] += 0.4          # set the reference apart
         v = q["gap_share"].to_numpy()
         ax.errorbar(x, v, yerr=[v - q["ci_lo"].to_numpy(), q["ci_hi"].to_numpy() - v],
                     fmt="o", color=col, ms=9, capsize=5, lw=2, label=lab)
-    ax.set_xticks(np.arange(len(Q0B_BANDS)), [_band_label(b) for b in Q0B_BANDS])
+    ticks = np.arange(len(sets), dtype=float)
+    ticks[-1] += 0.4
+    ax.axvline((ticks[-2] + ticks[-1]) / 2, color=GREY, lw=0.8, ls=":")
+    ax.set_xticks(ticks, [_band_label(b) for b in Q0B_BANDS] + ["all ≥ 0\n(reference)"])
     ax.axhline(0, color=GREY, lw=1)
     ax.set_xlabel("day-ahead price band, €/MWh")
-    ax.set_ylabel("(P − G − R) / P")
+    ax.set_ylabel("share of potential not produced\n(redispatch removed)")
     ax.set_title("Gap between potential estimate and output, by band")
     ax.legend(frameon=False)
     save(fig, "F3_projection_vs_forecast_gap_by_band", d)
@@ -367,35 +413,57 @@ def make_all(out: Path) -> list[Path]:
 
     # F6
     d, anc = f6_data(), anchors()
-    fig, ax = plt.subplots(figsize=(9, 5.5))
+    fig, ax = plt.subplots(figsize=(10, 6))
     cyc = [BLUE, ORANGE, GREEN, VERMILION, SKY, PURPLE, GREY]
-    for lam, col in zip(LAMS, cyc):
+    marks = ["o", "s", "^", "D", "v", "P", "X"]
+    offset = {"L4": -0.003, "L5": 0.003}                 # λ₄ and λ₅ overlap; nudge apart
+    for lam, col, mk in zip(LAMS, cyc, marks):
         q = d.filter(pl.col("lam") == lam)
         if q.height:
-            ax.plot(q["sigma"].to_numpy(), q["share_informative"].to_numpy(), "o-",
-                    color=col, lw=2, label=LAM_LABEL[lam])
-    for k, ls in (("H", ":"), ("T", "--")):
+            ax.plot(q["sigma"].to_numpy() + offset.get(lam, 0.0),
+                    q["share_informative"].to_numpy(), marker=mk, ms=8,
+                    ls="--" if lam == "L5" else "-", color=col, lw=2, label=LAM_LABEL[lam])
+    for k, ls, lab in (("H", ":", "statutory projection H\n(lower bound)"),
+                       ("T", "--", "TSO forecast")):
         ax.axvline(anc[k], color="black", ls=ls, lw=1.3)
-        ax.text(anc[k], 1.03, f"Anchor {k} {anc[k]:.3f}", ha="center", fontsize=12)
+        ax.text(anc[k], 1.04, f"{lab}\nσ = {anc[k]:.3f}", ha="center", va="bottom", fontsize=11)
     ax.set_ylim(-0.03, 1.1)
     ax.set_xlabel("noise in the potential, σ")
     ax.set_ylabel("share of cells informative")
-    ax.set_title("Noise dial: fleet stays informative, cohorts do not", pad=22)
+    ax.set_title("Noise dial: fleet stays informative, cohorts do not", pad=58)
     ax.legend(frameon=False, fontsize=11, ncol=2, loc="center right")
+    l7 = d.filter((pl.col("lam") == "L7") & (pl.col("sigma") == 0.0))
     save(fig, "F6_noise_dial", d.with_columns(pl.lit(anc["H"]).alias("anchor_h_sigma"),
-                                              pl.lit(anc["T"]).alias("anchor_t_sigma")))
+                                              pl.lit(anc["T"]).alias("anchor_t_sigma")),
+         l7_k=int(l7["n_informative"][0]), l7_n=int(l7["n_cells"][0]))
 
     # F7
     d = f7_data()
-    fig, ax = plt.subplots(figsize=(9, 5.5))
+    fig, ax = plt.subplots(figsize=(11, 6))
     x = np.arange(d.height)
-    ax.bar(x - 0.2, d["q1_share"].to_numpy(), 0.4, color=SKY, label="synthetic at Anchor H (Q1)")
-    ax.bar(x + 0.2, d["q5_share"].to_numpy(), 0.4, color=VERMILION, label="real data with H (Q5)")
+    w = 0.27
+    q1s = d["q1_share"].to_numpy()
+    ax.bar(x - w, q1s, w, color=SKY, label="synthetic at Anchor H (Q1, cells)")
+    q5s = d["q5_share"].to_numpy().astype(float)
+    ax.bar(x, np.nan_to_num(q5s), w, color=VERMILION, label="real data with H (Q5, months)")
+    und = (d["q5_n_undefined"] / d["q5_months"]).to_numpy()
+    ax.bar(x + w, und, w, color="white", edgecolor=GREY, hatch="//",
+           label="real data: undefined (n/a)")
+    for i, r in enumerate(d.iter_rows(named=True)):
+        ax.text(x[i] - w, q1s[i] + 0.02, f"{r['q1_n_informative']}/{r['q1_n']}",
+                ha="center", fontsize=10, rotation=90, va="bottom")
+        lab = (f"{r['q5_n_informative']}/{r['q5_n']}" if r["q5_n"] else "n/a")
+        ax.text(x[i], np.nan_to_num(q5s[i]) + 0.02, lab, ha="center", fontsize=10,
+                rotation=90, va="bottom")
+        if r["q5_n_undefined"]:
+            ax.text(x[i] + w, und[i] + 0.02, f"{r['q5_n_undefined']}/{r['q5_months']} n/a",
+                    ha="center", fontsize=10, rotation=90, va="bottom")
     ax.set_xticks(x, [LAM_LABEL[l] for l in d["lam"]], rotation=20)
-    ax.set_ylim(0, 1.05)
-    ax.set_ylabel("share informative")
+    ax.set_ylim(0, 1.5)
+    ax.set_yticks(np.linspace(0, 1, 6))
+    ax.set_ylabel("share informative\n(cells: synthetic; months: real)")
     ax.set_title("Real data is far less informative than the synthetic benchmark")
-    ax.legend(frameon=False)
+    ax.legend(frameon=False, loc="upper center", ncol=3, fontsize=11)
     save(fig, "F7_synthetic_vs_real", d)
 
     # F8
