@@ -131,10 +131,12 @@ decide how wide it is.
    logically maximal 839.3 GWh** — the counterfactual bound is the whole of its own
    support and says nothing.
 
-5. **What binds on real data is the noise in ĉ, not cohort collinearity.** The
-   within-identical-row spread of ĉ accounts for **72% to 100%** of the point fit's
-   residual (`p3_real.csv`, `rms_floor` ÷ `rms_point`): quarter-hours the design
-   cannot tell apart carry ĉ values differing by about 0.19 RMS. No response function
+5. **What binds on real data is the noise in ĉ, not cohort collinearity.** On the
+   three window arms the within-identical-row spread of ĉ accounts for **89% to 94%**
+   of the point fit's residual (`p3_real.csv`, `rms_floor` ÷ `rms_point`);
+   across all 36 arms it runs **30% to 100%**, median 91%, the low end on a
+   23-quarter-hour month. Quarter-hours the design cannot tell apart carry ĉ values
+   differing by about 0.19 RMS on the window. No response function
    of any shape, cohort structure or regularisation could fit better, so ε is
    essentially a measurement of how noisy a per-quarter-hour `1 − G/F` is, and every
    interval inherits it. Merging cohorts, adding cohorts or sharpening θ cannot
@@ -165,9 +167,9 @@ per-quarter-hour response, not its projection onto the depth grid (§0.9).
 
 | functional | covered | scored | median width |
 |---|---|---|---|
-| λ₁ fleet response, −20 to −5 | 161 | 161 | 7.8 × 10⁻⁷ |
-| λ₂ fleet response, ≤ −50 | 161 | 161 | 1.0 × 10⁻⁶ |
-| λ₃ one identified cohort | 161 | 161 | 5.0 × 10⁻⁶ |
+| λ₁ fleet response, −20 to −5 | 161 | 161 | 7.7 × 10⁻⁷ |
+| λ₂ fleet response, ≤ −50 | 161 | 161 | 1.5 × 10⁻⁶ |
+| λ₃ one identified cohort | 161 | 161 | 4.7 × 10⁻⁶ |
 | λ₄ the collinear group | 161 | 161 | 1.3 × 10⁻⁵ |
 | λ₅ counterfactual energy, GWh | 161 | 161 | 0.28 |
 | λ₆ λ₃ − λ₄ | 161 | 161 | 1.5 × 10⁻⁵ |
@@ -192,7 +194,7 @@ Median width, both configurations pooled:
 
 | functional | step | logistic | half |
 |---|---|---|---|
-| λ₁ | 0.0000 | 0.0049 | 0.0000 |
+| λ₁ | 0.0000 | 0.0048 | 0.0000 |
 | λ₂ | 0.0000 | 0.0083 | 0.0000 |
 | λ₃ | 0.0000 | 0.0278 | 0.0000 |
 | λ₄ | 0.0000 | 0.0632 | 0.0000 |
@@ -278,8 +280,8 @@ settings. `ĉ = 1 − G/F`, with the recalibrated arm beside it (§0.11).
 
 Across all three settings the widths move by at most 0.41 (λ₃: 0.524 at `low`, 0.648
 at `main`, 0.938 at `high`) and no interval becomes informative. The **recalibration
-sensitivity changes every width by less than 0.031**, so the crude `ĉ = 1 − G/F` is
-not what produces this result.
+sensitivity changes every width by at most 0.038** (λ₆ at `low`; next largest 0.035,
+0.031, 0.031), so the crude `ĉ = 1 − G/F` is not what produces this result.
 
 **λ₅'s bound is the whole of its own support.** 839.3 GWh is exactly
 `l5_energy_full_gwh`, the energy that would be curtailed if the cohort responded
@@ -297,10 +299,12 @@ never switches off" from "it always does". The same holds in nine of the ten mon
 | 2026-01, any | 0.010 | 0.010 | 0.010 | **1.00** |
 
 The floor is the RMS spread of ĉ **between quarter-hours whose design rows are
-identical** — quarter-hours no response function can distinguish. It is 72% to 100%
-of everything the point fit leaves behind. In 2026-01 the design has a single
-distinct row (10 exposed quarter-hours, every θ = 0), so the floor is the entire
-residual and nothing whatever can be fitted.
+identical** — quarter-hours no response function can distinguish. On the window arms
+it is **89% to 94%** of everything the point fit leaves behind; over all 36 arms it
+runs from 0.299 to 1.000 with a median of 0.905, the minimum on `high`/2026-02, which
+has 23 exposed quarter-hours in 3 distinct rows and settles nothing either way. In
+2026-01 the design has a single distinct row (10 exposed quarter-hours, every
+θ = 0), so the floor is the entire residual and nothing whatever can be fitted.
 
 **The consequence is structural, not a shortcoming of this estimator.** ε is defined
 from the dispersion of ĉ, ĉ is a per-quarter-hour ratio of two quantities that differ
@@ -348,7 +352,7 @@ aggregate German panel does not identify a cohort-level switch-off response.
 ## 5. Limitations
 
 1. **ĉ on real data is `1 − G/F`**, not a stage-A estimate (§0.11). The recalibration
-   arm shows widths moving by under 0.031, and §3.2 shows the binding term is the
+   arm shows widths moving by at most 0.038, and §3.2 shows the binding term is the
    within-row spread rather than the level, so a better Â would move the intervals'
    position more than their width. It would not change finding 4.
 2. **Arm O's ε is discretisation, not sampling noise.** With ĉ = c_true the bootstrap
@@ -380,7 +384,35 @@ aggregate German panel does not identify a cohort-level switch-off response.
 | `src/identification/run_p3_synthetic.py`, `run_p3_real.py`, `summarise_p3.py` | runners |
 | `tests/test_bounds.py` | 17 tests |
 
+| `src/identification/check_p3_numbers.py` | re-derives every figure quoted above from the artifacts |
+
 Every row carries `git_head`, `run_date` and `preregistration_commit = 1cd4b30`.
+
+### Correction, 15 November 2026 — four figures in the first version of this note
+
+Found by running `src/identification/check_p3_numbers.py`, which re-derives every
+number in this document from the artifacts, immediately after the first version was
+committed (`d159397`). The commit is not amended, following the practice of
+`docs/12` section J: the record keeps the error and its correction together.
+
+| where | said | is |
+|---|---|---|
+| §2.1, λ₁ median width | 7.8 × 10⁻⁷ | **7.7 × 10⁻⁷** |
+| §2.1, λ₂ median width | 1.0 × 10⁻⁶ | **1.5 × 10⁻⁶** |
+| §2.1, λ₃ median width | 5.0 × 10⁻⁶ | **4.7 × 10⁻⁶** |
+| §1 finding 5 and §3.2, floor ÷ point residual | "72% to 100%" | **89–94% on the window arms; 30–100% over all 36 arms** |
+| §3.1 and §5, recalibration effect on width | "less than 0.031" | **at most 0.038** |
+
+| §2.2, λ₁ on logistic | 0.0049 | **0.0048** |
+
+The rounding errors are λ₁, λ₂, λ₃ and λ₁-on-logistic. The scope error is the one
+that mattered: I quoted the range
+over the window arms and April 2026 as though it were the range over everything, and
+the true minimum (0.299) sits on a month with 23 exposed quarter-hours. The fourth
+understated the largest recalibration effect by 0.007. **No finding changes** — the
+floor still dominates the residual on every arm that carries a conclusion, and the
+recalibration still moves no interval enough to matter — but the numbers now say what
+the artifacts say.
 
 ---
 
