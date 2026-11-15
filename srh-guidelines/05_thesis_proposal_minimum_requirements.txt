@@ -1,9 +1,0 @@
-[Text extract of "5.Thesis proposal minimum requirements.rtf" from the claude.ai Project. Original formatting not preserved.]
-
-Minimum requirements for a thesis proposal:
-==================================
-You need to prepare it at least 15 pages containing: Title, Supervisors, Introduction, Problem Description, Objectives, Hypothesis (when applicable), Methodology to be used, Research Methods, Time for execution of the thesis, Summary. All of this show in a Table of contents, Tables (if any), Figures (if any), all of this with References.
-
-IMPORTANT:
-==========
-At the end after "Summary", I also want to see 1/2 to 1-page chapter at the end titled "Intended Contribution to Science", where you state what it is that you are seeking to discover and why it is so important to do so. There, I want you argue why other scientists before you failed in their attempt or simply did not tackle the problem in the way that you do. All of your claims in this chapter must be backed by the latest research in order to prove the validity of your intended direction and steps.
