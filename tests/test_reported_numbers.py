@@ -38,6 +38,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 P3 = REPO_ROOT / "artifacts" / "P3"
 Q0 = REPO_ROOT / "artifacts" / "Q0"
 Q0B = REPO_ROOT / "artifacts" / "Q0b"
+Q1D = REPO_ROOT / "artifacts" / "Q1"
 QS_FILE = (REPO_ROOT / "data" / "raw" / "netztransparenz"
            / "hochrechnung_wind_onshore_qualitaetsgesichert"
            / "online_hochrechnung_wind_onshore_qs_2025-10-01_2026-10-31_dl2026-11-15.csv")
@@ -411,6 +412,84 @@ def _qs_file_checks():
     ]
 
 
+def _q1_checks():
+    """`docs/Q1_results.md`."""
+    lv = pl.read_csv(Q1D / "q1_summary_by_level.csv")
+    hd = pl.read_csv(Q1D / "q1_headline.csv")
+    raw = load(Q1D / "q1_variance_dial.csv").with_columns(
+        pl.col("sigma").cast(pl.Float64, strict=False))
+
+    def L(sig, lam, col, noise="iid"):
+        q = lv.filter((pl.col("noise") == noise) & ((pl.col("sigma") - sig).abs() < 1e-9)
+                      & (pl.col("lam") == lam))
+        if q.height != 1:
+            raise AssertionError(f"{noise}/{sig}/{lam}: {q.height} rows")
+        return float(q[col][0])
+
+    def H(stat, lam):
+        q = hd.filter((pl.col("statistic") == stat) & (pl.col("lam") == lam))
+        return float(q["value"][0])
+
+    out = [("Q1 rows", raw.height, 3024, 0),
+           ("Q1 sigma* (censored at the grid top)", H("sigma_star", "L1"), 0.35, 1e-9)]
+    grid = (0.0, 0.033, 0.066, 0.12, 0.18, 0.25, 0.35)
+    table = {  # section 3, n_informative
+        "L1": (54, 54, 54, 54, 54, 54, 50), "L2": (54, 54, 54, 54, 54, 54, 41),
+        "L3": (54, 54, 54, 34, 18, 18, 18), "L4": (54, 54, 24, 18, 18, 18, 14),
+        "L5": (54, 52, 24, 18, 18, 18, 17), "L6": (54, 54, 54, 24, 18, 18, 18),
+        "L7": (18, 14, 9, 9, 9, 6, 0)}
+    for lam, ns in table.items():
+        for sig, n in zip(grid, ns):
+            out.append((f"Q1 {lam} informative cells at {sig}", L(sig, lam, "n_informative"), n, 0))
+    for sig in grid:
+        out.append((f"Q1 coverage at {sig}", L(sig, "L1", "level_coverage"), 1.0, 0))
+    out.append(("Q1 AR(1) coverage", L(0.18, "L1", "level_coverage", "ar1"), 1.0, 0))
+    iqr = {  # section 3, median [q25, q75]
+        (0.033, "L1"): (0.008, 0.006, 0.014), (0.033, "L3"): (0.056, 0.022, 0.077),
+        (0.033, "L4"): (0.142, 0.066, 0.184), (0.033, "L6"): (0.158, 0.074, 0.204),
+        (0.066, "L1"): (0.017, 0.013, 0.029), (0.066, "L3"): (0.114, 0.045, 0.145),
+        (0.066, "L4"): (0.280, 0.110, 0.343), (0.066, "L6"): (0.311, 0.134, 0.396),
+        (0.18, "L1"): (0.048, 0.038, 0.083), (0.18, "L3"): (0.335, 0.102, 0.387),
+        (0.18, "L4"): (0.503, 0.153, 0.674), (0.18, "L6"): (0.738, 0.248, 0.896),
+        (0.35, "L1"): (0.110, 0.066, 0.189), (0.35, "L3"): (0.607, 0.163, 0.672),
+        (0.35, "L4"): (0.548, 0.249, 0.987), (0.35, "L6"): (1.040, 0.405, 1.402)}
+    for (sig, lam), (m, a, b) in iqr.items():
+        out += [(f"Q1 {lam} median width at {sig}", L(sig, lam, "median_width"), m, 5e-4),
+                (f"Q1 {lam} q25 width at {sig}", L(sig, lam, "q25_width"), a, 5e-4),
+                (f"Q1 {lam} q75 width at {sig}", L(sig, lam, "q75_width"), b, 5e-4)]
+    at_033 = {"L1": 0.0, "L3": 0.222, "L4": 0.185, "L5": 0.0, "L6": 0.296}
+    for lam in ("L1", "L3", "L4", "L5", "L6"):
+        out.append((f"Q1 {lam} pooled rejection at 0", L(0.0, lam, "pooled_rejection_split"), 0.667, 5e-4))
+        out.append((f"Q1 {lam} pooled rejection at 0.033",
+                    L(0.033, lam, "pooled_rejection_split"), at_033[lam], 5e-4))
+        for sig in grid[2:]:
+            out.append((f"Q1 {lam} pooled rejection at {sig}",
+                        L(sig, lam, "pooled_rejection_split"), 0.0, 0))
+        out.append((f"Q1 {lam} secondary statistic", H("pooled_rejection_above_half_max_sigma", lam), 0.0, 0))
+    out.append(("Q1 split cells scored per functional", L(0.0, "L1", "n_split_scored"), 27, 0))
+    for sig, f in zip(grid, (0.372, 0.996, 0.996, 0.996, 0.997, 0.995, 0.994)):
+        out.append((f"Q1 floor ratio at {sig}", L(sig, "L1", "median_floor_ratio"), f, 5e-4))
+    for sig, e in ((0.033, 0.019), (0.18, 0.108), (0.35, 0.226)):
+        out.append((f"Q1 median eps at {sig}", L(sig, "L1", "median_eps"), e, 5e-4))
+    out.append(("Q1 AR(1) median eps", L(0.18, "L1", "median_eps", "ar1"), 0.114, 5e-4))
+    out.append(("Q1 AR(1) L1 informative cells", L(0.18, "L1", "n_informative", "ar1"), 52, 0))
+    for lam, dv, tol in (("L1", 0.048, 5e-4), ("L2", 0.090, 5e-4), ("L3", 0.247, 5e-4),
+                         ("L4", 0.160, 5e-4), ("L6", 0.433, 5e-4), ("L7", 0.021, 5e-4),
+                         ("L5", 3118.0, 0.5)):
+        out.append((f"Q1 AR(1) minus iid width {lam}",
+                    H("ar1_minus_iid_median_width_at_0.18", lam), dv, tol))
+    # section 2 -- the solver statuses and the port check's scale
+    st = pl.concat([raw.select(["noise", "sigma", pl.col("status_lo").alias("s")]),
+                    raw.select(["noise", "sigma", pl.col("status_hi").alias("s")])])
+    inacc = st.filter(pl.col("s") == "optimal_inaccurate")
+    out += [("Q1 inaccurate solves at 0", inacc.filter(pl.col("sigma") == 0.0).height, 20, 0),
+            ("Q1 inaccurate solves at 0.25", inacc.filter(pl.col("sigma") == 0.25).height, 1, 0),
+            ("Q1 inaccurate solves elsewhere",
+             inacc.filter(~pl.col("sigma").is_in([0.0, 0.25])).height, 0, 0),
+            ("Q1 infeasible solves", st.filter(pl.col("s").str.contains("infeasible")).height, 0, 0)]
+    return out
+
+
 def _collect():
     """All checks whose artifacts are on disk, as (id, got, want, tol)."""
     out, skipped = [], []
@@ -440,6 +519,10 @@ def _collect():
     else:
         skipped.append("Q0b")
     out += _qs_file_checks()
+    if (Q1D / "q1_summary_by_level.csv").exists():
+        out += _q1_checks()
+    else:
+        skipped.append("Q1")
     return out, skipped
 
 

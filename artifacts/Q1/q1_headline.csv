@@ -1,0 +1,23 @@
+statistic,lam,value,note,sigma
+sigma_star,L1,0.35,largest iid level with L1 informative in >= half the cells,
+pooled_rejection_above_half_max_sigma,L1,0.0,"secondary statistic, per functional (Q0 section 5 names none)",
+pooled_rejection_above_half_max_sigma,L2,nan,"secondary statistic, per functional (Q0 section 5 names none)",
+pooled_rejection_above_half_max_sigma,L3,0.0,"secondary statistic, per functional (Q0 section 5 names none)",
+pooled_rejection_above_half_max_sigma,L4,0.0,"secondary statistic, per functional (Q0 section 5 names none)",
+pooled_rejection_above_half_max_sigma,L5,0.0,"secondary statistic, per functional (Q0 section 5 names none)",
+pooled_rejection_above_half_max_sigma,L6,0.0,"secondary statistic, per functional (Q0 section 5 names none)",
+pooled_rejection_above_half_max_sigma,L7,nan,"secondary statistic, per functional (Q0 section 5 names none)",
+level_coverage,ALL,1.0,guard rail; below 0.95 the level's widths are withheld,0.0
+level_coverage,ALL,1.0,guard rail; below 0.95 the level's widths are withheld,0.033
+level_coverage,ALL,1.0,guard rail; below 0.95 the level's widths are withheld,0.066
+level_coverage,ALL,1.0,guard rail; below 0.95 the level's widths are withheld,0.12
+level_coverage,ALL,1.0,guard rail; below 0.95 the level's widths are withheld,0.18
+level_coverage,ALL,1.0,guard rail; below 0.95 the level's widths are withheld,0.25
+level_coverage,ALL,1.0,guard rail; below 0.95 the level's widths are withheld,0.35
+ar1_minus_iid_median_width_at_0.18,L1,0.04808601514673791,Q0 predicted correlated noise widens LESS (negative),
+ar1_minus_iid_median_width_at_0.18,L2,0.0899534183109893,Q0 predicted correlated noise widens LESS (negative),
+ar1_minus_iid_median_width_at_0.18,L3,0.24650903555949133,Q0 predicted correlated noise widens LESS (negative),
+ar1_minus_iid_median_width_at_0.18,L4,0.16029256617370247,Q0 predicted correlated noise widens LESS (negative),
+ar1_minus_iid_median_width_at_0.18,L5,3117.7865661895103,Q0 predicted correlated noise widens LESS (negative),
+ar1_minus_iid_median_width_at_0.18,L6,0.4326671226444252,Q0 predicted correlated noise widens LESS (negative),
+ar1_minus_iid_median_width_at_0.18,L7,0.021278464935615027,Q0 predicted correlated noise widens LESS (negative),
