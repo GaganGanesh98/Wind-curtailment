@@ -94,9 +94,17 @@ def is_missing(raw: str) -> bool:
     return raw.strip().upper() in MISSING_TOKENS
 
 
-def load_projection() -> tuple[pl.DataFrame, dict[str, int]]:
+def load_projection(hr_dir: Path = HR_DIR) -> tuple[pl.DataFrame, dict[str, int]]:
+    """The Online-Hochrechnung in long format: ts_utc (ms), area, hr_mw.
+
+    `hr_dir` was added on 15 November 2026 for Phase Q0b, which reads the
+    quality-assured series from its own folder. The default is unchanged, so the
+    Nr. 5.1 compliance check keeps reading exactly the operational files it was
+    validated on; the two series live in separate folders precisely so that this
+    glob can never mix them.
+    """
     rows, empty = [], {}
-    for path in sorted(HR_DIR.glob("*.csv")):
+    for path in sorted(Path(hr_dir).glob("*.csv")):
         for rec in csv.DictReader(path.read_text(encoding="utf-8-sig").splitlines(),
                                   delimiter=";"):
             tz = (rec.get("Zeitzone") or "").strip()

@@ -123,6 +123,8 @@ on it; the grid below leaves room where it would fall.
 **Anchor Z — exact: σ = 0, b = 0** by construction. This is P3 Arm O, and Q1's zero
 level must reproduce it (§3, dead-end check).
 
+> **Corrected in Amendment 1, A1.3 below.** The provenance conclusion in this paragraph is wrong: `results/36` was produced by the module's first, importable version (`a84bf4a`). The paragraph is kept as written so the error stays on record.
+
 **`[VERIFY]` — `src/check_hochrechnung_onshore.py` cannot be imported.** It compiles a
 regular expression at module level with no `import re`, so it raises `NameError` on
 import. That is true in **every commit the file has ever appeared in** (checked across
@@ -321,3 +323,114 @@ an estimated share — becomes possible again.
    whose cohort structure is fully identified. The real panel is worse on every axis
    measured in P3, so σ\* is an optimistic bound on what the same accuracy would buy
    in Germany.
+
+---
+
+## Amendment 1 — 15 November 2026: what σ = 0.066 is, and a correction to §1.4
+
+**Recorded after Q0 was approved and while Q1 was running, before any Q1 result was
+read.** It changes no grid level, threshold, statistic or seed in §§2–6; it adds a
+statement about §1.2's anchor, confirms §3's grid against it, and corrects §1.4. Items
+A1.1 and A1.2 are the student's instruction; A1.3 and A1.4 are a correction of mine.
+
+### A1.1 σ = 0.066 is a lower bound on H's error against true potential
+
+**The student's statement, verbatim:** *"0.066 is agreement between two outputs of the
+same TSO extrapolation, so it is a lower bound on H's error against true potential."*
+
+What it rests on, stated so that it is checked rather than assumed.
+
+**The algebra, and the condition it needs.** Write `e_G` and `e_H` for each series' error
+against the true potential `A`. Then
+
+```
+Var(log G/H) = Var(e_G) + Var(e_H) - 2 Cov(e_G, e_H)
+```
+
+which is **below** `Var(e_H)` exactly when `Var(e_G) < 2 Cov(e_G, e_H)` — when the
+component the two series share dominates `G`'s own error. That is what "two outputs of
+the same extrapolation" asserts. **If `G` were instead an independent meter**
+(`Cov ≈ 0`), 0.066 would sit *above* H's error, not below it. The lower-bound reading
+therefore stands or falls with the shared-derivation premise, and this repo cannot test
+that premise without a measurement independent of both series — which is what Q3 and Q4
+scope.
+
+**The evidence, measured with code that runs.** On positive-price quarter-hours,
+`artifacts/Q0b/q0b_h_agreement.csv`:
+
+| series | area | corr(H, G) | corr of 15-minute changes |
+|---|---|---|---|
+| quality-assured | 50Hertz + Amprion + TransnetBW | 0.9954 | 0.899 |
+| quality-assured | 50Hertz | 0.9944 | 0.873 |
+| quality-assured | Amprion | 0.9968 | 0.927 |
+| quality-assured | TransnetBW | 0.9972 | 0.955 |
+| quality-assured | TenneT | 0.9914 | 0.877 |
+
+The two series agree to 0.991–0.997 in level and 0.87–0.96 in their quarter-hour
+changes. That is **consistent with**, and does not establish, a shared derivation: two
+independent good estimates of the same wind would also correlate highly in level.
+
+**The anchor itself is stable.** On thirteen months of the quality-assured series the
+same statistic is σ = **0.0607** [0.0544, 0.0667] against the operational series' 0.0660
+[0.0511, 0.0800] on two months. The grid point stays at 0.066.
+
+**And Q0b establishes the property the anchor's label needed.** The quality-assured
+projection ADDS BACK market curtailment on the deciding aggregate and in every area
+(`docs/Q0b_results.md` §1), so Q1 may describe σ = 0.066 as *Anchor H, a measured
+potential estimator* — with this section's caveat attached every time.
+
+### A1.2 Q1's noise grid extends above it — confirmed
+
+**Four of §3's seven levels lie above 0.066**: 0.120, 0.180, 0.250 and 0.350, reaching
+5.3 times the measured agreement. If H's true error against potential is larger than
+0.066, as A1.1 argues, it falls inside the grid. **No change to §3.**
+
+### A1.3 Correction: §1.4's provenance statement about `results/36` was wrong
+
+§1.4 said that `src/check_hochrechnung_onshore.py` lacks `import re` "in **every commit
+the file has ever appeared in**", and concluded that `results/36_hochrechnung_onshore_check.csv`
+"cannot have been produced by the committed version of it and its provenance is
+unclear". **The premise is true and the conclusion is false.**
+
+- **`a84bf4a` (31 Oct 2026)** committed the module and `results/36` together. That
+  version uses **no** regular expression, imports cleanly, and is the version that wrote
+  `results/36`. Its provenance is clear.
+- **`0e41a6e`** added DST-aware timestamp parsing with a module-level `re.compile` and no
+  `import re`. **From that commit on** the module raises `NameError` on import, and
+  `results/36` was never regenerated after it.
+
+So what is broken is the current code's ability to **reproduce** `results/36`, not the
+file's origin. Reproducing it would also need a live SMARD fetch, because its one day,
+2026-10-30, lies beyond the panel. The error was mine: I inferred "never importable" from
+"never imported `re`" without checking whether the earliest version used `re` at all.
+
+### A1.4 Every document and result that cites the module's output
+
+Searched every local branch — `main`, `identification-fix`,
+`mechanism-aware-censoring-gate-and-test2`, `e1-first-run`, both `claude/` worktree
+branches and this one — by filename, by module name and by the output's values, with
+coincidental numeric matches removed by hand.
+
+| where | what it cites | where it lives |
+|---|---|---|
+| `results/36_hochrechnung_onshore_check.csv` | **the output itself**: 96 quarter-hours of 2026-10-30, price > 5; ratio and correlation 50Hertz 1.0825 / 0.9862, Amprion 1.0279 / 0.9992, TransnetBW 1.0169 / 1.0 | every branch |
+| `docs/06`, "Baseline corrected (31 Oct 2026)" | "+3.5% over three areas (50Hertz +8.2%, Amprion +2.8%, TransnetBW +1.7%)"; the "47 MW and 60 MW excess"; "The 1.035 figure is withdrawn as a baseline"; "its +1.7% (12 MW) stands unexplained" | every branch carrying `docs/06` |
+| `docs/06`, "The two series are not independent (31 Oct 2026)" | "TransnetBW correlates 1.000 and TenneT/Amprion 0.99+" — **partly**, see below | the same |
+| `src/check_hochrechnung_onshore.py`, docstring line 21 | "1.028 for Amprion and 1.017 for TransnetBW, 1.035 over the three" | every branch |
+| commit `a84bf4a` message | the producing commit; a table of all three areas' means, ratios (1.082, 1.028, 1.017) and correlations (0.986, 0.999, 1.000), and "1.035" over three areas | history |
+| commit `0c97d59` message | "The 1.035 figure is withdrawn"; "TransnetBW correlates 1.000, TenneT and Amprion above 0.99" | history |
+| this document, §1.4 | the provenance claim corrected in A1.3 | this branch |
+
+The values check out against the file: the three-area pooled ratio is
+3,536.5 / 3,418.0 = 1.0347, which is the "+3.5%" and the "1.035"; the excesses are
+614.1 − 567.3 = 46.8 MW, 2,209.7 − 2,149.8 = 59.9 MW and 712.7 − 700.9 = 11.8 MW.
+
+**One figure in that list does not come from `results/36`.** The file has no TenneT row.
+The TenneT correlation of "0.99+" in `docs/06` and "above 0.99" in `0c97d59` matches
+`results/34_hochrechnung_check.csv`'s TenneT value of 0.9923 — but `results/34` is the
+*Hochrechnung Windenergie* export that `docs/06` itself identifies as the wrong series,
+1.57% of the fleet. Amprion's "0.99+" matches `results/36` (0.9992), not `results/34`
+(0.9695). **The `docs/06` sentence therefore draws on two different series.** `[VERIFY]`
+It is not edited here — `docs/06` is the spec, and rewriting it is not this phase's to
+do — and for A1.1's purpose it is superseded by `artifacts/Q0b/q0b_h_agreement.csv`,
+which measures the correlation on the series Anchor H actually is, with code that runs.

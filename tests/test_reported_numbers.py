@@ -37,6 +37,11 @@ from src.identification.summarise_p3 import load
 REPO_ROOT = Path(__file__).resolve().parents[1]
 P3 = REPO_ROOT / "artifacts" / "P3"
 Q0 = REPO_ROOT / "artifacts" / "Q0"
+Q0B = REPO_ROOT / "artifacts" / "Q0b"
+QS_FILE = (REPO_ROOT / "data" / "raw" / "netztransparenz"
+           / "hochrechnung_wind_onshore_qualitaetsgesichert"
+           / "online_hochrechnung_wind_onshore_qs_2025-10-01_2026-10-31_dl2026-11-15.csv")
+QS_SHA256 = "c5a7f961034886b0ec9a88faaf7eaa40fa3aaf767516d15b68d9fb0f96fad5b4"
 
 
 def _checks_arm_d(dd: pl.DataFrame, o: pl.DataFrame):
@@ -267,6 +272,145 @@ def _q0_from_arm_d(d: pl.DataFrame):
     ]
 
 
+def _q0b_checks(sh: pl.DataFrame, v: pl.DataFrame, ag: pl.DataFrame):
+    """`docs/Q0b_results.md` and `docs/Q0_preregistration.md` Amendment 1."""
+    agg = "50Hertz+Amprion+TransnetBW"
+    QA, OP = "quality-assured", "operational"
+
+    def share(area, est, set_, col="gap_share", series=QA):
+        q = sh.filter((pl.col("series") == series) & (pl.col("area") == area)
+                      & (pl.col("estimator") == est) & (pl.col("set") == set_))
+        if q.height != 1:
+            raise AssertionError(f"{series}/{area}/{est}/{set_}: {q.height} rows")
+        return float(q[col][0])
+
+    def verdict(area, col, series=QA):
+        q = v.filter((pl.col("series") == series) & (pl.col("area") == area))
+        return q[col][0]
+
+    def agree(area, col, series=QA):
+        q = ag.filter((pl.col("series") == series) & (pl.col("area") == area))
+        return float(q[col][0])
+
+    out = [
+        ("Q0b decides: aggregate verdict is ADDS BACK",
+         float(verdict(agg, "verdict") == "ADDS BACK"), 1.0, 0),
+        ("Q0b aggregate D", float(verdict(agg, "D")), 0.2893, 5e-5),
+        ("Q0b aggregate D CI low", float(verdict(agg, "D_lo")), 0.2484, 5e-5),
+        ("Q0b aggregate D CI high", float(verdict(agg, "D_hi")), 0.3344, 5e-5),
+        ("Q0b aggregate bands with data", float(verdict(agg, "bands_with_data")), 4, 0),
+        ("Q0b operational aggregate is INDETERMINATE",
+         float(verdict(agg, "verdict", OP) == "INDETERMINATE"), 1.0, 0),
+        ("Q0b operational aggregate bands", float(verdict(agg, "bands_with_data", OP)), 2, 0),
+        ("Q0b operational aggregate D", float(verdict(agg, "D", OP)), 0.3616, 5e-5),
+        ("Q0b operational aggregate D low", float(verdict(agg, "D_lo", OP)), 0.2889, 5e-5),
+        ("Q0b operational aggregate D high", float(verdict(agg, "D_hi", OP)), 0.4375, 5e-5),
+        ("Q0b forecast aggregate D", float(verdict(agg, "F_D")), 0.1033, 5e-5),
+        ("Q0b forecast aggregate D low", float(verdict(agg, "F_D_lo")), 0.0567, 5e-5),
+        ("Q0b forecast aggregate D high", float(verdict(agg, "F_D_hi")), 0.1444, 5e-5),
+        ("Q0b forecast 50Hertz D low", float(verdict("50Hertz", "F_D_lo")), -0.0028, 5e-5),
+        ("Q0b forecast 50Hertz D high", float(verdict("50Hertz", "F_D_hi")), 0.1117, 5e-5),
+        ("Q0b forecast TenneT D", float(verdict("TenneT", "F_D")), -0.0018, 5e-5),
+        ("Q0b forecast TenneT D low", float(verdict("TenneT", "F_D_lo")), -0.0889, 5e-5),
+        ("Q0b forecast TenneT D high", float(verdict("TenneT", "F_D_hi")), 0.0730, 5e-5),
+        ("Q0b H negative-price share", share(agg, "H", "price < 0"), 0.3107, 5e-5),
+        ("Q0b H negative share CI low", share(agg, "H", "price < 0", "ci_lo"), 0.2693, 5e-5),
+        ("Q0b H negative share CI high", share(agg, "H", "price < 0", "ci_hi"), 0.3542, 5e-5),
+        ("Q0b H price>=0 share", share(agg, "H", "price >= 0"), 0.0214, 5e-5),
+        ("Q0b H price>=0 CI low", share(agg, "H", "price >= 0", "ci_lo"), 0.0174, 5e-5),
+        ("Q0b H price>=0 CI high", share(agg, "H", "price >= 0", "ci_hi"), 0.0259, 5e-5),
+        ("Q0b H price>5 share", share(agg, "H", "price > 5"), 0.0157, 5e-5),
+        ("Q0b F negative-price share", share(agg, "F", "price < 0"), 0.0933, 5e-5),
+        ("Q0b F price>=0 share", share(agg, "F", "price >= 0"), -0.0101, 5e-5),
+        ("Q0b F price>5 share", share(agg, "F", "price > 5"), -0.0106, 5e-5),
+        ("Q0b H is 3.3x F at negative prices",
+         share(agg, "H", "price < 0") / share(agg, "F", "price < 0"), 3.33, 0.005),
+        ("Q0b price>=0 days", share(agg, "H", "price >= 0", "n_days"), 391, 0),
+        ("Q0b price>5 days", share(agg, "H", "price > 5", "n_days"), 390, 0),
+        ("Q0b negative-price days", share(agg, "H", "price < 0", "n_days"), 99, 0),
+        # redispatch's own size (section 3)
+        ("Q0b R share, aggregate, negative", share(agg, "H", "price < 0", "r_share"), 0.0338, 5e-5),
+        ("Q0b R share, aggregate, price>=0", share(agg, "H", "price >= 0", "r_share"), 0.0165, 5e-5),
+        ("Q0b R share, TenneT, negative", share("TenneT", "H", "price < 0", "r_share"), 0.1355, 5e-5),
+        ("Q0b R share, TenneT, price>=0", share("TenneT", "H", "price >= 0", "r_share"), 0.1279, 5e-5),
+        ("Q0b TenneT positive-price gap share", share("TenneT", "H", "price >= 0"), -0.0691, 5e-5),
+        ("Q0b every other area sits above at positive prices",
+         float(all(share(a, "H", "price >= 0") > 0 for a in ("50Hertz", "Amprion", "TransnetBW", agg))),
+         1.0, 0),
+        # Amendment 1 A1.1 and Q0b section 5 -- the agreement evidence
+        ("Q0b QS sigma, aggregate", agree(agg, "sigma_log_G_over_H"), 0.0607, 5e-5),
+        ("Q0b QS sigma CI low", agree(agg, "sigma_lo"), 0.0544, 5e-5),
+        ("Q0b QS sigma CI high", agree(agg, "sigma_hi"), 0.0667, 5e-5),
+        ("Q0b operational sigma, aggregate", agree(agg, "sigma_log_G_over_H", OP), 0.0660, 5e-5),
+        ("Q0b operational sigma CI low", agree(agg, "sigma_lo", OP), 0.0511, 5e-5),
+        ("Q0b operational sigma CI high", agree(agg, "sigma_hi", OP), 0.0800, 5e-5),
+        ("Q0b QS corr(H,G), aggregate", agree(agg, "corr_H_G"), 0.9954, 5e-5),
+        ("Q0b operational corr(H,G), aggregate", agree(agg, "corr_H_G", OP), 0.9959, 5e-5),
+        ("Q0b QS corr of changes, aggregate", agree(agg, "corr_dH_dG_lag1"), 0.899, 5e-4),
+        ("Q0b QS corr(H,G), 50Hertz", agree("50Hertz", "corr_H_G"), 0.9944, 5e-5),
+        ("Q0b QS corr(H,G), Amprion", agree("Amprion", "corr_H_G"), 0.9968, 5e-5),
+        ("Q0b QS corr(H,G), TransnetBW", agree("TransnetBW", "corr_H_G"), 0.9972, 5e-5),
+        ("Q0b QS corr(H,G), TenneT", agree("TenneT", "corr_H_G"), 0.9914, 5e-5),
+        ("Q0b QS corr of changes, 50Hertz", agree("50Hertz", "corr_dH_dG_lag1"), 0.873, 5e-4),
+        ("Q0b QS corr of changes, Amprion", agree("Amprion", "corr_dH_dG_lag1"), 0.927, 5e-4),
+        ("Q0b QS corr of changes, TransnetBW", agree("TransnetBW", "corr_dH_dG_lag1"), 0.955, 5e-4),
+        ("Q0b QS corr of changes, TenneT", agree("TenneT", "corr_dH_dG_lag1"), 0.877, 5e-4),
+    ]
+    for area, d, lo, hi in (("50Hertz", 0.2866, 0.2406, 0.3355),
+                            ("Amprion", 0.2944, 0.2563, 0.3365),
+                            ("TransnetBW", 0.2861, 0.2312, 0.3421),
+                            ("TenneT", 0.3106, 0.2656, 0.3560)):
+        out += [(f"Q0b {area} verdict ADDS BACK",
+                 float(verdict(area, "verdict") == "ADDS BACK"), 1.0, 0),
+                (f"Q0b {area} D", float(verdict(area, "D")), d, 5e-5),
+                (f"Q0b {area} D low", float(verdict(area, "D_lo")), lo, 5e-5),
+                (f"Q0b {area} D high", float(verdict(area, "D_hi")), hi, 5e-5)]
+    for b, h, hlo, hhi, f, nd in (("(-5,0)", 0.2469, 0.2201, 0.2786, 0.0493, 99),
+                                  ("[-20,-5]", 0.4025, 0.3362, 0.4560, 0.1125, 38),
+                                  ("[-50,-20]", 0.5453, 0.4757, 0.5808, 0.2681, 20),
+                                  ("<=-50", 0.6799, 0.5810, 0.7326, 0.5296, 12)):
+        out += [(f"Q0b H band {b}", share(agg, "H", f"band {b}"), h, 5e-5),
+                (f"Q0b H band {b} CI low", share(agg, "H", f"band {b}", "ci_lo"), hlo, 5e-5),
+                (f"Q0b H band {b} CI high", share(agg, "H", f"band {b}", "ci_hi"), hhi, 5e-5),
+                (f"Q0b F band {b}", share(agg, "F", f"band {b}"), f, 5e-5),
+                (f"Q0b band {b} event-days", share(agg, "H", f"band {b}", "n_days"), nd, 0)]
+    return out
+
+
+def _amendment1_checks():
+    """`docs/Q0_preregistration.md` A1.4 -- the values traced to results/36 and /34."""
+    import csv as _csv
+    r36 = {r["area"]: r for r in _csv.DictReader(open(REPO_ROOT / "results" / "36_hochrechnung_onshore_check.csv"))}
+    r34 = {r["area"]: r for r in _csv.DictReader(open(REPO_ROOT / "results" / "34_hochrechnung_check.csv"))}
+    hr = sum(float(r36[a]["hr_mean_mw"]) for a in r36)
+    sm = sum(float(r36[a]["smard_mean_mw"]) for a in r36)
+    ex = {a: float(r36[a]["hr_mean_mw"]) - float(r36[a]["smard_mean_mw"]) for a in r36}
+    return [
+        ("A1.4 three-area pooled ratio is the 1.035", hr / sm, 1.0347, 5e-5),
+        ("A1.4 50Hertz excess MW", ex["50Hertz"], 46.8, 0.05),
+        ("A1.4 Amprion excess MW", ex["Amprion"], 59.9, 0.05),
+        ("A1.4 TransnetBW excess MW", ex["TransnetBW"], 11.8, 0.05),
+        ("A1.4 results/36 has no TenneT row", float("TenneT" in r36 or "TenneT DE" in r36), 0.0, 0),
+        ("A1.4 results/36 Amprion corr", float(r36["Amprion"]["corr"]), 0.9992, 5e-5),
+        ("A1.4 results/34 TenneT corr (the wrong series)",
+         float(r34["TenneT"]["corr_with_smard_actual"]), 0.9923, 5e-5),
+        ("A1.4 results/34 Amprion corr", float(r34["Amprion"]["corr_with_smard_actual"]), 0.9695, 5e-5),
+    ]
+
+
+def _qs_file_checks():
+    """Q0b section 4: the fetched raw file is the one the results were computed on."""
+    import hashlib
+    if not QS_FILE.exists():
+        return []
+    raw = QS_FILE.read_bytes()
+    n_rows = raw.decode("utf-8-sig").strip().count("\n")      # header excluded by count
+    return [
+        ("Q0b raw file sha256 matches", float(hashlib.sha256(raw).hexdigest() == QS_SHA256), 1.0, 0),
+        ("Q0b raw file quarter-hours", n_rows, 38020, 0),
+    ]
+
+
 def _collect():
     """All checks whose artifacts are on disk, as (id, got, want, tol)."""
     out, skipped = [], []
@@ -288,6 +432,14 @@ def _collect():
         out += _q0_checks(load(q))
     else:
         skipped.append("Q0 anchors")
+    if (Q0B / "q0b_verdicts.csv").exists():
+        out += _q0b_checks(load(Q0B / "q0b_gap_shares.csv"),
+                           load(Q0B / "q0b_verdicts.csv"),
+                           load(Q0B / "q0b_h_agreement.csv"))
+        out += _amendment1_checks()
+    else:
+        skipped.append("Q0b")
+    out += _qs_file_checks()
     return out, skipped
 
 
