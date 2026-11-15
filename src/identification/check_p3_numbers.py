@@ -26,6 +26,45 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 P3 = REPO_ROOT / "artifacts" / "P3"
 
 
+def _checks_arm_d(dd: pl.DataFrame, o: pl.DataFrame):
+    """Section 2.4, including the Arm O comparison it is quoted against."""
+    scored = dd.filter(pl.col("cov").is_not_null())
+    o45 = o.filter(pl.col("seed") == 45)
+    fs = dd.filter(pl.col("lam") == "L1").with_columns(
+        (pl.col("rms_floor") / pl.col("rms_point")).alias("fs"))
+
+    def med(df, lam, **eq):
+        q = df.filter((pl.col("lam") == lam) & pl.col("feasible"))
+        for k, v in eq.items():
+            q = q.filter(pl.col(k) == v)
+        return float(q["width"].median())
+
+    out = [
+        ("S2.4 cells", dd.select(["hetero", "rate", "gamma", "r_shape", "seed"]).unique().height, 54, 0),
+        ("S2.4 solves all optimal", int((dd["status_lo"] == "optimal").sum()), 378, 0),
+        ("S2.4 covered", int(scored["cov"].sum()), 378, 0),
+        ("S2.4 scored", scored.height, 378, 0),
+        ("S2.4 width L1", med(dd, "L1"), 0.096, 5e-4),
+        ("S2.4 width L2", med(dd, "L2"), 0.178, 5e-4),
+        ("S2.4 width L3", med(dd, "L3"), 0.541, 5e-4),
+        ("S2.4 width L4", med(dd, "L4"), 0.712, 5e-4),
+        ("S2.4 width L6", med(dd, "L6"), 1.206, 5e-4),
+        ("S2.4 width L7", med(dd, "L7"), 1.000, 5e-4),
+        ("S2.4 width L5 GWh", med(dd, "L5"), 12218.0, 1.0),
+        ("S2.4 Arm O seed-45 width L1", med(o45, "L1"), 7.0e-7, 5e-8),
+        ("S2.4 Arm O seed-45 width L7", med(o45, "L7"), 0.467, 5e-4),
+        ("S2.4 eps step", float(dd.filter(pl.col("r_shape") == "step")["eps"].median()), 0.035, 5e-4),
+        ("S2.4 eps half", float(dd.filter(pl.col("r_shape") == "half")["eps"].median()), 0.083, 5e-4),
+        ("S2.4 eps logistic", float(dd.filter(pl.col("r_shape") == "logistic")["eps"].median()), 0.121, 5e-4),
+        ("S2.4 floor share min", float(fs["fs"].min()), 0.982, 1e-3),
+        ("S2.4 floor share max", float(fs["fs"].max()), 0.999, 1e-3),
+        ("S2.4 floor share mean", float(fs["fs"].mean()), 0.995, 1e-3),
+        ("S2.4 pooled exceeds width, any",
+         int(dd["pooled_err_exceeds_width"].sum()), 0, 0),
+    ]
+    return out
+
+
 def _checks(o: pl.DataFrame, r: pl.DataFrame):
     scored = o.filter(pl.col("cov").is_not_null())
     win = r.filter((pl.col("period") == "window")
@@ -131,8 +170,14 @@ def _checks(o: pl.DataFrame, r: pl.DataFrame):
 def main() -> None:
     o = load(P3 / "p3_synthetic_arm_o.csv")
     r = load(P3 / "p3_real.csv")
+    checks = _checks(o, r)
+    arm_d = P3 / "p3_synthetic_arm_d.csv"
+    if arm_d.exists():
+        checks += _checks_arm_d(load(arm_d), o)
+    else:
+        print("note: Arm D artifact absent, section 2.4 not checked")
     bad = 0
-    for name, got, want, tol in _checks(o, r):
+    for name, got, want, tol in checks:
         good = abs(float(got) - float(want)) <= tol
         bad += not good
         print(f"{'ok  ' if good else 'FAIL'}  {name:<48} {got!r:>24}  quoted {want!r}")

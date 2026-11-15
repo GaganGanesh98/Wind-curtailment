@@ -131,12 +131,16 @@ decide how wide it is.
    logically maximal 839.3 GWh** — the counterfactual bound is the whole of its own
    support and says nothing.
 
-5. **What binds on real data is the noise in ĉ, not cohort collinearity.** On the
+5. **What binds is the noise in ĉ, not cohort collinearity — and that is not a fact
+   about German data.** On the
    three window arms the within-identical-row spread of ĉ accounts for **89% to 94%**
    of the point fit's residual (`p3_real.csv`, `rms_floor` ÷ `rms_point`);
    across all 36 arms it runs **30% to 100%**, median 91%, the low end on a
    23-quarter-hour month. Quarter-hours the design cannot tell apart carry ĉ values
-   differing by about 0.19 RMS on the window. No response function
+   differing by about 0.19 RMS on the window. **The same collapse reproduces on the
+   synthetic benchmark the moment ĉ is derived rather than exact** (§2.4): with a
+   known truth and a fully identified cohort structure, every interval widens by four
+   to five orders of magnitude and the floor accounts for 99.5% of the residual. No response function
    of any shape, cohort structure or regularisation could fit better, so ε is
    essentially a measurement of how noisy a per-quarter-hour `1 − G/F` is, and every
    interval inherits it. Merging cohorts, adding cohorts or sharpening θ cannot
@@ -256,6 +260,62 @@ variation. The rank of X itself moves (143–179 of 300 columns) with the censor
 rate and seed, and §1 finding 2 is the relevant statement about it — it does not
 predict the width.
 
+### 2.4 Arm D — derived ĉ, and the bridge to real data
+
+54 cells: both configurations × 3 rates × 3 γ × 3 shapes, seed 45, complete, all 378
+solves `optimal`. ĉ = 1 − G/Â with Â the shared cross-fitted stage A — what real data
+gives, on a benchmark where the truth is still known.
+`artifacts/P3/p3_synthetic_arm_d.csv`.
+
+**Coverage holds: 378 of 378, no misses.** The bounds stay honest when ĉ is noisy;
+they simply stop being narrow.
+
+**Everything else collapses.** Median width, Arm D against the same seed-45 cells of
+Arm O:
+
+| functional | Arm O | Arm D | ratio |
+|---|---|---|---|
+| λ₁ fleet response, −20 to −5 | 7.0 × 10⁻⁷ | **0.096** | ×1.4 × 10⁵ |
+| λ₂ fleet response, ≤ −50 | 1.3 × 10⁻⁶ | **0.178** | ×1.3 × 10⁵ |
+| λ₃ one identified cohort | 4.7 × 10⁻⁶ | **0.541** | ×1.2 × 10⁵ |
+| λ₄ the collinear group | 1.2 × 10⁻⁵ | **0.712** | ×5.8 × 10⁴ |
+| λ₆ λ₃ − λ₄ | 1.4 × 10⁻⁵ | **1.206** | ×8.6 × 10⁴ |
+| λ₇ one member | 0.467 | **1.000** | ×2.1 |
+| λ₅ counterfactual, GWh | 0.27 | **12,218** | ×4.5 × 10⁴ |
+
+λ₇ reaches its entire range. λ₆ spans more than the whole of [0, 1]. **Not one
+functional survives the change from an exact ĉ to a derived one**, on the same
+design, the same cohorts and the same truth.
+
+**And the mechanism is the same one §3.2 finds on real data.** ε rises by one to two
+orders of magnitude, and the within-identical-row floor accounts for essentially all
+of it:
+
+| shape | ε, Arm O | ε, Arm D | floor ÷ point residual, Arm D |
+|---|---|---|---|
+| step | 2 × 10⁻⁷ | 0.035 | 0.982–0.999 |
+| half | 2 × 10⁻⁷ | 0.083 | (same range) |
+| logistic | 0.0061 | 0.121 | (same range) |
+
+Mean floor share over the 54 cells is **0.995**. With a derived ĉ, almost the whole
+residual is dispersion between quarter-hours the design cannot distinguish, exactly
+as on the real panel, where it is 0.89 to 0.94 on the window arms.
+
+**Two consequences worth stating plainly.**
+
+- **The real-data null in §3 is not about German data.** It reproduces on a synthetic
+  benchmark with a known truth, a fully identified cohort structure and no
+  measurement problem of any kind, as soon as ĉ is formed by dividing an observed
+  output by an estimated potential. The real panel is worse (ε = 0.234 against
+  0.035–0.121 here) because its potential is the raw forecast and its forecast error
+  is real, but the direction and the mechanism are already present here.
+- **The pooled-response comparison of §2.3 dies with the widths.** In Arm D the
+  single common response function lands outside the identified set in **0 of 54
+  cells, for every functional** — not because pooling became right, but because every
+  interval is now wide enough to contain anything. Read against §2.3's 53 of 80 under
+  an exact ĉ, that is the clearest statement of what noise in ĉ costs: it removes the
+  bounds' ability to rule out a wrong structural assumption.
+
 ## 3. Real data
 
 DE, onshore, ex post (T1). Window 2025-10-01 to 2026-09-30, **2,052 exposed
@@ -356,8 +416,9 @@ aggregate German panel does not identify a cohort-level switch-off response.
    within-row spread rather than the level, so a better Â would move the intervals'
    position more than their width. It would not change finding 4.
 2. **Arm O's ε is discretisation, not sampling noise.** With ĉ = c_true the bootstrap
-   has nothing to resample, so §2's widths answer "what does the design determine
-   exactly", and Arm D (§2.4) is the bridge to the real-data regime.
+   has nothing to resample, so §2.1–2.3's widths answer "what does the design
+   determine exactly". §2.4 is the arm that answers the practical question, and its
+   widths are four to five orders of magnitude larger.
 3. **The grid offers no rank variation.** `exposure_rank` is 4 of 5 in every synthetic
    cell, so the brief's "bound width against exposure-matrix rank" cannot be answered
    from it; §2.3 reports what can be said instead.
@@ -377,7 +438,7 @@ aggregate German panel does not identify a cohort-level switch-off response.
 |---|---|
 | `artifacts/P3/p3_synthetic_arm_o.csv` | 162 cells × 7 functionals, oracle ĉ |
 | `artifacts/P3/p3_synthetic_arm_o_summary.csv` | per-functional roll-up |
-| `artifacts/P3/p3_synthetic_arm_d.csv` | derived ĉ, reduced grid |
+| `artifacts/P3/p3_synthetic_arm_d.csv` | 54 cells × 7 functionals, derived ĉ |
 | `artifacts/P3/p3_real.csv` | 3 settings × (window, window-recalibrated, 10 months) × 7 |
 | `src/identification/bounds.py` | the SOCP, ε, row compression, the row-space test |
 | `src/identification/functionals.py` | the seven coefficient vectors |
@@ -388,11 +449,12 @@ aggregate German panel does not identify a cohort-level switch-off response.
 
 Every row carries `git_head`, `run_date` and `preregistration_commit = 1cd4b30`.
 
-### Correction, 15 November 2026 — four figures in the first version of this note
+### Correction, 15 November 2026 — six figures in the first version of this note
 
 Found by running `src/identification/check_p3_numbers.py`, which re-derives every
-number in this document from the artifacts, immediately after the first version was
-committed (`d159397`). The commit is not amended, following the practice of
+number in this document from the artifacts and exits non-zero on a mismatch. It was
+written and run immediately after the first version was committed (`d159397`), and
+failed six of its checks. That commit is not amended, following the practice of
 `docs/12` section J: the record keeps the error and its correction together.
 
 | where | said | is |
@@ -400,40 +462,18 @@ committed (`d159397`). The commit is not amended, following the practice of
 | §2.1, λ₁ median width | 7.8 × 10⁻⁷ | **7.7 × 10⁻⁷** |
 | §2.1, λ₂ median width | 1.0 × 10⁻⁶ | **1.5 × 10⁻⁶** |
 | §2.1, λ₃ median width | 5.0 × 10⁻⁶ | **4.7 × 10⁻⁶** |
-| §1 finding 5 and §3.2, floor ÷ point residual | "72% to 100%" | **89–94% on the window arms; 30–100% over all 36 arms** |
-| §3.1 and §5, recalibration effect on width | "less than 0.031" | **at most 0.038** |
-
 | §2.2, λ₁ on logistic | 0.0049 | **0.0048** |
+| §3.1 and §5, recalibration effect on width | "less than 0.031" | **at most 0.038** |
+| §1 finding 5 and §3.2, floor ÷ point residual | "72% to 100%" | **89–94% on the window arms; 30–100% over all 36 arms** |
 
-The rounding errors are λ₁, λ₂, λ₃ and λ₁-on-logistic. The scope error is the one
-that mattered: I quoted the range
-over the window arms and April 2026 as though it were the range over everything, and
-the true minimum (0.299) sits on a month with 23 exposed quarter-hours. The fourth
-understated the largest recalibration effect by 0.007. **No finding changes** — the
-floor still dominates the residual on every arm that carries a conclusion, and the
-recalibration still moves no interval enough to matter — but the numbers now say what
-the artifacts say.
+The first four are rounding. The fifth understated the largest recalibration effect
+by 0.007. The sixth is a real error of scope and the reason the script now exists: I
+quoted the range of the floor share over the three window arms and April 2026 as
+though it were the range over everything, and the true minimum (0.299) sits on
+`high`/2026-02, a month with 23 exposed quarter-hours in 3 distinct rows that settles
+nothing either way.
 
----
-
-### 2.4 Arm D — derived ĉ — `[PENDING]`
-
-54 cells: both configurations × 3 rates × 3 γ × 3 shapes, seed 45. Running at the
-time of this commit; its file is deliberately **not** committed while partial, under
-hard rule 20, and no figure from it appears anywhere in this note.
-
-**One engineering note, because it changed the run rather than the result.** The
-first attempt fitted the shared stage A once per cell and was going to take about
-seven hours. Stage A is trained on price > 5 €/MWh quarter-hours, where no cohort is
-exposed and `g_obs == a_true` whatever `r*` is, and it predicts from the forecast,
-the weather proxy and the hour — none of which the response shape or the cohort
-offsets touch. So it depends on the price process alone, and the six cells sharing a
-(rate, γ, seed) share it. `docs/09` Amendment 6 states the same property for E1 v2.
-
-That was **verified before being relied on**, not assumed: fitting stage A
-independently for (step, homogeneous), (half, homogeneous) and (step, split) at rate
-0.10, γ = 0, seed 45 returns a **bit-identical** `a_hat` in all three, on an identical
-safe mask of 78,075 quarter-hours. The cache re-checks a SHA-256 of the price series
-on every hit and raises if it differs, so a cell that does not in fact share the
-process cannot silently reuse the wrong array. Nine fits replace fifty-four and no
-number moves.
+**No finding moves.** The within-row floor still dominates the residual on every arm
+that carries a conclusion, and recalibration still moves no interval enough to
+matter. But a stated range must be the range of what it names, and the script now
+re-derives every figure in this note, §2.4 included, over 79 checks.
