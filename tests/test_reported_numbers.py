@@ -40,6 +40,7 @@ Q0 = REPO_ROOT / "artifacts" / "Q0"
 Q0B = REPO_ROOT / "artifacts" / "Q0b"
 Q1D = REPO_ROOT / "artifacts" / "Q1"
 Q0C = REPO_ROOT / "artifacts" / "Q0c"
+Q5D = REPO_ROOT / "artifacts" / "Q5"
 QS_FILE = (REPO_ROOT / "data" / "raw" / "netztransparenz"
            / "hochrechnung_wind_onshore_qualitaetsgesichert"
            / "online_hochrechnung_wind_onshore_qs_2025-10-01_2026-10-31_dl2026-11-15.csv")
@@ -529,6 +530,71 @@ def _q0c_checks():
     return out
 
 
+def _q5_checks():
+    """`docs/Q5_results.md`."""
+    sm = pl.read_csv(Q5D / "q5_summary.csv")
+    raw = load(Q5D / "q5_real.csv")
+
+    def T(setting, scope, col):
+        q = sm.filter((pl.col("table") == "transitions") & (pl.col("setting") == setting)
+                      & (pl.col("scope") == scope))
+        return float(q[col][0])
+
+    def A(pot, setting, col):
+        q = sm.filter((pl.col("table") == "per_arm") & (pl.col("potential") == pot)
+                      & (pl.col("setting") == setting))
+        return float(q[col][0])
+
+    out = [("Q5 rows", raw.height, 504, 0)]
+    for st, n, up, dn, f, h in (("main", 59, 2, 5, 0.102, 0.051),
+                                ("low", 59, 3, 4, 0.085, 0.068),
+                                ("high", 53, 3, 2, 0.057, 0.075)):
+        out += [(f"Q5 {st} pairs in both", T(st, "months", "n_pairs_both"), n, 0),
+                (f"Q5 {st} become informative", T(st, "months", "n_become_informative"), up, 0),
+                (f"Q5 {st} reverse", T(st, "months", "n_reverse"), dn, 0),
+                (f"Q5 {st} share informative F", T(st, "months", "share_informative_F"), f, 5e-4),
+                (f"Q5 {st} share informative H", T(st, "months", "share_informative_H"), h, 5e-4),
+                (f"Q5 {st} one-arm-only pairs", T(st, "months", "n_pairs_one_arm_only"), 0, 0),
+                (f"Q5 {st} window become informative", T(st, "window", "n_become_informative"), 1, 0),
+                (f"Q5 {st} window reverse", T(st, "window", "n_reverse"), 0, 0),
+                (f"Q5 {st} window pairs", T(st, "window", "n_pairs_both"), 7, 0)]
+    out += [("Q5 headline share", T("main", "months", "share_become_informative"), 0.034, 5e-4),
+            ("Q5 main reverse share", T("main", "months", "share_reverse"), 0.085, 5e-4),
+            ("Q5 low share", T("low", "months", "share_become_informative"), 0.051, 5e-4),
+            ("Q5 low reverse share", T("low", "months", "share_reverse"), 0.068, 5e-4),
+            ("Q5 high share", T("high", "months", "share_become_informative"), 0.057, 5e-4),
+            ("Q5 high reverse share", T("high", "months", "share_reverse"), 0.038, 5e-4),
+            ("Q5 main informative both", T("main", "months", "n_informative_both"), 1, 0),
+            ("Q5 main neither arm", T("main", "months", "n_pairs_neither_arm"), 11, 0)]
+    for pot, st, e, fl, w in (("F", "main", 0.267, 0.924, 0.943), ("H", "main", 0.107, 0.963, 1.000),
+                              ("F", "low", 0.267, 0.936, 0.942), ("H", "low", 0.107, 0.963, 1.000),
+                              ("F", "high", 0.267, 0.918, 0.977), ("H", "high", 0.107, 0.930, 0.908)):
+        out += [(f"Q5 {pot} {st} median eps", A(pot, st, "median_eps"), e, 5e-4),
+                (f"Q5 {pot} {st} floor ratio", A(pot, st, "median_floor_ratio"), fl, 5e-4),
+                (f"Q5 {pot} {st} median width", A(pot, st, "median_width_excl_L5"), w, 5e-4)]
+    plain = raw.filter((pl.col("setting") == "main")
+                       & ~pl.col("c_hat").str.contains("recalibrated"))
+
+    def W(pot, period, lam):
+        q = plain.filter((pl.col("potential") == pot) & (pl.col("period") == period)
+                         & (pl.col("lam") == lam))
+        return float(q["width"][0])
+    for period, lam, wf, wh in (("window", "L1", 0.474, 0.208), ("2025-10", "L1", 0.156, 0.148),
+                                ("2026-01", "L3", 0.070, 0.532), ("2026-01", "L4", 0.075, 0.569),
+                                ("2026-01", "L6", 0.144, 1.101), ("2026-01", "L7", 0.124, 0.945),
+                                ("2026-02", "L3", 0.148, 0.269), ("2026-04", "L1", 0.571, 0.175),
+                                ("2026-04", "L2", 0.983, 0.196)):
+        out += [(f"Q5 width F {period} {lam}", W("F", period, lam), wf, 5e-4),
+                (f"Q5 width H {period} {lam}", W("H", period, lam), wh, 5e-4)]
+    months = plain.filter((pl.col("period") != "window") & (pl.col("lam") == "L1")
+                          & (pl.col("potential") == "H") & pl.col("defined"))
+    out += [("Q5 H L1 defined months", months.height, 8, 0),
+            ("Q5 H L1 informative months",
+             months.filter(pl.col("informative").cast(pl.String) == "true").height
+             + months.filter(pl.col("informative").cast(pl.String) == "True").height, 2, 0)]
+    return out
+
+
 def _collect():
     """All checks whose artifacts are on disk, as (id, got, want, tol)."""
     out, skipped = [], []
@@ -563,6 +629,10 @@ def _collect():
         out += _q0c_checks()
     else:
         skipped.append("Q0c")
+    if (Q5D / "q5_summary.csv").exists():
+        out += _q5_checks()
+    else:
+        skipped.append("Q5")
     if (Q1D / "q1_summary_by_level.csv").exists():
         out += _q1_checks()
     else:

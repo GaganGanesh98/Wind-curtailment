@@ -43,12 +43,16 @@ def transitions(d: pl.DataFrame, setting: str, months: bool) -> dict:
     h = base.filter(pl.col("potential") == "H").select(key + [pl.col("informative").alias("inf_h")])
     j = f.join(h, on=key, how="full", coalesce=True)
     both = j.filter(pl.col("inf_f").is_not_null() & pl.col("inf_h").is_not_null())
+    neither = j.filter(pl.col("inf_f").is_null() & pl.col("inf_h").is_null()).height
     n = both.height
     up = both.filter(~pl.col("inf_f") & pl.col("inf_h")).height
     down = both.filter(pl.col("inf_f") & ~pl.col("inf_h")).height
     return {
         "setting": setting, "scope": "months" if months else "window",
-        "n_pairs_both": n, "n_pairs_one_arm_only": j.height - n,
+        # Corrected after the first run: the original single count, "one arm only",
+        # also held pairs undefined in BOTH arms. The headline denominator is unchanged.
+        "n_pairs_both": n, "n_pairs_one_arm_only": j.height - n - neither,
+        "n_pairs_neither_arm": neither,
         "n_become_informative": up, "share_become_informative": up / n if n else np.nan,
         "n_reverse": down, "share_reverse": down / n if n else np.nan,
         "share_informative_F": float(both["inf_f"].mean()) if n else np.nan,
