@@ -445,14 +445,14 @@ aggregate German panel does not identify a cohort-level switch-off response.
 | `src/identification/run_p3_synthetic.py`, `run_p3_real.py`, `summarise_p3.py` | runners |
 | `tests/test_bounds.py` | 17 tests |
 
-| `src/identification/check_p3_numbers.py` | re-derives every figure quoted above from the artifacts |
+| `tests/test_reported_numbers.py` | re-derives every figure quoted above from the artifacts, under `pytest` |
 
 Every row carries `git_head`, `run_date` and `preregistration_commit = 1cd4b30`.
 
 ### Correction, 15 November 2026 — six figures in the first version of this note
 
-Found by running `src/identification/check_p3_numbers.py`, which re-derives every
-number in this document from the artifacts and exits non-zero on a mismatch. It was
+Found by running the number checker, which re-derives every number in this document
+from the artifacts and fails on a mismatch. It was
 written and run immediately after the first version was committed (`d159397`), and
 failed six of its checks. That commit is not amended, following the practice of
 `docs/12` section J: the record keeps the error and its correction together.
@@ -476,4 +476,7 @@ nothing either way.
 **No finding moves.** The within-row floor still dominates the residual on every arm
 that carries a conclusion, and recalibration still moves no interval enough to
 matter. But a stated range must be the range of what it names, and the script now
-re-derives every figure in this note, §2.4 included, over 79 checks.
+re-derives every figure in this note, §2.4 included, over 79 checks. Since 15
+November it lives in `tests/test_reported_numbers.py` and runs under `pytest`, one
+test per figure, so a note that drifts from its artifact fails the suite (Phase Q
+hard rule 7).
