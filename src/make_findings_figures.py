@@ -188,6 +188,20 @@ def f7_data() -> pl.DataFrame:
               .sort("lam"))
 
 
+FLEET, COHORT = ("L1", "L2"), ("L3", "L4", "L6", "L7")
+
+
+def f9_data() -> pl.DataFrame:
+    """Q1 median interval width and interquartile range per functional against i.i.d. σ."""
+    return (pl.read_csv(ART / "Q1" / "q1_summary_by_level.csv")
+              .filter((pl.col("noise") == "iid") & pl.col("lam").is_in(FLEET + COHORT))
+              .with_columns(pl.when(pl.col("lam").is_in(FLEET)).then(pl.lit("fleet"))
+                              .otherwise(pl.lit("cohort")).alias("group"))
+              .select(["group", "lam", "sigma", "n_cells", "median_width", "q25_width",
+                       "q75_width"])
+              .sort(["group", "lam", "sigma"], descending=[True, False, False]))
+
+
 def f8_data() -> pl.DataFrame:
     """Q6a between-day variance per testable cell against the measurement-only ceiling."""
     num = ("v_between", "v_meas", "excess_ci_lo", "excess_ci_hi", "sigma_h")
@@ -265,6 +279,16 @@ CAPTIONS = {
         "artifacts/Q1/q1_summary_by_level.csv, rows noise = iid, sigma = 0.066, column "
         "share_informative; artifacts/Q5/q5_real.csv, rows setting = main, period != window, "
         "potential = H, c_hat not recalibrated; informative True/False defined, empty undefined."),
+    "F9_width_vs_noise": (
+        "Q1: median width of the identified set (line) and interquartile range (band) across "
+        "the 54 synthetic cells, against i.i.d. noise σ in the potential, on the tested grid "
+        "only. Left: fleet functionals; right: cohort functionals. Log scale. Vertical lines: "
+        "the statutory projection H (σ is a lower bound on its error) and the TSO forecast. "
+        "Dashed horizontal line: 0.25, the informative limit for λ₁–λ₄ and λ₇ (λ₆'s is 0.5). "
+        "λ₅ is omitted: it is an energy in GWh, not a share of potential.",
+        "artifacts/Q1/q1_summary_by_level.csv, rows noise = iid, lam in L1-L4, L6, L7, columns "
+        "sigma, median_width, q25_width, q75_width; anchors from artifacts/Q0/q0_anchors.csv as "
+        "in F6."),
     "F8_day_heterogeneity": (
         "Q6a: between-day variance of the curtailed share per testable cell (95% interval) "
         "against the variance that measurement error at Anchor H's σ alone would produce.",
@@ -483,6 +507,38 @@ def make_all(out: Path) -> list[Path]:
     ax.set_title("Days differ more than measurement error explains")
     ax.legend(frameon=False)
     save(fig, "F8_day_heterogeneity", d)
+
+    # F9
+    d, anc = f9_data(), anchors()
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5.8), sharey=True)
+    styles = {"L1": (BLUE, "o"), "L2": (ORANGE, "s"), "L3": (GREEN, "^"),
+              "L4": (VERMILION, "D"), "L6": (PURPLE, "P"), "L7": (GREY, "X")}
+    for ax, group, lams, title in ((axes[0], "fleet", FLEET, "fleet functionals"),
+                                   (axes[1], "cohort", COHORT, "cohort functionals")):
+        for lam in lams:
+            q = d.filter(pl.col("lam") == lam)
+            col, mk = styles[lam]
+            s = q["sigma"].to_numpy()
+            ax.fill_between(s, q["q25_width"].to_numpy(), q["q75_width"].to_numpy(),
+                            color=col, alpha=0.15, lw=0)
+            ax.plot(s, q["median_width"].to_numpy(), marker=mk, ms=7, color=col, lw=2,
+                    label=LAM_LABEL[lam])
+        ax.axhline(0.25, color="black", ls=(0, (4, 3)), lw=1)
+        for k, ls in (("H", ":"), ("T", "--")):
+            ax.axvline(anc[k], color="black", ls=ls, lw=1.2)
+        ax.set_yscale("log")
+        ax.set_xlabel("noise in the potential, σ")
+        ax.set_title(title)
+        ax.legend(frameon=False, fontsize=11, loc="center right")
+    axes[0].set_ylabel("interval width (log)")
+    for ax in axes:
+        for k, lab in (("H", "projection H\n(lower bound)"), ("T", "TSO\nforecast")):
+            ax.text(anc[k] + 0.004, 0.03, lab, transform=ax.get_xaxis_transform(),
+                    ha="left", va="bottom", fontsize=10)
+    fig.suptitle("Intervals widen with noise; cohort intervals cross the informative limit first",
+                 fontsize=15)
+    save(fig, "F9_width_vs_noise", d.with_columns(pl.lit(anc["H"]).alias("anchor_h_sigma"),
+                                                  pl.lit(anc["T"]).alias("anchor_t_sigma")))
     return written
 
 

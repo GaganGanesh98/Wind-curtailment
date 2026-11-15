@@ -126,3 +126,16 @@ def test_every_figure_has_png_csv_and_caption():
             continue
         for s in (".png", "_data.csv", "_caption.txt"):
             assert (FIG / f"{name}{s}").exists(), f"{name}{s} missing"
+
+
+def test_f9_widths_are_the_q1_summary():
+    d = mf.f9_data()
+    assert set(d["lam"]) == {"L1", "L2", "L3", "L4", "L6", "L7"}   # λ₅ (GWh) omitted
+    assert d.height == 6 * 7                                       # six functionals × grid
+    q1 = pl.read_csv(mf.ART / "Q1" / "q1_summary_by_level.csv").filter(pl.col("noise") == "iid")
+    j = d.join(q1.select(["lam", "sigma", pl.col("median_width").alias("m")]), on=["lam", "sigma"])
+    assert (j["median_width"] == j["m"]).all()
+    assert (d["q25_width"] <= d["median_width"]).all() and (d["median_width"] <= d["q75_width"]).all()
+    anc = mf.anchors()
+    _same(d.with_columns(pl.lit(anc["H"]).alias("anchor_h_sigma"),
+                         pl.lit(anc["T"]).alias("anchor_t_sigma")), _committed("F9_width_vs_noise"))
