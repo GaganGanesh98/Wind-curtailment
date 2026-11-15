@@ -237,6 +237,10 @@ Working tree there: `src/censoring/m2.py` and `src/censoring/tb_methods.py` modi
 1. Apply `artifacts/R1/test_real_panel.py.handover.txt` as `tests/test_real_panel.py`
    in the main checkout (§2).
 2. Resolve the λ-grid question per `docs/Q_STOP_R1.md` (§5).
+   **Decided** by the student (`docs/Q_STOP_R1.md`) and **run** as a sensitivity, reported
+   15 November 2026 in `docs/TB_lambda_sensitivity.md`: on the widened grid T-B FAILS on
+   the half-shape gate. The committed PASS is unchanged. 77 of 135 widened selections are
+   at the new upper edge, so the sensitivity is itself provisional.
 3. Decide whether `run_td.py` and `results/26` are committed, since `docs/10` cites
    that result (§2).
 4. Decide whether a 2024-onwards kill test is wanted as a new artifact (§1.2).

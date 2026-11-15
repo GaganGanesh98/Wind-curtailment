@@ -42,6 +42,7 @@ Q1D = REPO_ROOT / "artifacts" / "Q1"
 Q0C = REPO_ROOT / "artifacts" / "Q0c"
 Q5D = REPO_ROOT / "artifacts" / "Q5"
 Q6D = REPO_ROOT / "artifacts" / "Q6"
+TBL = REPO_ROOT / "artifacts" / "TB_lambda"
 QS_FILE = (REPO_ROOT / "data" / "raw" / "netztransparenz"
            / "hochrechnung_wind_onshore_qualitaetsgesichert"
            / "online_hochrechnung_wind_onshore_qs_2025-10-01_2026-10-31_dl2026-11-15.csv")
@@ -689,6 +690,76 @@ def _q6b_checks():
     return out
 
 
+def _tb_lambda_checks():
+    """`docs/TB_lambda_sensitivity.md`."""
+    import hashlib
+    from scipy.stats import binomtest
+    w = pl.read_csv(TBL / "41_tb_lambda_widening.csv")
+    sp = pl.read_csv(TBL / "42_tb_primary_widened_lambda.csv", infer_schema_length=0)
+    out = [("TB-lambda fits", w.height, 135, 0),
+           ("TB-lambda reproduced", float(w["reproduced_old_selection"].sum()), 135, 0),
+           ("TB-lambda changed", float(w["selection_changed"].sum()), 108, 0),
+           ("TB-lambda at new top", float((w["new_edge"] == "lambda_max").sum()), 77, 0),
+           ("TB-lambda interior", float((w["new_edge"] == "interior").sum()), 58, 0),
+           ("TB-lambda spliced rows", sp.height, 945, 0),
+           ("TB-lambda verdict FAIL",
+            float("T-B VERDICT at n = 50: FAIL" in (TBL / "42_verdict_report.txt").read_text()), 1.0, 0)]
+    for f, h in (("21_tb_primary.csv", "a8d38855b7ea2b22"),
+                 ("21_tb_primary_report_20261110.txt", "ed9f694d24036fc6")):
+        p = REPO_ROOT / "results" / f
+        if p.exists():
+            got = hashlib.sha256(p.read_bytes()).hexdigest()[:16]
+            out.append((f"TB-lambda {f} untouched", float(got == h), 1.0, 0))
+    d = sp.filter(pl.col("n_event_days_requested") == "50").with_columns(
+        pl.col("int_abs_r").cast(pl.Float64))
+    k = ["censoring_rate", "gamma", "r_shape", "seed"]
+    m2 = d.filter(pl.col("method") == "M2").select(k + [pl.col("int_abs_r").alias("m2")])
+    for rival, shape, wins in (("B3-CV", "step", 45), ("B6", "step", 45), ("B3-CV", "logistic", 42),
+                               ("B6", "logistic", 45), ("B3-CV", "half", 15), ("B6", "half", 32)):
+        j = m2.join(d.filter(pl.col("method") == rival).select(k + [pl.col("int_abs_r").alias("r")]),
+                    on=k).filter(pl.col("r_shape") == shape)
+        out.append((f"TB-lambda {shape} M2 vs {rival} wins", float((j["m2"] < j["r"]).sum()), wins, 0))
+    out.append(("TB-lambda half sign-test p", binomtest(15, 45).pvalue, 0.036, 5e-4))
+    for shape, mean in (("step", 0.000129), ("logistic", 0.011271), ("half", 0.011705)):
+        out.append((f"TB-lambda M2 mean {shape}",
+                    float(m2.filter(pl.col("r_shape") == shape)["m2"].mean()), mean, 5e-7))
+    b3 = d.filter((pl.col("method") == "B3-CV") & (pl.col("r_shape") == "half"))
+    out.append(("TB-lambda B3-CV half mean", float(b3["int_abs_r"].mean()), 0.010641, 5e-7))
+    rep = REPO_ROOT / "results" / "21_tb_primary_report_20261110.txt"
+    if rep.exists():
+        lines = rep.read_text().splitlines()
+
+        def wins_in(shape, rival):
+            for ln in lines:
+                f = ln.split()
+                if len(f) > 8 and f[0] == shape and f[1] == rival:
+                    return float(f[4]), float(f[7])   # wins, p (f[8] is ties)
+            raise AssertionError(f"no {shape}/{rival} line in the committed report")
+        for shape, rival, wn, p in (("step", "B3-CV", 45, 0.0), ("step", "B6", 45, 0.0),
+                                    ("logistic", "B3-CV", 41, 0.0), ("logistic", "B6", 45, 0.0),
+                                    ("half", "B3-CV", 22, 1.0), ("half", "B6", 36, 0.0001)):
+            got_w, got_p = wins_in(shape, rival)
+            out += [(f"TB committed {shape} vs {rival} wins", got_w, wn, 0),
+                    (f"TB committed {shape} vs {rival} p", got_p, p, 5e-5)]
+        out.append(("TB committed verdict PASS",
+                    float("T-B VERDICT at n = 50: PASS" in rep.read_text()), 1.0, 0))
+    old = REPO_ROOT / "results" / "21_tb_primary.csv"
+    if old.exists():
+        o = pl.read_csv(old, infer_schema_length=0).filter(
+            (pl.col("method") == "M2") & (pl.col("n_event_days_requested") == "50")).select(
+            k + [pl.col("int_abs_r").cast(pl.Float64).alias("old")])
+        j = o.join(m2, on=k)
+        for shape, mean, (wo, be, sa) in (("step", 0.000125, (10, 33, 2)),
+                                           ("logistic", 0.011759, (9, 20, 16)),
+                                           ("half", 0.011064, (22, 14, 9))):
+            q = j.filter(pl.col("r_shape") == shape)
+            out += [(f"TB-lambda old M2 mean {shape}", float(q["old"].mean()), mean, 5e-7),
+                    (f"TB-lambda {shape} worse", float((q["m2"] > q["old"]).sum()), wo, 0),
+                    (f"TB-lambda {shape} better", float((q["m2"] < q["old"]).sum()), be, 0),
+                    (f"TB-lambda {shape} same", float((q["m2"] == q["old"]).sum()), sa, 0)]
+    return out
+
+
 def _collect():
     """All checks whose artifacts are on disk, as (id, got, want, tol)."""
     out, skipped = [], []
@@ -735,6 +806,10 @@ def _collect():
         out += _q6b_checks()
     else:
         skipped.append("Q6b")
+    if (TBL / "42_tb_primary_widened_lambda.csv").exists():
+        out += _tb_lambda_checks()
+    else:
+        skipped.append("T-B lambda sensitivity")
     if (Q1D / "q1_summary_by_level.csv").exists():
         out += _q1_checks()
     else:

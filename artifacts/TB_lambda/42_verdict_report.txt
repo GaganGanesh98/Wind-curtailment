@@ -1,0 +1,48 @@
+spliced 108 re-scored M2 cells into 42_tb_primary_widened_lambda.csv (945 rows); unchanged cells keep the existing score
+
+VERDICT on the widened-lambda table, unchanged scorer:
+
+====================================================================================================
+T-B at n_event_days = 50
+====================================================================================================
+  shape     rival         M2 mean     rival   wins  n_eff  thr        p  ties  M2 fail riv fail  verdict
+  step      B3-CV         0.00013   0.00199     45     45   30   0.0000     0        0        0  PASS  (decisive)
+  step      B6            0.00013   0.01287     45     45   30   0.0000     0        0        0  PASS  (decisive)
+  step      B3@8          0.00013   0.00193     45     45   30   0.0000     0        0        0  PASS
+  step      B3-H          0.00013   0.00180     45     45   30   0.0000     0        0        0  PASS
+  step      M2-noPool     0.00013   0.00013     37     45   30   0.0000     0        0        0  PASS
+  step      M2-noAtom     0.00013   0.01050     45     45   30   0.0000     0        0        0  PASS
+  logistic  B3-CV         0.01127   0.02582     42     45   30   0.0000     0        0        0  PASS  (decisive)
+  logistic  B6            0.01127   0.03678     45     45   30   0.0000     0        0        0  PASS  (decisive)
+  logistic  B3@8          0.01127   0.19963     45     45   30   0.0000     0        0        0  PASS
+  logistic  B3-H          0.01127   0.04129     45     45   30   0.0000     0        0        0  PASS
+  logistic  M2-noPool     0.01127   0.01458     27     45   30   0.2327     0        0        0  no
+  logistic  M2-noAtom     0.01127   0.01199     29     45   30   0.0725     0        0        0  no
+  half      B3-CV         0.01171   0.01064     15     45   30   0.0357     0        0        0  LOSES  (decisive)
+  half      B6            0.01171   0.02878     32     45   30   0.0066     0        0        0  PASS  (decisive)
+  half      B3@8          0.01171   0.01051     16     45   30   0.0725     0        0        0  no
+  half      B3-H          0.01171   0.01062     20     45   30   0.5515     0        0        0  no
+  half      M2-noPool     0.01171   0.01499     34     45   30   0.0008     0        0        0  PASS
+  half      M2-noAtom     0.01171   0.03180     45     45   30   0.0000     0        0        0  PASS
+
+  COMPONENT ATTRIBUTION (Amendment 3 0.3: ablation vs B3-CV, reported, decides nothing)
+    shape     left       vs        wins  n_eff  thr        p  note
+    step      M2-noPool  B3-CV       45     45   30   0.0000  pre-registered
+    step      M2-noAtom  B3-CV        0     45   30   0.0000  pre-registered
+    step      M2         B3-CV       45     45   30   0.0000  context
+    logistic  M2-noPool  B3-CV       37     45   30   0.0000  pre-registered
+    logistic  M2-noAtom  B3-CV       44     45   30   0.0000  pre-registered
+    logistic  M2         B3-CV       42     45   30   0.0000  context
+    half      M2-noPool  B3-CV        5     45   30   0.0000  pre-registered
+    half      M2-noAtom  B3-CV        0     45   30   0.0000  pre-registered
+    half      M2         B3-CV       15     45   30   0.0357  context
+
+  Pre-registered rule (Amendment 3 section 0.3 T-B), applied verbatim:
+    M2 beats logistic vs B3-CV      True
+    M2 beats logistic vs B6         True
+    M2 beats step vs B3-CV          True
+    M2 beats step vs B6             True
+    M2 not significantly worse on half vs B3-CV    False   [GATES]
+    (reported only) half vs B6                  True
+
+  T-B VERDICT at n = 50: FAIL

@@ -1,0 +1,946 @@
+censoring_rate,gamma,r_shape,seed,n_event_days_requested,n_event_days_used,n_event_days_available,short_of_request,n_fit_qh,method,int_abs_r,failed,error,n_free_params,param_detail,chosen_lambda,chosen_bins,at_grid_boundary,seconds
+0.1,0.0,step,45,50,50,513,False,681,M2,6.203228731418061e-07,False,,654,6 blocks x 109 knots,10000.0,,lambda_max,84.09
+0.1,0.0,step,45,50,50,513,False,681,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.1,0.0,step,45,50,50,513,False,681,B6,0.024855188420755896,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.45
+0.1,0.0,step,45,50,50,513,False,681,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.0,step,45,50,50,513,False,681,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.0,step,45,50,50,513,False,681,M2-noPool,4.7700254487468656e-05,False,,654,6 blocks x 109 knots,0.0,,lambda_min,1.94
+0.1,0.0,step,45,50,50,513,False,681,M2-noAtom,0.01000816632624807,False,,648,6 blocks x 108 knots,100.0,,lambda_max,66.23
+0.1,0.0,step,46,50,50,516,False,891,M2,0.00035740474194671817,False,,642,6 blocks x 107 knots,10000.0,,lambda_max,96.58
+0.1,0.0,step,46,50,50,516,False,891,B3-CV,0.002774611974724781,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.08
+0.1,0.0,step,46,50,50,516,False,891,B6,0.019173588180467195,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.65
+0.1,0.0,step,46,50,50,516,False,891,B3@8,0.00237900858529067,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.0,step,46,50,50,516,False,891,B3-H,0.001925144987209526,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.0,step,46,50,50,516,False,891,M2-noPool,0.0005209633919160812,False,,642,6 blocks x 107 knots,0.0,,lambda_min,1.9
+0.1,0.0,step,46,50,50,516,False,891,M2-noAtom,0.010256008409702456,False,,636,6 blocks x 106 knots,100.0,,lambda_max,74.48
+0.1,0.0,step,47,50,50,494,False,758,M2,2.2126046503071853e-07,False,,1302,6 blocks x 217 knots,10000.0,,lambda_max,143.03
+0.1,0.0,step,47,50,50,494,False,758,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.08
+0.1,0.0,step,47,50,50,494,False,758,B6,0.004526583515006745,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.52
+0.1,0.0,step,47,50,50,494,False,758,B3@8,0.0016482801317588098,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.0,step,47,50,50,494,False,758,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.0,step,47,50,50,494,False,758,M2-noPool,2.4639069430065773e-06,False,,1302,6 blocks x 217 knots,0.0,,lambda_min,43.19
+0.1,0.0,step,47,50,50,494,False,758,M2-noAtom,0.010012802316737741,False,,1296,6 blocks x 216 knots,100.0,,lambda_max,140.9
+0.1,0.0,step,48,50,50,504,False,813,M2,1.1110146112639867e-07,False,,588,6 blocks x 98 knots,10000.0,,lambda_max,80.89
+0.1,0.0,step,48,50,50,504,False,813,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.08
+0.1,0.0,step,48,50,50,504,False,813,B6,0.011886221414877014,False,,6200,200 trees x <= 31 leaves; min_child_samples=20,,,,0.58
+0.1,0.0,step,48,50,50,504,False,813,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.0,step,48,50,50,504,False,813,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.0,step,48,50,50,504,False,813,M2-noPool,2.1006731524009224e-06,False,,588,6 blocks x 98 knots,0.0,,lambda_min,2.6
+0.1,0.0,step,48,50,50,504,False,813,M2-noAtom,0.010059468259642379,False,,582,6 blocks x 97 knots,3.1622776601683795,,,77.23
+0.1,0.0,step,49,50,50,497,False,1118,M2,0.00047622681420201853,False,,600,6 blocks x 100 knots,1000.0,,,104.09
+0.1,0.0,step,49,50,50,497,False,1118,B3-CV,0.0016662873833862427,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.08
+0.1,0.0,step,49,50,50,497,False,1118,B6,0.0036282995453921336,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.72
+0.1,0.0,step,49,50,50,497,False,1118,B3@8,0.0016907165620603248,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.0,step,49,50,50,497,False,1118,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.0,step,49,50,50,497,False,1118,M2-noPool,0.00032494119216949595,False,,600,6 blocks x 100 knots,0.0,,lambda_min,2.01
+0.1,0.0,step,49,50,50,497,False,1118,M2-noAtom,0.010078849663986396,False,,594,6 blocks x 99 knots,31.622776601683793,,,85.23
+0.1,0.0,logistic,45,50,50,513,False,681,M2,0.021857924862229903,False,,654,6 blocks x 109 knots,0.31622776601683794,,,33.87
+0.1,0.0,logistic,45,50,50,513,False,681,B3-CV,0.04190990365285979,False,,29,29 non-empty bins of 32 requested; equal-count quantile,,32,,0.08
+0.1,0.0,logistic,45,50,50,513,False,681,B6,0.08592720158561946,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.49
+0.1,0.0,logistic,45,50,50,513,False,681,B3@8,0.2057093710661774,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.0,logistic,45,50,50,513,False,681,B3-H,0.040646688067076976,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.0,logistic,45,50,50,513,False,681,M2-noPool,0.01776055873091023,False,,654,6 blocks x 109 knots,0.0,,lambda_min,1.24
+0.1,0.0,logistic,45,50,50,513,False,681,M2-noAtom,0.015099406307499251,False,,648,6 blocks x 108 knots,100.0,,lambda_max,25.35
+0.1,0.0,logistic,46,50,50,516,False,891,M2,0.011214131875998097,False,,642,6 blocks x 107 knots,31.622776601683793,,,30.12
+0.1,0.0,logistic,46,50,50,516,False,891,B3-CV,0.040437327289000694,False,,29,29 non-empty bins of 32 requested; equal-count quantile,,32,,0.13
+0.1,0.0,logistic,46,50,50,516,False,891,B6,0.1197721013972212,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.73
+0.1,0.0,logistic,46,50,50,516,False,891,B3@8,0.18982833079008318,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.0,logistic,46,50,50,516,False,891,B3-H,0.04030946326436363,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.0,logistic,46,50,50,516,False,891,M2-noPool,0.020366715832565087,False,,642,6 blocks x 107 knots,0.0,,lambda_min,1.22
+0.1,0.0,logistic,46,50,50,516,False,891,M2-noAtom,0.011667864812056306,False,,636,6 blocks x 106 knots,31.622776601683793,,,25.6
+0.1,0.0,logistic,47,50,50,494,False,758,M2,0.010730770911637589,False,,1302,6 blocks x 217 knots,1000.0,,,168.5
+0.1,0.0,logistic,47,50,50,494,False,758,B3-CV,0.03590202344147623,False,,29,29 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.1,0.0,logistic,47,50,50,494,False,758,B6,0.02756952413373566,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.55
+0.1,0.0,logistic,47,50,50,494,False,758,B3@8,0.18406111523554144,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.0,logistic,47,50,50,494,False,758,B3-H,0.0457705865102638,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.0,logistic,47,50,50,494,False,758,M2-noPool,0.02346235868008813,False,,1302,6 blocks x 217 knots,0.0,,lambda_min,18.04
+0.1,0.0,logistic,47,50,50,494,False,758,M2-noAtom,0.011698734642382292,False,,1296,6 blocks x 216 knots,100.0,,lambda_max,135.41
+0.1,0.0,logistic,48,50,50,504,False,813,M2,0.012774891646843296,False,,588,6 blocks x 98 knots,0.001,,,27.59
+0.1,0.0,logistic,48,50,50,504,False,813,B3-CV,0.024146802809878763,False,,31,31 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.1,0.0,logistic,48,50,50,504,False,813,B6,0.04695085117342691,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.57
+0.1,0.0,logistic,48,50,50,504,False,813,B3@8,0.14131401287766973,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.0,logistic,48,50,50,504,False,813,B3-H,0.04338712135266857,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.0,logistic,48,50,50,504,False,813,M2-noPool,0.012939036151598155,False,,588,6 blocks x 98 knots,0.0,,lambda_min,0.75
+0.1,0.0,logistic,48,50,50,504,False,813,M2-noAtom,0.01317511874366037,False,,582,6 blocks x 97 knots,10.0,,,24.44
+0.1,0.0,logistic,49,50,50,497,False,1118,M2,0.009260966781049124,False,,600,6 blocks x 100 knots,100.0,,,35.0
+0.1,0.0,logistic,49,50,50,497,False,1118,B3-CV,0.029901356973121386,False,,29,29 non-empty bins of 32 requested; equal-count quantile,,32,,0.1
+0.1,0.0,logistic,49,50,50,497,False,1118,B6,0.019201095981844635,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.99
+0.1,0.0,logistic,49,50,50,497,False,1118,B3@8,0.16862031450612444,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.0,logistic,49,50,50,497,False,1118,B3-H,0.033513637445476606,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.0,logistic,49,50,50,497,False,1118,M2-noPool,0.009429373278653768,False,,600,6 blocks x 100 knots,0.0,,lambda_min,1.02
+0.1,0.0,logistic,49,50,50,497,False,1118,M2-noAtom,0.010306104094584078,False,,594,6 blocks x 99 knots,100.0,,lambda_max,30.16
+0.1,0.0,half,45,50,50,513,False,681,M2,0.023143883019296575,False,,654,6 blocks x 109 knots,1.0,,,55.89
+0.1,0.0,half,45,50,50,513,False,681,B3-CV,0.026038898242327,False,,15,15 non-empty bins of 16 requested; equal-count quantile,,16,,0.07
+0.1,0.0,half,45,50,50,513,False,681,B6,0.005754749932998186,False,,3000,200 trees x <= 15 leaves; min_child_samples=50,,,,0.48
+0.1,0.0,half,45,50,50,513,False,681,B3@8,0.02145735191633922,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.0,half,45,50,50,513,False,681,B3-H,0.023737482210390373,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.0,half,45,50,50,513,False,681,M2-noPool,0.0278733647166237,False,,654,6 blocks x 109 knots,0.0,,lambda_min,1.63
+0.1,0.0,half,45,50,50,513,False,681,M2-noAtom,0.045671726978045564,False,,648,6 blocks x 108 knots,0.001,,,29.19
+0.1,0.0,half,46,50,50,516,False,891,M2,0.009527439339933084,False,,642,6 blocks x 107 knots,100.0,,,35.28
+0.1,0.0,half,46,50,50,516,False,891,B3-CV,0.007760306929291441,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.07
+0.1,0.0,half,46,50,50,516,False,891,B6,0.1546156243154043,False,,3000,200 trees x <= 15 leaves; min_child_samples=50,,,,0.61
+0.1,0.0,half,46,50,50,516,False,891,B3@8,0.007760306929291441,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.0,half,46,50,50,516,False,891,B3-H,0.008828115877338253,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.0,half,46,50,50,516,False,891,M2-noPool,0.009523774665931593,False,,642,6 blocks x 107 knots,0.0,,lambda_min,1.2
+0.1,0.0,half,46,50,50,516,False,891,M2-noAtom,0.03166721812339253,False,,636,6 blocks x 106 knots,3.1622776601683795,,,36.48
+0.1,0.0,half,47,50,50,494,False,758,M2,0.01813833037629715,False,,1302,6 blocks x 217 knots,3162.2776601683795,,,214.32
+0.1,0.0,half,47,50,50,494,False,758,B3-CV,0.01778316918608429,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.1,0.0,half,47,50,50,494,False,758,B6,0.004550034966855398,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.54
+0.1,0.0,half,47,50,50,494,False,758,B3@8,0.01423140334102035,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.0,half,47,50,50,494,False,758,B3-H,0.013565240276856887,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.0,half,47,50,50,494,False,758,M2-noPool,0.020107536573089925,False,,1302,6 blocks x 217 knots,0.0,,lambda_min,10.17
+0.1,0.0,half,47,50,50,494,False,758,M2-noAtom,0.04062218934203366,False,,1296,6 blocks x 216 knots,3.1622776601683795,,,154.1
+0.1,0.0,half,48,50,50,504,False,813,M2,0.01731196167095883,False,,588,6 blocks x 98 knots,100.0,,,55.27
+0.1,0.0,half,48,50,50,504,False,813,B3-CV,0.02175503512068329,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.07
+0.1,0.0,half,48,50,50,504,False,813,B6,0.03840106644324539,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,0.59
+0.1,0.0,half,48,50,50,504,False,813,B3@8,0.02175503512068329,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.0,half,48,50,50,504,False,813,B3-H,0.023426959396670454,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.0,half,48,50,50,504,False,813,M2-noPool,0.02192321995714073,False,,588,6 blocks x 98 knots,0.0,,lambda_min,1.58
+0.1,0.0,half,48,50,50,504,False,813,M2-noAtom,0.039375760961641186,False,,582,6 blocks x 97 knots,3.1622776601683795,,,38.72
+0.1,0.0,half,49,50,50,497,False,1118,M2,0.008342631074400399,False,,600,6 blocks x 100 knots,100.0,,,87.89
+0.1,0.0,half,49,50,50,497,False,1118,B3-CV,0.007150075868786595,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.1,0.0,half,49,50,50,497,False,1118,B6,0.034260224552408985,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.72
+0.1,0.0,half,49,50,50,497,False,1118,B3@8,0.007415551148366267,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.0,half,49,50,50,497,False,1118,B3-H,0.00985711465218698,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.0,half,49,50,50,497,False,1118,M2-noPool,0.014877512899813983,False,,600,6 blocks x 100 knots,0.0,,lambda_min,1.12
+0.1,0.0,half,49,50,50,497,False,1118,M2-noAtom,0.02819144944658019,False,,594,6 blocks x 99 knots,0.0001,,,51.27
+0.1,0.5,step,45,50,50,476,False,1017,M2,1.8395435118075584e-07,False,,420,6 blocks x 70 knots,10000.0,,lambda_max,64.1
+0.1,0.5,step,45,50,50,476,False,1017,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.1,0.5,step,45,50,50,476,False,1017,B6,0.0025274727634862965,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.64
+0.1,0.5,step,45,50,50,476,False,1017,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.5,step,45,50,50,476,False,1017,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.5,step,45,50,50,476,False,1017,M2-noPool,1.9443534054077356e-06,False,,420,6 blocks x 70 knots,0.0,,lambda_min,1.38
+0.1,0.5,step,45,50,50,476,False,1017,M2-noAtom,0.010867454079050392,False,,414,6 blocks x 69 knots,31.622776601683793,,,55.26
+0.1,0.5,step,46,50,50,476,False,865,M2,0.0018096527572495742,False,,852,6 blocks x 142 knots,10000.0,,lambda_max,112.58
+0.1,0.5,step,46,50,50,476,False,865,B3-CV,0.006414243400112881,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.1,0.5,step,46,50,50,476,False,865,B6,0.011954130652081337,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.56
+0.1,0.5,step,46,50,50,476,False,865,B3@8,0.004483935039412243,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.5,step,46,50,50,476,False,865,B3-H,0.0031952578847588755,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.5,step,46,50,50,476,False,865,M2-noPool,0.0014606054069927006,False,,852,6 blocks x 142 knots,0.0,,lambda_min,3.84
+0.1,0.5,step,46,50,50,476,False,865,M2-noAtom,0.011355305358421485,False,,846,6 blocks x 141 knots,10.0,,,89.88
+0.1,0.5,step,47,50,50,467,False,891,M2,6.726038961936242e-05,False,,702,6 blocks x 117 knots,10000.0,,lambda_max,86.26
+0.1,0.5,step,47,50,50,467,False,891,B3-CV,0.0030586771273923797,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.1,0.5,step,47,50,50,467,False,891,B6,0.0016666666666666668,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.58
+0.1,0.5,step,47,50,50,467,False,891,B3@8,0.0026101847584747567,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.5,step,47,50,50,467,False,891,B3-H,0.002018561679105247,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.5,step,47,50,50,467,False,891,M2-noPool,0.00012115512729082789,False,,702,6 blocks x 117 knots,0.0,,lambda_min,3.21
+0.1,0.5,step,47,50,50,467,False,891,M2-noAtom,0.010364653101532418,False,,696,6 blocks x 116 knots,0.31622776601683794,,,75.93
+0.1,0.5,step,48,50,50,483,False,882,M2,8.932223314532066e-08,False,,564,6 blocks x 94 knots,10000.0,,lambda_max,73.37
+0.1,0.5,step,48,50,50,483,False,882,B3-CV,0.0023746751562643683,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.1,0.5,step,48,50,50,483,False,882,B6,0.006593384214445998,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.57
+0.1,0.5,step,48,50,50,483,False,882,B3@8,0.0020541289835687665,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.5,step,48,50,50,483,False,882,B3-H,0.0018493566908423346,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.5,step,48,50,50,483,False,882,M2-noPool,1.9281808357999676e-06,False,,564,6 blocks x 94 knots,0.0,,lambda_min,1.67
+0.1,0.5,step,48,50,50,483,False,882,M2-noAtom,0.010073003514708197,False,,558,6 blocks x 93 knots,31.622776601683793,,,64.27
+0.1,0.5,step,49,50,50,455,False,887,M2,2.8261887797457565e-07,False,,582,6 blocks x 97 knots,10000.0,,lambda_max,77.57
+0.1,0.5,step,49,50,50,455,False,887,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.1,0.5,step,49,50,50,455,False,887,B6,0.003419664227792493,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.56
+0.1,0.5,step,49,50,50,455,False,887,B3@8,0.0018649047533543513,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.5,step,49,50,50,455,False,887,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.5,step,49,50,50,455,False,887,M2-noPool,1.3480430360109189e-05,False,,582,6 blocks x 97 knots,0.0,,lambda_min,1.72
+0.1,0.5,step,49,50,50,455,False,887,M2-noAtom,0.010154122363841526,False,,576,6 blocks x 96 knots,100.0,,lambda_max,71.86
+0.1,0.5,logistic,45,50,50,476,False,1017,M2,0.01519016672992956,False,,420,6 blocks x 70 knots,10.0,,,21.49
+0.1,0.5,logistic,45,50,50,476,False,1017,B3-CV,0.03835318108991877,False,,29,29 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.1,0.5,logistic,45,50,50,476,False,1017,B6,0.05021857029526924,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.69
+0.1,0.5,logistic,45,50,50,476,False,1017,B3@8,0.21220385709069758,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.5,logistic,45,50,50,476,False,1017,B3-H,0.0423305714658132,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.5,logistic,45,50,50,476,False,1017,M2-noPool,0.015033731875615656,False,,420,6 blocks x 70 knots,0.0,,lambda_min,0.47
+0.1,0.5,logistic,45,50,50,476,False,1017,M2-noAtom,0.012618077125142855,False,,414,6 blocks x 69 knots,10.0,,,21.25
+0.1,0.5,logistic,46,50,50,476,False,865,M2,0.010548489974674039,False,,852,6 blocks x 142 knots,31.622776601683793,,,51.84
+0.1,0.5,logistic,46,50,50,476,False,865,B3-CV,0.03084972531944226,False,,31,31 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.1,0.5,logistic,46,50,50,476,False,865,B6,0.07152637210106343,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.57
+0.1,0.5,logistic,46,50,50,476,False,865,B3@8,0.19821714968272736,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.5,logistic,46,50,50,476,False,865,B3-H,0.03140537422354714,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.5,logistic,46,50,50,476,False,865,M2-noPool,0.010543182237676717,False,,852,6 blocks x 142 knots,0.0,,lambda_min,2.86
+0.1,0.5,logistic,46,50,50,476,False,865,M2-noAtom,0.013214582609850013,False,,846,6 blocks x 141 knots,31.622776601683793,,,47.84
+0.1,0.5,logistic,47,50,50,467,False,891,M2,0.012165913166174663,False,,702,6 blocks x 117 knots,31.622776601683793,,,31.93
+0.1,0.5,logistic,47,50,50,467,False,891,B3-CV,0.017513974364104047,False,,58,58 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.1,0.5,logistic,47,50,50,467,False,891,B6,0.05064506556086761,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.62
+0.1,0.5,logistic,47,50,50,467,False,891,B3@8,0.22174833769959348,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.5,logistic,47,50,50,467,False,891,B3-H,0.04256827680683737,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.5,logistic,47,50,50,467,False,891,M2-noPool,0.009799442147022091,False,,702,6 blocks x 117 knots,0.0,,lambda_min,0.89
+0.1,0.5,logistic,47,50,50,467,False,891,M2-noAtom,0.014218445704577498,False,,696,6 blocks x 116 knots,10.0,,,34.45
+0.1,0.5,logistic,48,50,50,483,False,882,M2,0.007867763788635471,False,,564,6 blocks x 94 knots,10000.0,,lambda_max,24.84
+0.1,0.5,logistic,48,50,50,483,False,882,B3-CV,0.014737665287751446,False,,57,57 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.1,0.5,logistic,48,50,50,483,False,882,B6,0.03195492881573799,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.58
+0.1,0.5,logistic,48,50,50,483,False,882,B3@8,0.18144250064020306,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.5,logistic,48,50,50,483,False,882,B3-H,0.04101095734068987,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.5,logistic,48,50,50,483,False,882,M2-noPool,0.007847058336633291,False,,564,6 blocks x 94 knots,0.0,,lambda_min,0.72
+0.1,0.5,logistic,48,50,50,483,False,882,M2-noAtom,0.009846645984477825,False,,558,6 blocks x 93 knots,100.0,,lambda_max,22.75
+0.1,0.5,logistic,49,50,50,455,False,887,M2,0.00891730111718966,False,,582,6 blocks x 97 knots,10000.0,,lambda_max,25.93
+0.1,0.5,logistic,49,50,50,455,False,887,B3-CV,0.017163179158187537,False,,57,57 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.1,0.5,logistic,49,50,50,455,False,887,B6,0.048235431752388334,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.59
+0.1,0.5,logistic,49,50,50,455,False,887,B3@8,0.18001611140223162,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.5,logistic,49,50,50,455,False,887,B3-H,0.03738212689836341,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.5,logistic,49,50,50,455,False,887,M2-noPool,0.013053822237898532,False,,582,6 blocks x 97 knots,0.0,,lambda_min,0.67
+0.1,0.5,logistic,49,50,50,455,False,887,M2-noAtom,0.014130595902499892,False,,576,6 blocks x 96 knots,0.0,,lambda_min,22.36
+0.1,0.5,half,45,50,50,476,False,1017,M2,0.022858700031078837,False,,420,6 blocks x 70 knots,316.22776601683796,,,40.86
+0.1,0.5,half,45,50,50,476,False,1017,B3-CV,0.01785868176256519,False,,15,15 non-empty bins of 16 requested; equal-count quantile,,16,,0.07
+0.1,0.5,half,45,50,50,476,False,1017,B6,0.022102516944236896,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.65
+0.1,0.5,half,45,50,50,476,False,1017,B3@8,0.019054542421467455,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.5,half,45,50,50,476,False,1017,B3-H,0.017973939230114564,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.5,half,45,50,50,476,False,1017,M2-noPool,0.023965757668059428,False,,420,6 blocks x 70 knots,0.0,,lambda_min,0.67
+0.1,0.5,half,45,50,50,476,False,1017,M2-noAtom,0.039945733215816785,False,,414,6 blocks x 69 knots,0.1,,,24.01
+0.1,0.5,half,46,50,50,476,False,865,M2,0.0053876284702962275,False,,852,6 blocks x 142 knots,10000.0,,lambda_max,79.42
+0.1,0.5,half,46,50,50,476,False,865,B3-CV,0.012854874498485859,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.1,0.5,half,46,50,50,476,False,865,B6,0.04908641596249617,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.56
+0.1,0.5,half,46,50,50,476,False,865,B3@8,0.010535701637504823,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.5,half,46,50,50,476,False,865,B3-H,0.00849389996675137,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.5,half,46,50,50,476,False,865,M2-noPool,0.016180028598923025,False,,852,6 blocks x 142 knots,0.0,,lambda_min,5.12
+0.1,0.5,half,46,50,50,476,False,865,M2-noAtom,0.02842971859062027,False,,846,6 blocks x 141 knots,3.1622776601683795,,,65.05
+0.1,0.5,half,47,50,50,467,False,891,M2,0.0016522953814344938,False,,702,6 blocks x 117 knots,10000.0,,lambda_max,54.72
+0.1,0.5,half,47,50,50,467,False,891,B3-CV,0.0060748156158093045,False,,16,16 non-empty bins of 16 requested; equal-count quantile,,16,,0.07
+0.1,0.5,half,47,50,50,467,False,891,B6,0.07761608366857325,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,0.57
+0.1,0.5,half,47,50,50,467,False,891,B3@8,0.00672180446620228,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.5,half,47,50,50,467,False,891,B3-H,0.0070476751397187745,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.5,half,47,50,50,467,False,891,M2-noPool,0.017331950601916023,False,,702,6 blocks x 117 knots,0.0,,lambda_min,1.55
+0.1,0.5,half,47,50,50,467,False,891,M2-noAtom,0.030176999570155842,False,,696,6 blocks x 116 knots,0.0,,lambda_min,40.46
+0.1,0.5,half,48,50,50,483,False,882,M2,0.004606833732184593,False,,564,6 blocks x 94 knots,10000.0,,lambda_max,43.76
+0.1,0.5,half,48,50,50,483,False,882,B3-CV,0.004178504396117847,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.07
+0.1,0.5,half,48,50,50,483,False,882,B6,0.01826445665321436,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.57
+0.1,0.5,half,48,50,50,483,False,882,B3@8,0.004178504396117847,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.5,half,48,50,50,483,False,882,B3-H,0.006972536653498008,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.5,half,48,50,50,483,False,882,M2-noPool,0.010199974694906988,False,,564,6 blocks x 94 knots,0.0,,lambda_min,0.98
+0.1,0.5,half,48,50,50,483,False,882,M2-noAtom,0.02797043046411371,False,,558,6 blocks x 93 knots,1.0,,,25.83
+0.1,0.5,half,49,50,50,455,False,887,M2,0.004295691280144855,False,,582,6 blocks x 97 knots,10000.0,,lambda_max,69.94
+0.1,0.5,half,49,50,50,455,False,887,B3-CV,0.00418010598867294,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.07
+0.1,0.5,half,49,50,50,455,False,887,B6,0.025212934766571937,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.58
+0.1,0.5,half,49,50,50,455,False,887,B3@8,0.00418010598867294,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,0.5,half,49,50,50,455,False,887,B3-H,0.007872054806237105,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,0.5,half,49,50,50,455,False,887,M2-noPool,0.013336817412875176,False,,582,6 blocks x 97 knots,0.0,,lambda_min,2.12
+0.1,0.5,half,49,50,50,455,False,887,M2-noAtom,0.024277478813863097,False,,576,6 blocks x 96 knots,1.0,,,43.06
+0.1,1.0,step,45,50,50,428,False,1043,M2,1.1752101832083565e-06,False,,660,6 blocks x 110 knots,1000.0,,,81.85
+0.1,1.0,step,45,50,50,428,False,1043,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.1,1.0,step,45,50,50,428,False,1043,B6,0.0021736198332799163,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.67
+0.1,1.0,step,45,50,50,428,False,1043,B3@8,0.002082379977730267,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,1.0,step,45,50,50,428,False,1043,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,1.0,step,45,50,50,428,False,1043,M2-noPool,2.726041461857398e-06,False,,660,6 blocks x 110 knots,0.0,,lambda_min,1.97
+0.1,1.0,step,45,50,50,428,False,1043,M2-noAtom,0.010000572522805734,False,,654,6 blocks x 109 knots,100.0,,lambda_max,76.41
+0.1,1.0,step,46,50,50,439,False,994,M2,6.5677697895374e-06,False,,594,6 blocks x 99 knots,10000.0,,lambda_max,81.86
+0.1,1.0,step,46,50,50,439,False,994,B3-CV,0.0018266395814579136,False,,15,15 non-empty bins of 16 requested; equal-count quantile,,16,,0.07
+0.1,1.0,step,46,50,50,439,False,994,B6,0.013740364456307424,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.63
+0.1,1.0,step,46,50,50,439,False,994,B3@8,0.0018789093393582923,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,1.0,step,46,50,50,439,False,994,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,1.0,step,46,50,50,439,False,994,M2-noPool,1.0882481956733247e-05,False,,594,6 blocks x 99 knots,0.0,,lambda_min,1.84
+0.1,1.0,step,46,50,50,439,False,994,M2-noAtom,0.010109687924711522,False,,588,6 blocks x 98 knots,100.0,,lambda_max,74.04
+0.1,1.0,step,47,50,50,403,False,1110,M2,8.26736159777112e-06,False,,408,6 blocks x 68 knots,3162.2776601683795,,,75.34
+0.1,1.0,step,47,50,50,403,False,1110,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.1,1.0,step,47,50,50,403,False,1110,B6,0.008925998897384445,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.69
+0.1,1.0,step,47,50,50,403,False,1110,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,1.0,step,47,50,50,403,False,1110,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,1.0,step,47,50,50,403,False,1110,M2-noPool,1.6046997318998428e-05,False,,408,6 blocks x 68 knots,0.0,,lambda_min,1.49
+0.1,1.0,step,47,50,50,403,False,1110,M2-noAtom,0.011163023096487788,False,,402,6 blocks x 67 knots,0.0,,lambda_min,62.77
+0.1,1.0,step,48,50,50,418,False,1094,M2,2.39837884969026e-07,False,,600,6 blocks x 100 knots,10000.0,,lambda_max,101.13
+0.1,1.0,step,48,50,50,418,False,1094,B3-CV,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.07
+0.1,1.0,step,48,50,50,418,False,1094,B6,0.00315578675035652,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.67
+0.1,1.0,step,48,50,50,418,False,1094,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,1.0,step,48,50,50,418,False,1094,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,1.0,step,48,50,50,418,False,1094,M2-noPool,4.3422894328446855e-06,False,,600,6 blocks x 100 knots,0.0,,lambda_min,2.38
+0.1,1.0,step,48,50,50,418,False,1094,M2-noAtom,0.010019109004168468,False,,594,6 blocks x 99 knots,31.622776601683793,,,87.49
+0.1,1.0,step,49,50,50,404,False,1125,M2,1.7005118938396845e-05,False,,408,6 blocks x 68 knots,10000.0,,lambda_max,74.43
+0.1,1.0,step,49,50,50,404,False,1125,B3-CV,0.0017194592503687245,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.1,1.0,step,49,50,50,404,False,1125,B6,0.004731217720068019,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.72
+0.1,1.0,step,49,50,50,404,False,1125,B3@8,0.0017229307937414518,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,1.0,step,49,50,50,404,False,1125,B3-H,0.0017617189837429688,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,1.0,step,49,50,50,404,False,1125,M2-noPool,2.0904985211524137e-05,False,,408,6 blocks x 68 knots,0.0,,lambda_min,1.5
+0.1,1.0,step,49,50,50,404,False,1125,M2-noAtom,0.010040439628973153,False,,402,6 blocks x 67 knots,0.0031622776601683794,,,63.18
+0.1,1.0,logistic,45,50,50,428,False,1043,M2,0.01091273730403866,False,,660,6 blocks x 110 knots,10000.0,,lambda_max,39.91
+0.1,1.0,logistic,45,50,50,428,False,1043,B3-CV,0.01899320381650238,False,,57,57 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.1,1.0,logistic,45,50,50,428,False,1043,B6,0.03669549947830865,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.7
+0.1,1.0,logistic,45,50,50,428,False,1043,B3@8,0.22854767951736477,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,1.0,logistic,45,50,50,428,False,1043,B3-H,0.043163491463287185,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,1.0,logistic,45,50,50,428,False,1043,M2-noPool,0.009939719180215344,False,,660,6 blocks x 110 knots,0.0,,lambda_min,1.24
+0.1,1.0,logistic,45,50,50,428,False,1043,M2-noAtom,0.013933440896901331,False,,654,6 blocks x 109 knots,100.0,,lambda_max,32.0
+0.1,1.0,logistic,46,50,50,439,False,994,M2,0.006810350952227139,False,,594,6 blocks x 99 knots,10000.0,,lambda_max,30.01
+0.1,1.0,logistic,46,50,50,439,False,994,B3-CV,0.0365134514413471,False,,29,29 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.1,1.0,logistic,46,50,50,439,False,994,B6,0.05148610464440155,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.65
+0.1,1.0,logistic,46,50,50,439,False,994,B3@8,0.1812498434370667,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,1.0,logistic,46,50,50,439,False,994,B3-H,0.036157485033416766,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,1.0,logistic,46,50,50,439,False,994,M2-noPool,0.00894168636191188,False,,594,6 blocks x 99 knots,0.0,,lambda_min,0.8
+0.1,1.0,logistic,46,50,50,439,False,994,M2-noAtom,0.009436276112047918,False,,588,6 blocks x 98 knots,100.0,,lambda_max,25.39
+0.1,1.0,logistic,47,50,50,403,False,1110,M2,0.018187872901102926,False,,408,6 blocks x 68 knots,10.0,,,22.68
+0.1,1.0,logistic,47,50,50,403,False,1110,B3-CV,0.01926470021872838,False,,59,59 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.1,1.0,logistic,47,50,50,403,False,1110,B6,0.043468063179191975,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.7
+0.1,1.0,logistic,47,50,50,403,False,1110,B3@8,0.20898812557706672,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,1.0,logistic,47,50,50,403,False,1110,B3-H,0.04660313979900876,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,1.0,logistic,47,50,50,403,False,1110,M2-noPool,0.019273184552128952,False,,408,6 blocks x 68 knots,0.0,,lambda_min,0.49
+0.1,1.0,logistic,47,50,50,403,False,1110,M2-noAtom,0.009737519616740546,False,,402,6 blocks x 67 knots,0.0,,lambda_min,20.68
+0.1,1.0,logistic,48,50,50,418,False,1094,M2,0.01035037020492003,False,,600,6 blocks x 100 knots,1000.0,,,32.75
+0.1,1.0,logistic,48,50,50,418,False,1094,B3-CV,0.033018270466323794,False,,29,29 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.1,1.0,logistic,48,50,50,418,False,1094,B6,0.01998301985623307,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.69
+0.1,1.0,logistic,48,50,50,418,False,1094,B3@8,0.14770986648860826,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,1.0,logistic,48,50,50,418,False,1094,B3-H,0.04162898631277524,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,1.0,logistic,48,50,50,418,False,1094,M2-noPool,0.012850594196080893,False,,600,6 blocks x 100 knots,0.0,,lambda_min,0.92
+0.1,1.0,logistic,48,50,50,418,False,1094,M2-noAtom,0.01000935057917686,False,,594,6 blocks x 99 knots,100.0,,lambda_max,28.68
+0.1,1.0,logistic,49,50,50,404,False,1125,M2,0.012151879501930855,False,,408,6 blocks x 68 knots,3162.2776601683795,,,23.96
+0.1,1.0,logistic,49,50,50,404,False,1125,B3-CV,0.023056745314251212,False,,55,55 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.1,1.0,logistic,49,50,50,404,False,1125,B6,0.039591408477656284,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.73
+0.1,1.0,logistic,49,50,50,404,False,1125,B3@8,0.21153771415712336,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,1.0,logistic,49,50,50,404,False,1125,B3-H,0.04353161427358999,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,1.0,logistic,49,50,50,404,False,1125,M2-noPool,0.024383178374238756,False,,408,6 blocks x 68 knots,0.0,,lambda_min,0.7
+0.1,1.0,logistic,49,50,50,404,False,1125,M2-noAtom,0.01316962802322263,False,,402,6 blocks x 67 knots,100.0,,lambda_max,20.21
+0.1,1.0,half,45,50,50,428,False,1043,M2,0.02406220171675622,False,,660,6 blocks x 110 knots,10000.0,,lambda_max,77.34
+0.1,1.0,half,45,50,50,428,False,1043,B3-CV,0.015948542613935808,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.07
+0.1,1.0,half,45,50,50,428,False,1043,B6,0.02234108791781141,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.66
+0.1,1.0,half,45,50,50,428,False,1043,B3@8,0.015948542613935808,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,1.0,half,45,50,50,428,False,1043,B3-H,0.01550933154766111,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,1.0,half,45,50,50,428,False,1043,M2-noPool,0.022989449789822782,False,,660,6 blocks x 110 knots,0.0,,lambda_min,2.52
+0.1,1.0,half,45,50,50,428,False,1043,M2-noAtom,0.038332711927828736,False,,654,6 blocks x 109 knots,0.31622776601683794,,,50.26
+0.1,1.0,half,46,50,50,439,False,994,M2,0.010572823470396377,False,,594,6 blocks x 99 knots,10000.0,,lambda_max,39.85
+0.1,1.0,half,46,50,50,439,False,994,B3-CV,0.003859561763178309,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.07
+0.1,1.0,half,46,50,50,439,False,994,B6,0.015764118203797146,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.64
+0.1,1.0,half,46,50,50,439,False,994,B3@8,0.003859561763178309,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,1.0,half,46,50,50,439,False,994,B3-H,0.008932535772387775,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,1.0,half,46,50,50,439,False,994,M2-noPool,0.018079059843501777,False,,594,6 blocks x 99 knots,0.0,,lambda_min,0.99
+0.1,1.0,half,46,50,50,439,False,994,M2-noAtom,0.03307870077775928,False,,588,6 blocks x 98 knots,10.0,,,27.15
+0.1,1.0,half,47,50,50,403,False,1110,M2,0.0074758232523941225,False,,408,6 blocks x 68 knots,3.1622776601683795,,,37.99
+0.1,1.0,half,47,50,50,403,False,1110,B3-CV,0.007121187829442484,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.1,1.0,half,47,50,50,403,False,1110,B6,0.005793632601957941,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.7
+0.1,1.0,half,47,50,50,403,False,1110,B3@8,0.0061898553327464426,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,1.0,half,47,50,50,403,False,1110,B3-H,0.0056696340779051,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,1.0,half,47,50,50,403,False,1110,M2-noPool,0.007383503974217378,False,,408,6 blocks x 68 knots,0.0,,lambda_min,0.54
+0.1,1.0,half,47,50,50,403,False,1110,M2-noAtom,0.02699140303421532,False,,402,6 blocks x 67 knots,0.0,,lambda_min,24.69
+0.1,1.0,half,48,50,50,418,False,1094,M2,0.017968647769912822,False,,600,6 blocks x 100 knots,316.22776601683796,,,79.25
+0.1,1.0,half,48,50,50,418,False,1094,B3-CV,0.01572224657489398,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.07
+0.1,1.0,half,48,50,50,418,False,1094,B6,0.027763777779508097,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,0.69
+0.1,1.0,half,48,50,50,418,False,1094,B3@8,0.01572224657489398,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,1.0,half,48,50,50,418,False,1094,B3-H,0.01726076179175816,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,1.0,half,48,50,50,418,False,1094,M2-noPool,0.018605103055044914,False,,600,6 blocks x 100 knots,0.0,,lambda_min,1.39
+0.1,1.0,half,48,50,50,418,False,1094,M2-noAtom,0.03465800295629113,False,,594,6 blocks x 99 knots,3.1622776601683795,,,47.39
+0.1,1.0,half,49,50,50,404,False,1125,M2,0.01357043777073742,False,,408,6 blocks x 68 knots,1000.0,,,46.67
+0.1,1.0,half,49,50,50,404,False,1125,B3-CV,0.006044962229362646,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.1,1.0,half,49,50,50,404,False,1125,B6,0.010523748168603776,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,0.71
+0.1,1.0,half,49,50,50,404,False,1125,B3@8,0.004523217672744629,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.1,1.0,half,49,50,50,404,False,1125,B3-H,0.0044954456089325665,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.1,1.0,half,49,50,50,404,False,1125,M2-noPool,0.012984377896888397,False,,408,6 blocks x 68 knots,0.0,,lambda_min,1.37
+0.1,1.0,half,49,50,50,404,False,1125,M2-noAtom,0.036586598241990155,False,,402,6 blocks x 67 knots,10.0,,,29.24
+0.2,0.0,step,45,50,50,785,False,1132,M2,2.7230630150788157e-05,False,,714,6 blocks x 119 knots,100.0,,,105.74
+0.2,0.0,step,45,50,50,785,False,1132,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.1
+0.2,0.0,step,45,50,50,785,False,1132,B6,0.018231381356360165,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.71
+0.2,0.0,step,45,50,50,785,False,1132,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.0,step,45,50,50,785,False,1132,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.0,step,45,50,50,785,False,1132,M2-noPool,3.055745820787159e-05,False,,714,6 blocks x 119 knots,0.0,,lambda_min,2.32
+0.2,0.0,step,45,50,50,785,False,1132,M2-noAtom,0.010022988764384093,False,,708,6 blocks x 118 knots,100.0,,lambda_max,93.91
+0.2,0.0,step,46,50,50,760,False,1187,M2,2.0866118015309502e-07,False,,516,6 blocks x 86 knots,10000.0,,lambda_max,84.2
+0.2,0.0,step,46,50,50,760,False,1187,B3-CV,0.0015632002047473253,False,,16,16 non-empty bins of 16 requested; equal-count quantile,,16,,0.07
+0.2,0.0,step,46,50,50,760,False,1187,B6,0.009411869168208593,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.75
+0.2,0.0,step,46,50,50,760,False,1187,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.0,step,46,50,50,760,False,1187,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.0,step,46,50,50,760,False,1187,M2-noPool,2.2160895790362956e-06,False,,516,6 blocks x 86 knots,0.0,,lambda_min,1.74
+0.2,0.0,step,46,50,50,760,False,1187,M2-noAtom,0.01142991695629485,False,,510,6 blocks x 85 knots,0.31622776601683794,,,73.32
+0.2,0.0,step,47,50,50,775,False,1211,M2,5.7327290453630015e-05,False,,702,6 blocks x 117 knots,100.0,,,117.77
+0.2,0.0,step,47,50,50,775,False,1211,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.2,0.0,step,47,50,50,775,False,1211,B6,0.033965815714396295,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.76
+0.2,0.0,step,47,50,50,775,False,1211,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.0,step,47,50,50,775,False,1211,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.0,step,47,50,50,775,False,1211,M2-noPool,6.945924787708649e-05,False,,702,6 blocks x 117 knots,0.0,,lambda_min,2.76
+0.2,0.0,step,47,50,50,775,False,1211,M2-noAtom,0.01747361162765762,False,,696,6 blocks x 116 knots,0.001,,,92.4
+0.2,0.0,step,48,50,50,764,False,1213,M2,6.049221709457838e-05,False,,414,6 blocks x 69 knots,10000.0,,lambda_max,85.67
+0.2,0.0,step,48,50,50,764,False,1213,B3-CV,0.0018280754045828925,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.2,0.0,step,48,50,50,764,False,1213,B6,0.023802143187141165,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.76
+0.2,0.0,step,48,50,50,764,False,1213,B3@8,0.00184786354469409,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.0,step,48,50,50,764,False,1213,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.0,step,48,50,50,764,False,1213,M2-noPool,0.00010836424321721124,False,,414,6 blocks x 69 knots,0.0,,lambda_min,1.86
+0.2,0.0,step,48,50,50,764,False,1213,M2-noAtom,0.01074704872800682,False,,408,6 blocks x 68 knots,1.0,,,70.33
+0.2,0.0,step,49,50,50,782,False,1048,M2,4.616536158214002e-07,False,,852,6 blocks x 142 knots,1000.0,,,102.79
+0.2,0.0,step,49,50,50,782,False,1048,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.2,0.0,step,49,50,50,782,False,1048,B6,0.00904167212743545,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.69
+0.2,0.0,step,49,50,50,782,False,1048,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.0,step,49,50,50,782,False,1048,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.0,step,49,50,50,782,False,1048,M2-noPool,2.529664688494804e-06,False,,852,6 blocks x 142 knots,0.0,,lambda_min,2.62
+0.2,0.0,step,49,50,50,782,False,1048,M2-noAtom,0.010034554280681666,False,,846,6 blocks x 141 knots,0.1,,,93.56
+0.2,0.0,logistic,45,50,50,785,False,1132,M2,0.01456271248374374,False,,714,6 blocks x 119 knots,10000.0,,lambda_max,41.55
+0.2,0.0,logistic,45,50,50,785,False,1132,B3-CV,0.03518559428290122,False,,29,29 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.2,0.0,logistic,45,50,50,785,False,1132,B6,0.020177325438235874,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.74
+0.2,0.0,logistic,45,50,50,785,False,1132,B3@8,0.18682994670702585,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.0,logistic,45,50,50,785,False,1132,B3-H,0.04100967616607571,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.0,logistic,45,50,50,785,False,1132,M2-noPool,0.010884774668589094,False,,714,6 blocks x 119 knots,0.0,,lambda_min,1.71
+0.2,0.0,logistic,45,50,50,785,False,1132,M2-noAtom,0.01282553180402517,False,,708,6 blocks x 118 knots,100.0,,lambda_max,36.39
+0.2,0.0,logistic,46,50,50,760,False,1187,M2,0.011761921690426697,False,,516,6 blocks x 86 knots,10000.0,,lambda_max,24.22
+0.2,0.0,logistic,46,50,50,760,False,1187,B3-CV,0.02042510934202996,False,,57,57 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.2,0.0,logistic,46,50,50,760,False,1187,B6,0.02507447927852457,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.75
+0.2,0.0,logistic,46,50,50,760,False,1187,B3@8,0.19792142206258878,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.0,logistic,46,50,50,760,False,1187,B3-H,0.04208206496935306,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.0,logistic,46,50,50,760,False,1187,M2-noPool,0.009911415841162662,False,,516,6 blocks x 86 knots,0.0,,lambda_min,0.64
+0.2,0.0,logistic,46,50,50,760,False,1187,M2-noAtom,0.01334274932711317,False,,510,6 blocks x 85 knots,100.0,,lambda_max,22.24
+0.2,0.0,logistic,47,50,50,775,False,1211,M2,0.012694834602380705,False,,702,6 blocks x 117 knots,31.622776601683793,,,38.16
+0.2,0.0,logistic,47,50,50,775,False,1211,B3-CV,0.041313667108107965,False,,29,29 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.2,0.0,logistic,47,50,50,775,False,1211,B6,0.029760985647222273,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.76
+0.2,0.0,logistic,47,50,50,775,False,1211,B3@8,0.17138817446577395,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.0,logistic,47,50,50,775,False,1211,B3-H,0.044088401161854675,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.0,logistic,47,50,50,775,False,1211,M2-noPool,0.020110098384389496,False,,702,6 blocks x 117 knots,0.0,,lambda_min,1.44
+0.2,0.0,logistic,47,50,50,775,False,1211,M2-noAtom,0.010987516692083203,False,,696,6 blocks x 116 knots,100.0,,lambda_max,34.99
+0.2,0.0,logistic,48,50,50,764,False,1213,M2,0.007619177296132779,False,,414,6 blocks x 69 knots,10000.0,,lambda_max,20.82
+0.2,0.0,logistic,48,50,50,764,False,1213,B3-CV,0.033452924295191006,False,,30,30 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.2,0.0,logistic,48,50,50,764,False,1213,B6,0.0532047867805227,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.77
+0.2,0.0,logistic,48,50,50,764,False,1213,B3@8,0.17621804751513512,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.0,logistic,48,50,50,764,False,1213,B3-H,0.043869174974373856,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.0,logistic,48,50,50,764,False,1213,M2-noPool,0.016858005625941655,False,,414,6 blocks x 69 knots,0.0,,lambda_min,0.65
+0.2,0.0,logistic,48,50,50,764,False,1213,M2-noAtom,0.008870428328902759,False,,408,6 blocks x 68 knots,100.0,,lambda_max,17.84
+0.2,0.0,logistic,49,50,50,782,False,1048,M2,0.011973444700921635,False,,852,6 blocks x 142 knots,10000.0,,lambda_max,63.87
+0.2,0.0,logistic,49,50,50,782,False,1048,B3-CV,0.05541932711117404,False,,30,30 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.2,0.0,logistic,49,50,50,782,False,1048,B6,0.03517223100720976,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.7
+0.2,0.0,logistic,49,50,50,782,False,1048,B3@8,0.21756230161303747,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.0,logistic,49,50,50,782,False,1048,B3-H,0.05383542710623075,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.0,logistic,49,50,50,782,False,1048,M2-noPool,0.03100009128347434,False,,852,6 blocks x 142 knots,0.0,,lambda_min,2.01
+0.2,0.0,logistic,49,50,50,782,False,1048,M2-noAtom,0.012841783302738887,False,,846,6 blocks x 141 knots,100.0,,lambda_max,56.59
+0.2,0.0,half,45,50,50,785,False,1132,M2,0.02399650569830767,False,,714,6 blocks x 119 knots,1000.0,,,60.38
+0.2,0.0,half,45,50,50,785,False,1132,B3-CV,0.025515408531210947,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.07
+0.2,0.0,half,45,50,50,785,False,1132,B6,0.012118594944737503,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.7
+0.2,0.0,half,45,50,50,785,False,1132,B3@8,0.025515408531210947,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.0,half,45,50,50,785,False,1132,B3-H,0.018040769508875655,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.0,half,45,50,50,785,False,1132,M2-noPool,0.023984553466945918,False,,714,6 blocks x 119 knots,0.0,,lambda_min,1.42
+0.2,0.0,half,45,50,50,785,False,1132,M2-noAtom,0.038156783195451884,False,,708,6 blocks x 118 knots,1.0,,,38.35
+0.2,0.0,half,46,50,50,760,False,1187,M2,0.012660787903290328,False,,516,6 blocks x 86 knots,10000.0,,lambda_max,45.14
+0.2,0.0,half,46,50,50,760,False,1187,B3-CV,0.018595784592663235,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.2,0.0,half,46,50,50,760,False,1187,B6,0.046510349977412005,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,0.76
+0.2,0.0,half,46,50,50,760,False,1187,B3@8,0.01722981283196713,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.0,half,46,50,50,760,False,1187,B3-H,0.015207756995771123,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.0,half,46,50,50,760,False,1187,M2-noPool,0.01562746121572653,False,,516,6 blocks x 86 knots,0.0,,lambda_min,0.93
+0.2,0.0,half,46,50,50,760,False,1187,M2-noAtom,0.030578662251012776,False,,510,6 blocks x 85 knots,0.1,,,30.74
+0.2,0.0,half,47,50,50,775,False,1211,M2,0.014437730706339452,False,,702,6 blocks x 117 knots,10.0,,,69.1
+0.2,0.0,half,47,50,50,775,False,1211,B3-CV,0.01126290986063954,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.07
+0.2,0.0,half,47,50,50,775,False,1211,B6,0.016377278335522542,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,0.77
+0.2,0.0,half,47,50,50,775,False,1211,B3@8,0.01126290986063954,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.0,half,47,50,50,775,False,1211,B3-H,0.010616663527654713,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.0,half,47,50,50,775,False,1211,M2-noPool,0.01718011156657746,False,,702,6 blocks x 117 knots,0.0,,lambda_min,2.13
+0.2,0.0,half,47,50,50,775,False,1211,M2-noAtom,0.019664025361043825,False,,696,6 blocks x 116 knots,100.0,,lambda_max,45.9
+0.2,0.0,half,48,50,50,764,False,1213,M2,0.003959832025615821,False,,414,6 blocks x 69 knots,10000.0,,lambda_max,42.42
+0.2,0.0,half,48,50,50,764,False,1213,B3-CV,0.00249940154655074,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.2,0.0,half,48,50,50,764,False,1213,B6,0.0760293675181547,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.78
+0.2,0.0,half,48,50,50,764,False,1213,B3@8,0.006097119316918448,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.0,half,48,50,50,764,False,1213,B3-H,0.003697783718375094,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.0,half,48,50,50,764,False,1213,M2-noPool,0.015489966350296246,False,,414,6 blocks x 69 knots,0.0,,lambda_min,0.87
+0.2,0.0,half,48,50,50,764,False,1213,M2-noAtom,0.0354232705573,False,,408,6 blocks x 68 knots,3.1622776601683795,,,28.76
+0.2,0.0,half,49,50,50,782,False,1048,M2,0.022291561750014868,False,,852,6 blocks x 142 knots,10000.0,,lambda_max,101.87
+0.2,0.0,half,49,50,50,782,False,1048,B3-CV,0.010100482559949197,False,,30,30 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.2,0.0,half,49,50,50,782,False,1048,B6,0.02476049967981287,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.71
+0.2,0.0,half,49,50,50,782,False,1048,B3@8,0.014900171065861645,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.0,half,49,50,50,782,False,1048,B3-H,0.009013164185742127,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.0,half,49,50,50,782,False,1048,M2-noPool,0.015408109054205654,False,,852,6 blocks x 142 knots,0.0,,lambda_min,2.81
+0.2,0.0,half,49,50,50,782,False,1048,M2-noAtom,0.03789549419785168,False,,846,6 blocks x 141 knots,0.03162277660168379,,,66.42
+0.2,0.5,step,45,50,50,742,False,1124,M2,1.1206777021381214e-05,False,,1032,6 blocks x 172 knots,10000.0,,lambda_max,145.21
+0.2,0.5,step,45,50,50,742,False,1124,B3-CV,0.0023490716842577168,False,,29,29 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.2,0.5,step,45,50,50,742,False,1124,B6,0.0175011912962838,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.71
+0.2,0.5,step,45,50,50,742,False,1124,B3@8,0.003277665570424478,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.5,step,45,50,50,742,False,1124,B3-H,0.002250814203904842,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.5,step,45,50,50,742,False,1124,M2-noPool,4.3304235976368936e-05,False,,1032,6 blocks x 172 knots,0.0,,lambda_min,6.58
+0.2,0.5,step,45,50,50,742,False,1124,M2-noAtom,0.010034574154582315,False,,1026,6 blocks x 171 knots,100.0,,lambda_max,119.98
+0.2,0.5,step,46,50,50,728,False,1354,M2,1.5608157346469476e-07,False,,534,6 blocks x 89 knots,10000.0,,lambda_max,104.94
+0.2,0.5,step,46,50,50,728,False,1354,B3-CV,0.0022031259940072457,False,,58,58 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.2,0.5,step,46,50,50,728,False,1354,B6,0.027613136977913233,False,,12600,200 trees x <= 63 leaves; min_child_samples=20,,,,0.84
+0.2,0.5,step,46,50,50,728,False,1354,B3@8,0.0018695162302532445,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.5,step,46,50,50,728,False,1354,B3-H,0.0020206670060902115,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.5,step,46,50,50,728,False,1354,M2-noPool,2.7466241734071713e-06,False,,534,6 blocks x 89 knots,0.0,,lambda_min,2.36
+0.2,0.5,step,46,50,50,728,False,1354,M2-noAtom,0.011001346415561433,False,,528,6 blocks x 88 knots,0.1,,,84.86
+0.2,0.5,step,47,50,50,727,False,1267,M2,1.7221457939623856e-07,False,,630,6 blocks x 105 knots,10000.0,,lambda_max,99.39
+0.2,0.5,step,47,50,50,727,False,1267,B3-CV,0.002608017356814313,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.2,0.5,step,47,50,50,727,False,1267,B6,0.032413127832323925,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.77
+0.2,0.5,step,47,50,50,727,False,1267,B3@8,0.0022586265698181494,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.5,step,47,50,50,727,False,1267,B3-H,0.0019703267309162304,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.5,step,47,50,50,727,False,1267,M2-noPool,1.3324103386354776e-08,False,,630,6 blocks x 105 knots,0.0,,lambda_min,2.48
+0.2,0.5,step,47,50,50,727,False,1267,M2-noAtom,0.010034456163106513,False,,624,6 blocks x 104 knots,100.0,,lambda_max,90.91
+0.2,0.5,step,48,50,50,742,False,1417,M2,7.848568584523097e-07,False,,576,6 blocks x 96 knots,10000.0,,lambda_max,103.63
+0.2,0.5,step,48,50,50,742,False,1417,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.2,0.5,step,48,50,50,742,False,1417,B6,0.0030461779640412376,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.85
+0.2,0.5,step,48,50,50,742,False,1417,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.5,step,48,50,50,742,False,1417,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.5,step,48,50,50,742,False,1417,M2-noPool,2.4729834397769028e-05,False,,576,6 blocks x 96 knots,0.0,,lambda_min,2.28
+0.2,0.5,step,48,50,50,742,False,1417,M2-noAtom,0.013084240328691408,False,,570,6 blocks x 95 knots,0.31622776601683794,,,87.32
+0.2,0.5,step,49,50,50,711,False,1138,M2,5.1824800315440157e-08,False,,402,6 blocks x 67 knots,3162.2776601683795,,,71.67
+0.2,0.5,step,49,50,50,711,False,1138,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.2,0.5,step,49,50,50,711,False,1138,B6,0.04420884444721003,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.72
+0.2,0.5,step,49,50,50,711,False,1138,B3@8,0.0016929172461805275,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.5,step,49,50,50,711,False,1138,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.5,step,49,50,50,711,False,1138,M2-noPool,6.391203632198176e-08,False,,402,6 blocks x 67 knots,0.0,,lambda_min,1.38
+0.2,0.5,step,49,50,50,711,False,1138,M2-noAtom,0.010006180336827946,False,,396,6 blocks x 66 knots,31.622776601683793,,,61.81
+0.2,0.5,logistic,45,50,50,742,False,1124,M2,0.00945126695371388,False,,1032,6 blocks x 172 knots,10000.0,,lambda_max,85.57
+0.2,0.5,logistic,45,50,50,742,False,1124,B3-CV,0.01826751606097392,False,,56,56 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.08
+0.2,0.5,logistic,45,50,50,742,False,1124,B6,0.04284268025087441,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.73
+0.2,0.5,logistic,45,50,50,742,False,1124,B3@8,0.22981077162382235,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.5,logistic,45,50,50,742,False,1124,B3-H,0.03869241600436008,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.5,logistic,45,50,50,742,False,1124,M2-noPool,0.02201497173901133,False,,1032,6 blocks x 172 knots,0.0,,lambda_min,5.32
+0.2,0.5,logistic,45,50,50,742,False,1124,M2-noAtom,0.011316833827569433,False,,1026,6 blocks x 171 knots,100.0,,lambda_max,77.31
+0.2,0.5,logistic,46,50,50,728,False,1354,M2,0.009589397505507686,False,,534,6 blocks x 89 knots,10000.0,,lambda_max,29.68
+0.2,0.5,logistic,46,50,50,728,False,1354,B3-CV,0.013200560919862051,False,,58,58 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.2,0.5,logistic,46,50,50,728,False,1354,B6,0.02293609869032147,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.83
+0.2,0.5,logistic,46,50,50,728,False,1354,B3@8,0.17908770513648922,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.5,logistic,46,50,50,728,False,1354,B3-H,0.03867793997544122,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.5,logistic,46,50,50,728,False,1354,M2-noPool,0.020935277930032248,False,,534,6 blocks x 89 knots,0.0,,lambda_min,0.77
+0.2,0.5,logistic,46,50,50,728,False,1354,M2-noAtom,0.008647309665693133,False,,528,6 blocks x 88 knots,100.0,,lambda_max,23.06
+0.2,0.5,logistic,47,50,50,727,False,1267,M2,0.007010765976884419,False,,630,6 blocks x 105 knots,10000.0,,lambda_max,34.29
+0.2,0.5,logistic,47,50,50,727,False,1267,B3-CV,0.02964782416688419,False,,30,30 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.2,0.5,logistic,47,50,50,727,False,1267,B6,0.014969703137062366,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.79
+0.2,0.5,logistic,47,50,50,727,False,1267,B3@8,0.17946416846828261,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.5,logistic,47,50,50,727,False,1267,B3-H,0.03553197802790275,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.5,logistic,47,50,50,727,False,1267,M2-noPool,0.013804800382130424,False,,630,6 blocks x 105 knots,0.0,,lambda_min,1.44
+0.2,0.5,logistic,47,50,50,727,False,1267,M2-noAtom,0.008310335282945797,False,,624,6 blocks x 104 knots,100.0,,lambda_max,26.28
+0.2,0.5,logistic,48,50,50,742,False,1417,M2,0.009361618988321998,False,,576,6 blocks x 96 knots,3162.2776601683795,,,34.04
+0.2,0.5,logistic,48,50,50,742,False,1417,B3-CV,0.017299173354216962,False,,56,56 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.2,0.5,logistic,48,50,50,742,False,1417,B6,0.013823109073496397,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.85
+0.2,0.5,logistic,48,50,50,742,False,1417,B3@8,0.2094612058006826,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.5,logistic,48,50,50,742,False,1417,B3-H,0.038792786757893105,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.5,logistic,48,50,50,742,False,1417,M2-noPool,0.008869776511069443,False,,576,6 blocks x 96 knots,0.0,,lambda_min,1.27
+0.2,0.5,logistic,48,50,50,742,False,1417,M2-noAtom,0.009817796812473216,False,,570,6 blocks x 95 knots,100.0,,lambda_max,32.46
+0.2,0.5,logistic,49,50,50,711,False,1138,M2,0.008341827633453916,False,,402,6 blocks x 67 knots,1000.0,,,19.61
+0.2,0.5,logistic,49,50,50,711,False,1138,B3-CV,0.020965156737884495,False,,57,57 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.08
+0.2,0.5,logistic,49,50,50,711,False,1138,B6,0.05330464357467546,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.72
+0.2,0.5,logistic,49,50,50,711,False,1138,B3@8,0.21798397607191233,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.5,logistic,49,50,50,711,False,1138,B3-H,0.03852217995123663,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.5,logistic,49,50,50,711,False,1138,M2-noPool,0.00809583482626005,False,,402,6 blocks x 67 knots,0.0,,lambda_min,0.58
+0.2,0.5,logistic,49,50,50,711,False,1138,M2-noAtom,0.0120444838495086,False,,396,6 blocks x 66 knots,100.0,,lambda_max,18.18
+0.2,0.5,half,45,50,50,742,False,1124,M2,0.003706849230062828,False,,1032,6 blocks x 172 knots,10000.0,,lambda_max,153.32
+0.2,0.5,half,45,50,50,742,False,1124,B3-CV,0.006359565022777805,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.07
+0.2,0.5,half,45,50,50,742,False,1124,B6,0.028250661869243375,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,0.7
+0.2,0.5,half,45,50,50,742,False,1124,B3@8,0.006359565022777805,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.5,half,45,50,50,742,False,1124,B3-H,0.003578947017636383,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.5,half,45,50,50,742,False,1124,M2-noPool,0.008083115982056735,False,,1032,6 blocks x 172 knots,0.0,,lambda_min,14.24
+0.2,0.5,half,45,50,50,742,False,1124,M2-noAtom,0.022866452097995302,False,,1026,6 blocks x 171 knots,10.0,,,100.4
+0.2,0.5,half,46,50,50,728,False,1354,M2,0.008332518554032008,False,,534,6 blocks x 89 knots,10000.0,,lambda_max,61.27
+0.2,0.5,half,46,50,50,728,False,1354,B3-CV,0.008269193319292534,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.2,0.5,half,46,50,50,728,False,1354,B6,0.059499262444689005,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,0.82
+0.2,0.5,half,46,50,50,728,False,1354,B3@8,0.00871040702445707,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.5,half,46,50,50,728,False,1354,B3-H,0.011032289205951479,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.5,half,46,50,50,728,False,1354,M2-noPool,0.010007921046850022,False,,534,6 blocks x 89 knots,0.0,,lambda_min,1.34
+0.2,0.5,half,46,50,50,728,False,1354,M2-noAtom,0.031287903947897246,False,,528,6 blocks x 88 knots,3.1622776601683795,,,45.58
+0.2,0.5,half,47,50,50,727,False,1267,M2,0.006494251074143392,False,,630,6 blocks x 105 knots,10000.0,,lambda_max,87.15
+0.2,0.5,half,47,50,50,727,False,1267,B3-CV,0.0048223604307513395,False,,16,16 non-empty bins of 16 requested; equal-count quantile,,16,,0.07
+0.2,0.5,half,47,50,50,727,False,1267,B6,0.01588719854110683,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.78
+0.2,0.5,half,47,50,50,727,False,1267,B3@8,0.004575328904580586,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.5,half,47,50,50,727,False,1267,B3-H,0.007061566764733366,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.5,half,47,50,50,727,False,1267,M2-noPool,0.006399497462757906,False,,630,6 blocks x 105 knots,0.0,,lambda_min,1.92
+0.2,0.5,half,47,50,50,727,False,1267,M2-noAtom,0.024670948257114782,False,,624,6 blocks x 104 knots,0.001,,,60.8
+0.2,0.5,half,48,50,50,742,False,1417,M2,0.01213793755968819,False,,576,6 blocks x 96 knots,10000.0,,lambda_max,61.76
+0.2,0.5,half,48,50,50,742,False,1417,B3-CV,0.011085634462208423,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.07
+0.2,0.5,half,48,50,50,742,False,1417,B6,0.005688413492579289,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,0.84
+0.2,0.5,half,48,50,50,742,False,1417,B3@8,0.011085634462208423,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.5,half,48,50,50,742,False,1417,B3-H,0.012576237509992691,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.5,half,48,50,50,742,False,1417,M2-noPool,0.012731862513782504,False,,576,6 blocks x 96 knots,0.0,,lambda_min,1.05
+0.2,0.5,half,48,50,50,742,False,1417,M2-noAtom,0.02935809017081573,False,,570,6 blocks x 95 knots,10.0,,,38.19
+0.2,0.5,half,49,50,50,711,False,1138,M2,0.010398267808599163,False,,402,6 blocks x 67 knots,10000.0,,lambda_max,50.81
+0.2,0.5,half,49,50,50,711,False,1138,B3-CV,0.014529866983603262,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.2,0.5,half,49,50,50,711,False,1138,B6,0.009135679806789974,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,0.71
+0.2,0.5,half,49,50,50,711,False,1138,B3@8,0.010879638653971088,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,0.5,half,49,50,50,711,False,1138,B3-H,0.008641273488724163,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,0.5,half,49,50,50,711,False,1138,M2-noPool,0.010902160362641073,False,,402,6 blocks x 67 knots,0.0,,lambda_min,0.73
+0.2,0.5,half,49,50,50,711,False,1138,M2-noAtom,0.032397591173953175,False,,396,6 blocks x 66 knots,0.31622776601683794,,,38.52
+0.2,1.0,step,45,50,50,679,False,1487,M2,0.00040360108566475796,False,,438,6 blocks x 73 knots,1000.0,,,105.56
+0.2,1.0,step,45,50,50,679,False,1487,B3-CV,0.0026181628791024925,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.07
+0.2,1.0,step,45,50,50,679,False,1487,B6,0.004705913607987238,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.84
+0.2,1.0,step,45,50,50,679,False,1487,B3@8,0.0026181628791024925,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,1.0,step,45,50,50,679,False,1487,B3-H,0.002191104585894898,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,1.0,step,45,50,50,679,False,1487,M2-noPool,0.0003988257525203078,False,,438,6 blocks x 73 knots,0.0,,lambda_min,2.34
+0.2,1.0,step,45,50,50,679,False,1487,M2-noAtom,0.01119640002394053,False,,432,6 blocks x 72 knots,100.0,,lambda_max,85.03
+0.2,1.0,step,46,50,50,671,False,1520,M2,0.0002588420390496491,False,,702,6 blocks x 117 knots,10000.0,,lambda_max,137.11
+0.2,1.0,step,46,50,50,671,False,1520,B3-CV,0.0017434783551913454,False,,16,16 non-empty bins of 16 requested; equal-count quantile,,16,,0.07
+0.2,1.0,step,46,50,50,671,False,1520,B6,0.015908805307463796,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.91
+0.2,1.0,step,46,50,50,671,False,1520,B3@8,0.0016815958630542163,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,1.0,step,46,50,50,671,False,1520,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,1.0,step,46,50,50,671,False,1520,M2-noPool,0.00025053493544508734,False,,702,6 blocks x 117 knots,0.0,,lambda_min,3.17
+0.2,1.0,step,46,50,50,671,False,1520,M2-noAtom,0.010110170130038154,False,,696,6 blocks x 116 knots,100.0,,lambda_max,120.72
+0.2,1.0,step,47,50,50,635,False,1446,M2,6.198022173644254e-07,False,,594,6 blocks x 99 knots,1000.0,,,99.36
+0.2,1.0,step,47,50,50,635,False,1446,B3-CV,0.0015884640824612383,False,,16,16 non-empty bins of 16 requested; equal-count quantile,,16,,0.07
+0.2,1.0,step,47,50,50,635,False,1446,B6,0.00400632442096235,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.84
+0.2,1.0,step,47,50,50,635,False,1446,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,1.0,step,47,50,50,635,False,1446,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,1.0,step,47,50,50,635,False,1446,M2-noPool,1.8095209701479708e-06,False,,594,6 blocks x 99 knots,0.0,,lambda_min,2.32
+0.2,1.0,step,47,50,50,635,False,1446,M2-noAtom,0.010026306323896988,False,,588,6 blocks x 98 knots,31.622776601683793,,,87.92
+0.2,1.0,step,48,50,50,665,False,1309,M2,1.9036510659098393e-07,False,,582,6 blocks x 97 knots,10000.0,,lambda_max,94.38
+0.2,1.0,step,48,50,50,665,False,1309,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.2,1.0,step,48,50,50,665,False,1309,B6,0.0076289306257871885,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.78
+0.2,1.0,step,48,50,50,665,False,1309,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,1.0,step,48,50,50,665,False,1309,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,1.0,step,48,50,50,665,False,1309,M2-noPool,5.262467365372096e-06,False,,582,6 blocks x 97 knots,0.0,,lambda_min,2.1
+0.2,1.0,step,48,50,50,665,False,1309,M2-noAtom,0.01003814092827764,False,,576,6 blocks x 96 knots,0.0,,lambda_min,79.75
+0.2,1.0,step,49,50,50,653,False,1153,M2,1.9096356056643355e-08,False,,660,6 blocks x 110 knots,10000.0,,lambda_max,85.6
+0.2,1.0,step,49,50,50,653,False,1153,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.2,1.0,step,49,50,50,653,False,1153,B6,0.003143066312285524,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.73
+0.2,1.0,step,49,50,50,653,False,1153,B3@8,0.0016656305065759671,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,1.0,step,49,50,50,653,False,1153,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,1.0,step,49,50,50,653,False,1153,M2-noPool,4.384949909471321e-09,False,,660,6 blocks x 110 knots,0.0,,lambda_min,1.91
+0.2,1.0,step,49,50,50,653,False,1153,M2-noAtom,0.010010992323858508,False,,654,6 blocks x 109 knots,100.0,,lambda_max,79.33
+0.2,1.0,logistic,45,50,50,679,False,1487,M2,0.01723304331909351,False,,438,6 blocks x 73 knots,3.1622776601683795,,,24.05
+0.2,1.0,logistic,45,50,50,679,False,1487,B3-CV,0.012952866635878583,False,,58,58 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.2,1.0,logistic,45,50,50,679,False,1487,B6,0.039522727593476005,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.88
+0.2,1.0,logistic,45,50,50,679,False,1487,B3@8,0.17620947121211464,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,1.0,logistic,45,50,50,679,False,1487,B3-H,0.038280448364199804,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,1.0,logistic,45,50,50,679,False,1487,M2-noPool,0.01576969140668763,False,,438,6 blocks x 73 knots,0.0,,lambda_min,0.74
+0.2,1.0,logistic,45,50,50,679,False,1487,M2-noAtom,0.011608005270830841,False,,432,6 blocks x 72 knots,100.0,,lambda_max,17.53
+0.2,1.0,logistic,46,50,50,671,False,1520,M2,0.013932417362941957,False,,702,6 blocks x 117 knots,10.0,,,51.24
+0.2,1.0,logistic,46,50,50,671,False,1520,B3-CV,0.013589926124092997,False,,58,58 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.1
+0.2,1.0,logistic,46,50,50,671,False,1520,B6,0.015131709479780054,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,2.91
+0.2,1.0,logistic,46,50,50,671,False,1520,B3@8,0.1880424600059888,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.01
+0.2,1.0,logistic,46,50,50,671,False,1520,B3-H,0.04070449946701048,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,1.0,logistic,46,50,50,671,False,1520,M2-noPool,0.016587325256698746,False,,702,6 blocks x 117 knots,0.0,,lambda_min,3.53
+0.2,1.0,logistic,46,50,50,671,False,1520,M2-noAtom,0.010914959595443635,False,,696,6 blocks x 116 knots,31.622776601683793,,,71.4
+0.2,1.0,logistic,47,50,50,635,False,1446,M2,0.02163238373657882,False,,594,6 blocks x 99 knots,3.1622776601683795,,,42.71
+0.2,1.0,logistic,47,50,50,635,False,1446,B3-CV,0.018329619646402985,False,,58,58 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.2,1.0,logistic,47,50,50,635,False,1446,B6,0.02568695937527382,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.91
+0.2,1.0,logistic,47,50,50,635,False,1446,B3@8,0.21128516560785338,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,1.0,logistic,47,50,50,635,False,1446,B3-H,0.044701348087340796,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,1.0,logistic,47,50,50,635,False,1446,M2-noPool,0.013505495532838243,False,,594,6 blocks x 99 knots,0.0,,lambda_min,1.28
+0.2,1.0,logistic,47,50,50,635,False,1446,M2-noAtom,0.016119784297433704,False,,588,6 blocks x 98 knots,3.1622776601683795,,,36.24
+0.2,1.0,logistic,48,50,50,665,False,1309,M2,0.014419498744899993,False,,582,6 blocks x 97 knots,10.0,,,34.54
+0.2,1.0,logistic,48,50,50,665,False,1309,B3-CV,0.01871238739932762,False,,58,58 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.2,1.0,logistic,48,50,50,665,False,1309,B6,0.0251815416896625,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.83
+0.2,1.0,logistic,48,50,50,665,False,1309,B3@8,0.21518036342664582,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,1.0,logistic,48,50,50,665,False,1309,B3-H,0.040440714334165545,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,1.0,logistic,48,50,50,665,False,1309,M2-noPool,0.012950544786102993,False,,582,6 blocks x 97 knots,0.0,,lambda_min,1.05
+0.2,1.0,logistic,48,50,50,665,False,1309,M2-noAtom,0.01279352438638324,False,,576,6 blocks x 96 knots,0.03162277660168379,,,27.5
+0.2,1.0,logistic,49,50,50,653,False,1153,M2,0.01021038429611521,False,,660,6 blocks x 110 knots,10000.0,,lambda_max,35.46
+0.2,1.0,logistic,49,50,50,653,False,1153,B3-CV,0.020509676610063695,False,,58,58 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.2,1.0,logistic,49,50,50,653,False,1153,B6,0.0542030537779421,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.77
+0.2,1.0,logistic,49,50,50,653,False,1153,B3@8,0.24869076496108278,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,1.0,logistic,49,50,50,653,False,1153,B3-H,0.04607510299760484,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,1.0,logistic,49,50,50,653,False,1153,M2-noPool,0.009109602908409285,False,,660,6 blocks x 110 knots,0.0,,lambda_min,1.11
+0.2,1.0,logistic,49,50,50,653,False,1153,M2-noAtom,0.009689516724476537,False,,654,6 blocks x 109 knots,100.0,,lambda_max,30.44
+0.2,1.0,half,45,50,50,679,False,1487,M2,0.002390988275391266,False,,438,6 blocks x 73 knots,1000.0,,,53.16
+0.2,1.0,half,45,50,50,679,False,1487,B3-CV,0.004205154591275169,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.2,1.0,half,45,50,50,679,False,1487,B6,0.0061337944565523035,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,0.87
+0.2,1.0,half,45,50,50,679,False,1487,B3@8,0.003477702344021682,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,1.0,half,45,50,50,679,False,1487,B3-H,0.00417332812215257,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,1.0,half,45,50,50,679,False,1487,M2-noPool,0.0054302519831185185,False,,438,6 blocks x 73 knots,0.0,,lambda_min,1.68
+0.2,1.0,half,45,50,50,679,False,1487,M2-noAtom,0.026835494169860374,False,,432,6 blocks x 72 knots,3.1622776601683795,,,43.84
+0.2,1.0,half,46,50,50,671,False,1520,M2,0.0038059531965191932,False,,702,6 blocks x 117 knots,1000.0,,,96.46
+0.2,1.0,half,46,50,50,671,False,1520,B3-CV,0.0028937010419664197,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.08
+0.2,1.0,half,46,50,50,671,False,1520,B6,0.016490564004748662,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,0.92
+0.2,1.0,half,46,50,50,671,False,1520,B3@8,0.0028937010419664197,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,1.0,half,46,50,50,671,False,1520,B3-H,0.0033751226297774844,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,1.0,half,46,50,50,671,False,1520,M2-noPool,0.013446035177699137,False,,702,6 blocks x 117 knots,0.0,,lambda_min,2.46
+0.2,1.0,half,46,50,50,671,False,1520,M2-noAtom,0.024949788551951943,False,,696,6 blocks x 116 knots,3.1622776601683795,,,52.12
+0.2,1.0,half,47,50,50,635,False,1446,M2,0.01191933592073789,False,,594,6 blocks x 99 knots,3.1622776601683795,,,71.72
+0.2,1.0,half,47,50,50,635,False,1446,B3-CV,0.014722494261474338,False,,16,16 non-empty bins of 16 requested; equal-count quantile,,16,,0.07
+0.2,1.0,half,47,50,50,635,False,1446,B6,0.07521232664058757,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,0.87
+0.2,1.0,half,47,50,50,635,False,1446,B3@8,0.015225059536776447,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,1.0,half,47,50,50,635,False,1446,B3-H,0.01555853981492979,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,1.0,half,47,50,50,635,False,1446,M2-noPool,0.015016152728199943,False,,594,6 blocks x 99 knots,0.0,,lambda_min,1.89
+0.2,1.0,half,47,50,50,635,False,1446,M2-noAtom,0.03246477690405792,False,,588,6 blocks x 98 knots,0.01,,,41.81
+0.2,1.0,half,48,50,50,665,False,1309,M2,0.014576510607209112,False,,582,6 blocks x 97 knots,3.1622776601683795,,,83.85
+0.2,1.0,half,48,50,50,665,False,1309,B3-CV,0.014038524860327856,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.2,1.0,half,48,50,50,665,False,1309,B6,0.0324173180200752,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.79
+0.2,1.0,half,48,50,50,665,False,1309,B3@8,0.012088445234769648,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,1.0,half,48,50,50,665,False,1309,B3-H,0.011154460609558879,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,1.0,half,48,50,50,665,False,1309,M2-noPool,0.01680655540450683,False,,582,6 blocks x 97 knots,0.0,,lambda_min,1.4
+0.2,1.0,half,48,50,50,665,False,1309,M2-noAtom,0.035540371277660084,False,,576,6 blocks x 96 knots,0.0,,lambda_min,30.43
+0.2,1.0,half,49,50,50,653,False,1153,M2,0.013942049687215055,False,,660,6 blocks x 110 knots,10000.0,,lambda_max,81.69
+0.2,1.0,half,49,50,50,653,False,1153,B3-CV,0.01335411277780814,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.2,1.0,half,49,50,50,653,False,1153,B6,0.009923359907094349,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.77
+0.2,1.0,half,49,50,50,653,False,1153,B3@8,0.009315370868727938,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.2,1.0,half,49,50,50,653,False,1153,B3-H,0.007657030089155287,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.2,1.0,half,49,50,50,653,False,1153,M2-noPool,0.015977795096497004,False,,660,6 blocks x 110 knots,0.0,,lambda_min,2.18
+0.2,1.0,half,49,50,50,653,False,1153,M2-noAtom,0.0313488037387995,False,,654,6 blocks x 109 knots,3.1622776601683795,,,43.95
+0.4,0.0,step,45,50,50,926,False,2069,M2,4.291596338350689e-05,False,,588,6 blocks x 98 knots,1000.0,,,182.19
+0.4,0.0,step,45,50,50,926,False,2069,B3-CV,0.0015317082369720881,False,,57,57 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.08
+0.4,0.0,step,45,50,50,926,False,2069,B6,0.0016659849229356506,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.22
+0.4,0.0,step,45,50,50,926,False,2069,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.0,step,45,50,50,926,False,2069,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.0,step,45,50,50,926,False,2069,M2-noPool,7.626322812091339e-05,False,,588,6 blocks x 98 knots,0.0,,lambda_min,3.55
+0.4,0.0,step,45,50,50,926,False,2069,M2-noAtom,0.010063725178980435,False,,582,6 blocks x 97 knots,0.03162277660168379,,,133.21
+0.4,0.0,step,46,50,50,927,False,1887,M2,3.97344692249274e-05,False,,972,6 blocks x 162 knots,10000.0,,lambda_max,186.51
+0.4,0.0,step,46,50,50,927,False,1887,B3-CV,0.0019592244863192152,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.08
+0.4,0.0,step,46,50,50,927,False,1887,B6,0.009170006979814257,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.01
+0.4,0.0,step,46,50,50,927,False,1887,B3@8,0.0019592244863192152,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.0,step,46,50,50,927,False,1887,B3-H,0.0019530125797276665,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.0,step,46,50,50,927,False,1887,M2-noPool,5.181508967625999e-05,False,,972,6 blocks x 162 knots,0.0,,lambda_min,9.27
+0.4,0.0,step,46,50,50,927,False,1887,M2-noAtom,0.010109619212831334,False,,966,6 blocks x 161 knots,31.622776601683793,,,166.24
+0.4,0.0,step,47,50,50,929,False,2052,M2,0.00023534984735120983,False,,600,6 blocks x 100 knots,10000.0,,lambda_max,159.33
+0.4,0.0,step,47,50,50,929,False,2052,B3-CV,0.0020065814941362912,False,,16,16 non-empty bins of 16 requested; equal-count quantile,,16,,0.07
+0.4,0.0,step,47,50,50,929,False,2052,B6,0.01720793666628605,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.14
+0.4,0.0,step,47,50,50,929,False,2052,B3@8,0.0019865535789441984,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.0,step,47,50,50,929,False,2052,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.0,step,47,50,50,929,False,2052,M2-noPool,0.0002627879465306541,False,,600,6 blocks x 100 knots,0.0,,lambda_min,3.7
+0.4,0.0,step,47,50,50,929,False,2052,M2-noAtom,0.01008734229421642,False,,594,6 blocks x 99 knots,100.0,,lambda_max,126.05
+0.4,0.0,step,48,50,50,925,False,2219,M2,2.903983172212558e-07,False,,594,6 blocks x 99 knots,10000.0,,lambda_max,181.85
+0.4,0.0,step,48,50,50,925,False,2219,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.4,0.0,step,48,50,50,925,False,2219,B6,0.021607974199533427,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.19
+0.4,0.0,step,48,50,50,925,False,2219,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.0,step,48,50,50,925,False,2219,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.0,step,48,50,50,925,False,2219,M2-noPool,9.665324390803105e-06,False,,594,6 blocks x 99 knots,0.0,,lambda_min,3.46
+0.4,0.0,step,48,50,50,925,False,2219,M2-noAtom,0.010092932626542653,False,,588,6 blocks x 98 knots,100.0,,lambda_max,148.82
+0.4,0.0,step,49,50,50,927,False,1847,M2,6.9627812390562115e-06,False,,594,6 blocks x 99 knots,10000.0,,lambda_max,141.02
+0.4,0.0,step,49,50,50,927,False,1847,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.08
+0.4,0.0,step,49,50,50,927,False,1847,B6,0.0018109833483583911,False,,6200,200 trees x <= 31 leaves; min_child_samples=20,,,,1.03
+0.4,0.0,step,49,50,50,927,False,1847,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.0,step,49,50,50,927,False,1847,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.0,step,49,50,50,927,False,1847,M2-noPool,1.4481985775901355e-05,False,,594,6 blocks x 99 knots,0.0,,lambda_min,3.64
+0.4,0.0,step,49,50,50,927,False,1847,M2-noAtom,0.010034791024374873,False,,588,6 blocks x 98 knots,100.0,,lambda_max,125.92
+0.4,0.0,logistic,45,50,50,926,False,2069,M2,0.014653675212723039,False,,588,6 blocks x 98 knots,100.0,,,44.44
+0.4,0.0,logistic,45,50,50,926,False,2069,B3-CV,0.04051509381779354,False,,30,30 non-empty bins of 32 requested; equal-count quantile,,32,,0.08
+0.4,0.0,logistic,45,50,50,926,False,2069,B6,0.045419402175933606,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.15
+0.4,0.0,logistic,45,50,50,926,False,2069,B3@8,0.19766700747884847,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.0,logistic,45,50,50,926,False,2069,B3-H,0.043867048060975536,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.0,logistic,45,50,50,926,False,2069,M2-noPool,0.02509287520575816,False,,588,6 blocks x 98 knots,0.0,,lambda_min,1.58
+0.4,0.0,logistic,45,50,50,926,False,2069,M2-noAtom,0.014389317078523813,False,,582,6 blocks x 97 knots,100.0,,lambda_max,44.12
+0.4,0.0,logistic,46,50,50,927,False,1887,M2,0.008534998143604654,False,,972,6 blocks x 162 knots,3162.2776601683795,,,180.2
+0.4,0.0,logistic,46,50,50,927,False,1887,B3-CV,0.014340861998204755,False,,59,59 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.08
+0.4,0.0,logistic,46,50,50,927,False,1887,B6,0.01233054585500202,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.11
+0.4,0.0,logistic,46,50,50,927,False,1887,B3@8,0.23193475942197106,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.0,logistic,46,50,50,927,False,1887,B3-H,0.041952968714641624,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.0,logistic,46,50,50,927,False,1887,M2-noPool,0.01852610727657196,False,,972,6 blocks x 162 knots,0.0,,lambda_min,5.39
+0.4,0.0,logistic,46,50,50,927,False,1887,M2-noAtom,0.013565104681028757,False,,966,6 blocks x 161 knots,100.0,,lambda_max,164.78
+0.4,0.0,logistic,47,50,50,929,False,2052,M2,0.007777763809964677,False,,600,6 blocks x 100 knots,10000.0,,lambda_max,66.5
+0.4,0.0,logistic,47,50,50,929,False,2052,B3-CV,0.015536873786260286,False,,58,58 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.09
+0.4,0.0,logistic,47,50,50,929,False,2052,B6,0.019171759259824728,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.24
+0.4,0.0,logistic,47,50,50,929,False,2052,B3@8,0.21505375970749432,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.0,logistic,47,50,50,929,False,2052,B3-H,0.04080707670758559,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.0,logistic,47,50,50,929,False,2052,M2-noPool,0.012870324067715412,False,,600,6 blocks x 100 knots,0.0,,lambda_min,1.05
+0.4,0.0,logistic,47,50,50,929,False,2052,M2-noAtom,0.018708184646363365,False,,594,6 blocks x 99 knots,10.0,,,51.5
+0.4,0.0,logistic,48,50,50,925,False,2219,M2,0.008294299443004655,False,,594,6 blocks x 99 knots,1000.0,,,59.14
+0.4,0.0,logistic,48,50,50,925,False,2219,B3-CV,0.03706915440066253,False,,30,30 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.4,0.0,logistic,48,50,50,925,False,2219,B6,0.015933721779203207,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.2
+0.4,0.0,logistic,48,50,50,925,False,2219,B3@8,0.18787470777601156,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.0,logistic,48,50,50,925,False,2219,B3-H,0.03919646094753619,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.0,logistic,48,50,50,925,False,2219,M2-noPool,0.012105813993264533,False,,594,6 blocks x 99 knots,0.0,,lambda_min,1.34
+0.4,0.0,logistic,48,50,50,925,False,2219,M2-noAtom,0.013125190020275351,False,,588,6 blocks x 98 knots,10.0,,,49.27
+0.4,0.0,logistic,49,50,50,927,False,1847,M2,0.010269621114628426,False,,594,6 blocks x 99 knots,1000.0,,,53.76
+0.4,0.0,logistic,49,50,50,927,False,1847,B3-CV,0.01783683901353041,False,,58,58 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.4,0.0,logistic,49,50,50,927,False,1847,B6,0.023147265252715796,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.06
+0.4,0.0,logistic,49,50,50,927,False,1847,B3@8,0.20096027854180232,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.0,logistic,49,50,50,927,False,1847,B3-H,0.03837124260753641,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.0,logistic,49,50,50,927,False,1847,M2-noPool,0.009225750459577825,False,,594,6 blocks x 99 knots,0.0,,lambda_min,1.9
+0.4,0.0,logistic,49,50,50,927,False,1847,M2-noAtom,0.008312136792871188,False,,588,6 blocks x 98 knots,100.0,,lambda_max,44.96
+0.4,0.0,half,45,50,50,926,False,2069,M2,0.02403506751226196,False,,588,6 blocks x 98 knots,1e-06,,,90.61
+0.4,0.0,half,45,50,50,926,False,2069,B3-CV,0.016146942132978903,False,,30,30 non-empty bins of 32 requested; equal-count quantile,,32,,0.08
+0.4,0.0,half,45,50,50,926,False,2069,B6,0.029832778431749828,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.16
+0.4,0.0,half,45,50,50,926,False,2069,B3@8,0.01796143385338658,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.0,half,45,50,50,926,False,2069,B3-H,0.01886954598358847,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.0,half,45,50,50,926,False,2069,M2-noPool,0.023512277749998145,False,,588,6 blocks x 98 knots,0.0,,lambda_min,2.51
+0.4,0.0,half,45,50,50,926,False,2069,M2-noAtom,0.03513745715995676,False,,582,6 blocks x 97 knots,0.0,,lambda_min,62.19
+0.4,0.0,half,46,50,50,927,False,1887,M2,0.005523862558333203,False,,972,6 blocks x 162 knots,1000.0,,,209.34
+0.4,0.0,half,46,50,50,927,False,1887,B3-CV,0.005943776213944781,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.4,0.0,half,46,50,50,927,False,1887,B6,0.021313656154862873,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.03
+0.4,0.0,half,46,50,50,927,False,1887,B3@8,0.0068940864077637045,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.0,half,46,50,50,927,False,1887,B3-H,0.007899761290431592,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.0,half,46,50,50,927,False,1887,M2-noPool,0.014184120046224847,False,,972,6 blocks x 162 knots,0.0,,lambda_min,8.95
+0.4,0.0,half,46,50,50,927,False,1887,M2-noAtom,0.03127665350312371,False,,966,6 blocks x 161 knots,0.01,,,139.82
+0.4,0.0,half,47,50,50,929,False,2052,M2,0.0014076482406826106,False,,600,6 blocks x 100 knots,10000.0,,lambda_max,101.13
+0.4,0.0,half,47,50,50,929,False,2052,B3-CV,0.002516241993471311,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.08
+0.4,0.0,half,47,50,50,929,False,2052,B6,0.008866520653117042,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.16
+0.4,0.0,half,47,50,50,929,False,2052,B3@8,0.002516241993471311,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.0,half,47,50,50,929,False,2052,B3-H,0.0017884491528244073,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.0,half,47,50,50,929,False,2052,M2-noPool,0.006879321783479148,False,,600,6 blocks x 100 knots,0.0,,lambda_min,3.01
+0.4,0.0,half,47,50,50,929,False,2052,M2-noAtom,0.02300676439470192,False,,594,6 blocks x 99 knots,10.0,,,74.31
+0.4,0.0,half,48,50,50,925,False,2219,M2,0.006936125709372168,False,,594,6 blocks x 99 knots,10000.0,,lambda_max,144.53
+0.4,0.0,half,48,50,50,925,False,2219,B3-CV,0.007745000037031004,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.08
+0.4,0.0,half,48,50,50,925,False,2219,B6,0.011546425619244152,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.2
+0.4,0.0,half,48,50,50,925,False,2219,B3@8,0.006405346969951965,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.0,half,48,50,50,925,False,2219,B3-H,0.0049452345281076416,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.0,half,48,50,50,925,False,2219,M2-noPool,0.006604704903853357,False,,594,6 blocks x 99 knots,0.0,,lambda_min,4.01
+0.4,0.0,half,48,50,50,925,False,2219,M2-noAtom,0.029098629351584613,False,,588,6 blocks x 98 knots,3.1622776601683795,,,106.02
+0.4,0.0,half,49,50,50,927,False,1847,M2,0.00664181831693264,False,,594,6 blocks x 99 knots,316.22776601683796,,,95.62
+0.4,0.0,half,49,50,50,927,False,1847,B3-CV,0.00828771374179383,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.07
+0.4,0.0,half,49,50,50,927,False,1847,B6,0.023186591177276287,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.02
+0.4,0.0,half,49,50,50,927,False,1847,B3@8,0.00828771374179383,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.0,half,49,50,50,927,False,1847,B3-H,0.008061217837695903,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.0,half,49,50,50,927,False,1847,M2-noPool,0.008973247617084214,False,,594,6 blocks x 99 knots,0.0,,lambda_min,2.18
+0.4,0.0,half,49,50,50,927,False,1847,M2-noAtom,0.026445754048635854,False,,588,6 blocks x 98 knots,10.0,,,49.81
+0.4,0.5,step,45,50,50,918,False,1832,M2,3.741923435174321e-07,False,,408,6 blocks x 68 knots,10000.0,,lambda_max,122.44
+0.4,0.5,step,45,50,50,918,False,1832,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.4,0.5,step,45,50,50,918,False,1832,B6,0.01098670052441127,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.04
+0.4,0.5,step,45,50,50,918,False,1832,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.5,step,45,50,50,918,False,1832,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.5,step,45,50,50,918,False,1832,M2-noPool,7.441002826185835e-06,False,,408,6 blocks x 68 knots,0.0,,lambda_min,2.38
+0.4,0.5,step,45,50,50,918,False,1832,M2-noAtom,0.01034151714281976,False,,402,6 blocks x 67 knots,100.0,,lambda_max,94.58
+0.4,0.5,step,46,50,50,907,False,1839,M2,2.657129206499557e-07,False,,702,6 blocks x 117 knots,10000.0,,lambda_max,131.52
+0.4,0.5,step,46,50,50,907,False,1839,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.09
+0.4,0.5,step,46,50,50,907,False,1839,B6,0.03973555304672578,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.05
+0.4,0.5,step,46,50,50,907,False,1839,B3@8,0.0016788533634483872,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.5,step,46,50,50,907,False,1839,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.5,step,46,50,50,907,False,1839,M2-noPool,2.5928657834665507e-06,False,,702,6 blocks x 117 knots,0.0,,lambda_min,2.94
+0.4,0.5,step,46,50,50,907,False,1839,M2-noAtom,0.010020906138547895,False,,696,6 blocks x 116 knots,100.0,,lambda_max,115.68
+0.4,0.5,step,47,50,50,921,False,1995,M2,1.0443437244602357e-06,False,,456,6 blocks x 76 knots,316.22776601683796,,,122.92
+0.4,0.5,step,47,50,50,921,False,1995,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.4,0.5,step,47,50,50,921,False,1995,B6,0.001749917269537576,False,,12600,200 trees x <= 63 leaves; min_child_samples=20,,,,1.14
+0.4,0.5,step,47,50,50,921,False,1995,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.5,step,47,50,50,921,False,1995,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.5,step,47,50,50,921,False,1995,M2-noPool,2.4079715794111943e-06,False,,456,6 blocks x 76 knots,0.0,,lambda_min,2.68
+0.4,0.5,step,47,50,50,921,False,1995,M2-noAtom,0.010015736671084179,False,,450,6 blocks x 75 knots,100.0,,lambda_max,107.05
+0.4,0.5,step,48,50,50,921,False,1735,M2,0.0006905363320083123,False,,510,6 blocks x 85 knots,10000.0,,lambda_max,125.3
+0.4,0.5,step,48,50,50,921,False,1735,B3-CV,0.0029213637806960987,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.08
+0.4,0.5,step,48,50,50,921,False,1735,B6,0.01256599065823332,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.01
+0.4,0.5,step,48,50,50,921,False,1735,B3@8,0.002280545174476825,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.5,step,48,50,50,921,False,1735,B3-H,0.002032202596330823,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.5,step,48,50,50,921,False,1735,M2-noPool,0.000961944023493301,False,,510,6 blocks x 85 knots,0.0,,lambda_min,2.29
+0.4,0.5,step,48,50,50,921,False,1735,M2-noAtom,0.010336687726346092,False,,504,6 blocks x 84 knots,10.0,,,93.53
+0.4,0.5,step,49,50,50,918,False,1707,M2,6.042402313350589e-06,False,,426,6 blocks x 71 knots,3162.2776601683795,,,111.33
+0.4,0.5,step,49,50,50,918,False,1707,B3-CV,0.0016038083295585267,False,,30,30 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.4,0.5,step,49,50,50,918,False,1707,B6,0.0022512329800527015,False,,6200,200 trees x <= 31 leaves; min_child_samples=20,,,,1.01
+0.4,0.5,step,49,50,50,918,False,1707,B3@8,0.001668862423782691,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.5,step,49,50,50,918,False,1707,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.5,step,49,50,50,918,False,1707,M2-noPool,2.0117199525219362e-05,False,,426,6 blocks x 71 knots,0.0,,lambda_min,2.57
+0.4,0.5,step,49,50,50,918,False,1707,M2-noAtom,0.010871791498645195,False,,420,6 blocks x 70 knots,100.0,,lambda_max,92.35
+0.4,0.5,logistic,45,50,50,918,False,1832,M2,0.009613513681930329,False,,408,6 blocks x 68 knots,100.0,,,27.79
+0.4,0.5,logistic,45,50,50,918,False,1832,B3-CV,0.019585682300996055,False,,58,58 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.4,0.5,logistic,45,50,50,918,False,1832,B6,0.018636103670301073,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.06
+0.4,0.5,logistic,45,50,50,918,False,1832,B3@8,0.2069677313837284,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.5,logistic,45,50,50,918,False,1832,B3-H,0.04001067213665514,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.5,logistic,45,50,50,918,False,1832,M2-noPool,0.009312089910804915,False,,408,6 blocks x 68 knots,0.0,,lambda_min,0.92
+0.4,0.5,logistic,45,50,50,918,False,1832,M2-noAtom,0.010378863387214124,False,,402,6 blocks x 67 knots,100.0,,lambda_max,25.84
+0.4,0.5,logistic,46,50,50,907,False,1839,M2,0.009002527390204714,False,,702,6 blocks x 117 knots,10000.0,,lambda_max,70.56
+0.4,0.5,logistic,46,50,50,907,False,1839,B3-CV,0.021205261923663,False,,58,58 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.08
+0.4,0.5,logistic,46,50,50,907,False,1839,B6,0.032003417268508846,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.06
+0.4,0.5,logistic,46,50,50,907,False,1839,B3@8,0.2290798754581482,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.5,logistic,46,50,50,907,False,1839,B3-H,0.044703139310162655,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.5,logistic,46,50,50,907,False,1839,M2-noPool,0.015640182351746024,False,,702,6 blocks x 117 knots,0.0,,lambda_min,2.39
+0.4,0.5,logistic,46,50,50,907,False,1839,M2-noAtom,0.01113918646843162,False,,696,6 blocks x 116 knots,100.0,,lambda_max,58.09
+0.4,0.5,logistic,47,50,50,921,False,1995,M2,0.014579356204182705,False,,456,6 blocks x 76 knots,1000.0,,,39.32
+0.4,0.5,logistic,47,50,50,921,False,1995,B3-CV,0.017641697647427495,False,,58,58 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.4,0.5,logistic,47,50,50,921,False,1995,B6,0.023881585797084284,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.1
+0.4,0.5,logistic,47,50,50,921,False,1995,B3@8,0.2138459861495471,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.5,logistic,47,50,50,921,False,1995,B3-H,0.040989117464180935,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.5,logistic,47,50,50,921,False,1995,M2-noPool,0.020982520927705514,False,,456,6 blocks x 76 knots,0.0,,lambda_min,0.82
+0.4,0.5,logistic,47,50,50,921,False,1995,M2-noAtom,0.01600688617332315,False,,450,6 blocks x 75 knots,0.0,,lambda_min,32.8
+0.4,0.5,logistic,48,50,50,921,False,1735,M2,0.008652892194890361,False,,510,6 blocks x 85 knots,100.0,,,30.75
+0.4,0.5,logistic,48,50,50,921,False,1735,B3-CV,0.03363228009288234,False,,30,30 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.4,0.5,logistic,48,50,50,921,False,1735,B6,0.02775647632871086,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.01
+0.4,0.5,logistic,48,50,50,921,False,1735,B3@8,0.18233987093897622,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.5,logistic,48,50,50,921,False,1735,B3-H,0.03647412966514087,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.5,logistic,48,50,50,921,False,1735,M2-noPool,0.010846811240382935,False,,510,6 blocks x 85 knots,0.0,,lambda_min,1.43
+0.4,0.5,logistic,48,50,50,921,False,1735,M2-noAtom,0.011169109004846285,False,,504,6 blocks x 84 knots,100.0,,lambda_max,30.79
+0.4,0.5,logistic,49,50,50,918,False,1707,M2,0.008394993695756641,False,,426,6 blocks x 71 knots,10000.0,,lambda_max,26.89
+0.4,0.5,logistic,49,50,50,918,False,1707,B3-CV,0.018180468159615562,False,,58,58 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.12
+0.4,0.5,logistic,49,50,50,918,False,1707,B6,0.03592223434669738,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.07
+0.4,0.5,logistic,49,50,50,918,False,1707,B3@8,0.20530186351053484,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.5,logistic,49,50,50,918,False,1707,B3-H,0.04163528375833352,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.5,logistic,49,50,50,918,False,1707,M2-noPool,0.014790283653556597,False,,426,6 blocks x 71 knots,0.0,,lambda_min,0.61
+0.4,0.5,logistic,49,50,50,918,False,1707,M2-noAtom,0.011720330235856792,False,,420,6 blocks x 70 knots,100.0,,lambda_max,21.12
+0.4,0.5,half,45,50,50,918,False,1832,M2,0.023206957458341015,False,,408,6 blocks x 68 knots,10000.0,,lambda_max,57.06
+0.4,0.5,half,45,50,50,918,False,1832,B3-CV,0.01769480231345378,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.07
+0.4,0.5,half,45,50,50,918,False,1832,B6,0.02388586328318408,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.05
+0.4,0.5,half,45,50,50,918,False,1832,B3@8,0.01769480231345378,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.5,half,45,50,50,918,False,1832,B3-H,0.01353644270083971,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.5,half,45,50,50,918,False,1832,M2-noPool,0.02475672105883485,False,,408,6 blocks x 68 knots,0.0,,lambda_min,1.61
+0.4,0.5,half,45,50,50,918,False,1832,M2-noAtom,0.038231638659876846,False,,402,6 blocks x 67 knots,0.0001,,,41.42
+0.4,0.5,half,46,50,50,907,False,1839,M2,0.010368206506004786,False,,702,6 blocks x 117 knots,10000.0,,lambda_max,105.61
+0.4,0.5,half,46,50,50,907,False,1839,B3-CV,0.008636401777878314,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.08
+0.4,0.5,half,46,50,50,907,False,1839,B6,0.07941665184353541,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.03
+0.4,0.5,half,46,50,50,907,False,1839,B3@8,0.006897643954519894,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.5,half,46,50,50,907,False,1839,B3-H,0.007360105716048106,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.5,half,46,50,50,907,False,1839,M2-noPool,0.006215337641436995,False,,702,6 blocks x 117 knots,0.0,,lambda_min,6.05
+0.4,0.5,half,46,50,50,907,False,1839,M2-noAtom,0.027567625492271937,False,,696,6 blocks x 116 knots,0.001,,,86.78
+0.4,0.5,half,47,50,50,921,False,1995,M2,0.016553458341224132,False,,456,6 blocks x 76 knots,0.01,,,58.45
+0.4,0.5,half,47,50,50,921,False,1995,B3-CV,0.012913314633756074,False,,15,15 non-empty bins of 16 requested; equal-count quantile,,16,,0.07
+0.4,0.5,half,47,50,50,921,False,1995,B6,0.0026757579618214653,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.21
+0.4,0.5,half,47,50,50,921,False,1995,B3@8,0.01333284573091254,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.5,half,47,50,50,921,False,1995,B3-H,0.015963230646044716,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.5,half,47,50,50,921,False,1995,M2-noPool,0.01661987870293799,False,,456,6 blocks x 76 knots,0.0,,lambda_min,1.79
+0.4,0.5,half,47,50,50,921,False,1995,M2-noAtom,0.03707924613134285,False,,450,6 blocks x 75 knots,0.0031622776601683794,,,45.39
+0.4,0.5,half,48,50,50,921,False,1735,M2,0.009192121904987128,False,,510,6 blocks x 85 knots,10000.0,,lambda_max,66.95
+0.4,0.5,half,48,50,50,921,False,1735,B3-CV,0.008134738076597432,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.12
+0.4,0.5,half,48,50,50,921,False,1735,B6,0.04821920001951396,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.0
+0.4,0.5,half,48,50,50,921,False,1735,B3@8,0.009012675701652973,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.5,half,48,50,50,921,False,1735,B3-H,0.010340552009893466,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.5,half,48,50,50,921,False,1735,M2-noPool,0.02191883509299334,False,,510,6 blocks x 85 knots,0.0,,lambda_min,1.56
+0.4,0.5,half,48,50,50,921,False,1735,M2-noAtom,0.0344073978223738,False,,504,6 blocks x 84 knots,0.0,,lambda_min,49.31
+0.4,0.5,half,49,50,50,918,False,1707,M2,0.005043679352852338,False,,426,6 blocks x 71 knots,10000.0,,lambda_max,59.54
+0.4,0.5,half,49,50,50,918,False,1707,B3-CV,0.004503658728559225,False,,16,16 non-empty bins of 16 requested; equal-count quantile,,16,,0.09
+0.4,0.5,half,49,50,50,918,False,1707,B6,0.013693383569276824,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.04
+0.4,0.5,half,49,50,50,918,False,1707,B3@8,0.007128931116915864,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,0.5,half,49,50,50,918,False,1707,B3-H,0.006297199546184257,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,0.5,half,49,50,50,918,False,1707,M2-noPool,0.010393575855201214,False,,426,6 blocks x 71 knots,0.0,,lambda_min,0.96
+0.4,0.5,half,49,50,50,918,False,1707,M2-noAtom,0.02616785565982617,False,,420,6 blocks x 70 knots,3.1622776601683795,,,37.16
+0.4,1.0,step,45,50,50,894,False,1768,M2,0.0006040695646904064,False,,630,6 blocks x 105 knots,10000.0,,lambda_max,131.7
+0.4,1.0,step,45,50,50,894,False,1768,B3-CV,0.0025031088049887076,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.4,1.0,step,45,50,50,894,False,1768,B6,0.03055607648240051,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,0.98
+0.4,1.0,step,45,50,50,894,False,1768,B3@8,0.0020369083988280015,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,1.0,step,45,50,50,894,False,1768,B3-H,0.0021945997860392573,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,1.0,step,45,50,50,894,False,1768,M2-noPool,0.00044993352625466405,False,,630,6 blocks x 105 knots,0.0,,lambda_min,2.98
+0.4,1.0,step,45,50,50,894,False,1768,M2-noAtom,0.010391894602332159,False,,624,6 blocks x 104 knots,0.00031622776601683794,,,106.9
+0.4,1.0,step,46,50,50,898,False,2189,M2,7.042903725434923e-07,False,,702,6 blocks x 117 knots,10000.0,,lambda_max,165.63
+0.4,1.0,step,46,50,50,898,False,2189,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.08
+0.4,1.0,step,46,50,50,898,False,2189,B6,0.0016666666666666668,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.18
+0.4,1.0,step,46,50,50,898,False,2189,B3@8,0.0016787174113623204,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,1.0,step,46,50,50,898,False,2189,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,1.0,step,46,50,50,898,False,2189,M2-noPool,4.363864737645939e-06,False,,702,6 blocks x 117 knots,0.0,,lambda_min,3.89
+0.4,1.0,step,46,50,50,898,False,2189,M2-noAtom,0.01001646479321756,False,,696,6 blocks x 116 knots,100.0,,lambda_max,141.43
+0.4,1.0,step,47,50,50,889,False,1945,M2,2.955489264290974e-07,False,,642,6 blocks x 107 knots,10000.0,,lambda_max,144.84
+0.4,1.0,step,47,50,50,889,False,1945,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.4,1.0,step,47,50,50,889,False,1945,B6,0.009842323059237108,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.03
+0.4,1.0,step,47,50,50,889,False,1945,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,1.0,step,47,50,50,889,False,1945,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,1.0,step,47,50,50,889,False,1945,M2-noPool,3.860611501900757e-06,False,,642,6 blocks x 107 knots,0.0,,lambda_min,3.12
+0.4,1.0,step,47,50,50,889,False,1945,M2-noAtom,0.010020652070127232,False,,636,6 blocks x 106 knots,0.1,,,128.29
+0.4,1.0,step,48,50,50,891,False,1903,M2,2.1854287134026596e-07,False,,402,6 blocks x 67 knots,10000.0,,lambda_max,107.84
+0.4,1.0,step,48,50,50,891,False,1903,B3-CV,0.0016666666666666668,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.4,1.0,step,48,50,50,891,False,1903,B6,0.030796591035894435,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.04
+0.4,1.0,step,48,50,50,891,False,1903,B3@8,0.0016666666666666668,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,1.0,step,48,50,50,891,False,1903,B3-H,0.0016666666666666668,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,1.0,step,48,50,50,891,False,1903,M2-noPool,4.580893488959441e-06,False,,402,6 blocks x 67 knots,0.0,,lambda_min,2.35
+0.4,1.0,step,48,50,50,891,False,1903,M2-noAtom,0.01000093181858779,False,,396,6 blocks x 66 knots,100.0,,lambda_max,97.34
+0.4,1.0,step,49,50,50,902,False,1802,M2,0.0005978186979834919,False,,402,6 blocks x 67 knots,10000.0,,lambda_max,101.94
+0.4,1.0,step,49,50,50,902,False,1802,B3-CV,0.0023006043426648773,False,,59,59 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.4,1.0,step,49,50,50,902,False,1802,B6,0.00977826602212992,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.0
+0.4,1.0,step,49,50,50,902,False,1802,B3@8,0.0025739172818581486,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,1.0,step,49,50,50,902,False,1802,B3-H,0.002364008028709731,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,1.0,step,49,50,50,902,False,1802,M2-noPool,0.0005756167211561097,False,,402,6 blocks x 67 knots,0.0,,lambda_min,2.02
+0.4,1.0,step,49,50,50,902,False,1802,M2-noAtom,0.010421454554179758,False,,396,6 blocks x 66 knots,3.1622776601683795,,,89.43
+0.4,1.0,logistic,45,50,50,894,False,1768,M2,0.008996601747398822,False,,630,6 blocks x 105 knots,10000.0,,lambda_max,52.22
+0.4,1.0,logistic,45,50,50,894,False,1768,B3-CV,0.015652474401657644,False,,58,58 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.4,1.0,logistic,45,50,50,894,False,1768,B6,0.025250181888897123,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.01
+0.4,1.0,logistic,45,50,50,894,False,1768,B3@8,0.21949029646465482,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,1.0,logistic,45,50,50,894,False,1768,B3-H,0.04457918953880577,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,1.0,logistic,45,50,50,894,False,1768,M2-noPool,0.010304459536407072,False,,630,6 blocks x 105 knots,0.0,,lambda_min,1.56
+0.4,1.0,logistic,45,50,50,894,False,1768,M2-noAtom,0.014247754272796816,False,,624,6 blocks x 104 knots,3.1622776601683795,,,39.09
+0.4,1.0,logistic,46,50,50,898,False,2189,M2,0.009582151618380318,False,,702,6 blocks x 117 knots,10000.0,,lambda_max,96.57
+0.4,1.0,logistic,46,50,50,898,False,2189,B3-CV,0.019281029686207398,False,,58,58 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.09
+0.4,1.0,logistic,46,50,50,898,False,2189,B6,0.06975982358521113,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.21
+0.4,1.0,logistic,46,50,50,898,False,2189,B3@8,0.207292297691376,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,1.0,logistic,46,50,50,898,False,2189,B3-H,0.044564605668265485,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,1.0,logistic,46,50,50,898,False,2189,M2-noPool,0.008694804381889965,False,,702,6 blocks x 117 knots,0.0,,lambda_min,2.39
+0.4,1.0,logistic,46,50,50,898,False,2189,M2-noAtom,0.011805613794612943,False,,696,6 blocks x 116 knots,100.0,,lambda_max,70.1
+0.4,1.0,logistic,47,50,50,889,False,1945,M2,0.010423012739125822,False,,642,6 blocks x 107 knots,10000.0,,lambda_max,55.59
+0.4,1.0,logistic,47,50,50,889,False,1945,B3-CV,0.01750513085529574,False,,60,60 non-empty bins of 64 requested; equal-count quantile,,64,bins_max,0.07
+0.4,1.0,logistic,47,50,50,889,False,1945,B6,0.034499130738729455,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.08
+0.4,1.0,logistic,47,50,50,889,False,1945,B3@8,0.2069144969054281,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,1.0,logistic,47,50,50,889,False,1945,B3-H,0.043208218068657905,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,1.0,logistic,47,50,50,889,False,1945,M2-noPool,0.014177571214341312,False,,642,6 blocks x 107 knots,0.0,,lambda_min,1.48
+0.4,1.0,logistic,47,50,50,889,False,1945,M2-noAtom,0.00924418973439484,False,,636,6 blocks x 106 knots,100.0,,lambda_max,46.16
+0.4,1.0,logistic,48,50,50,891,False,1903,M2,0.013000561228379708,False,,402,6 blocks x 67 knots,316.22776601683796,,,26.18
+0.4,1.0,logistic,48,50,50,891,False,1903,B3-CV,0.04540245670648866,False,,29,29 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.4,1.0,logistic,48,50,50,891,False,1903,B6,0.025560305991632674,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.06
+0.4,1.0,logistic,48,50,50,891,False,1903,B3@8,0.21106502382064365,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,1.0,logistic,48,50,50,891,False,1903,B3-H,0.04733346454037083,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,1.0,logistic,48,50,50,891,False,1903,M2-noPool,0.010163552407636754,False,,402,6 blocks x 67 knots,0.0,,lambda_min,0.81
+0.4,1.0,logistic,48,50,50,891,False,1903,M2-noAtom,0.011837552522394396,False,,396,6 blocks x 66 knots,100.0,,lambda_max,22.37
+0.4,1.0,logistic,49,50,50,902,False,1802,M2,0.006681474865210828,False,,402,6 blocks x 67 knots,10000.0,,lambda_max,22.28
+0.4,1.0,logistic,49,50,50,902,False,1802,B3-CV,0.03769858340306109,False,,31,31 non-empty bins of 32 requested; equal-count quantile,,32,,0.07
+0.4,1.0,logistic,49,50,50,902,False,1802,B6,0.03168950165442857,False,,1400,200 trees x <= 7 leaves; min_child_samples=50,,,,1.02
+0.4,1.0,logistic,49,50,50,902,False,1802,B3@8,0.2014190654259913,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,1.0,logistic,49,50,50,902,False,1802,B3-H,0.035810792711664936,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,1.0,logistic,49,50,50,902,False,1802,M2-noPool,0.017320737146638367,False,,402,6 blocks x 67 knots,0.0,,lambda_min,0.61
+0.4,1.0,logistic,49,50,50,902,False,1802,M2-noAtom,0.011472661370941379,False,,396,6 blocks x 66 knots,100.0,,lambda_max,21.11
+0.4,1.0,half,45,50,50,894,False,1768,M2,0.006080564813084482,False,,630,6 blocks x 105 knots,10000.0,,lambda_max,112.25
+0.4,1.0,half,45,50,50,894,False,1768,B3-CV,0.00325993682662545,False,,4,4 non-empty bins of 4 requested; equal-count quantile,,4,bins_min,0.07
+0.4,1.0,half,45,50,50,894,False,1768,B6,0.011705433360683219,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.0
+0.4,1.0,half,45,50,50,894,False,1768,B3@8,0.004375837040216117,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.01
+0.4,1.0,half,45,50,50,894,False,1768,B3-H,0.00804058370412101,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,1.0,half,45,50,50,894,False,1768,M2-noPool,0.008132651213752454,False,,630,6 blocks x 105 knots,0.0,,lambda_min,2.16
+0.4,1.0,half,45,50,50,894,False,1768,M2-noAtom,0.030669046551273577,False,,624,6 blocks x 104 knots,0.0031622776601683794,,,80.3
+0.4,1.0,half,46,50,50,898,False,2189,M2,0.018100367455171386,False,,702,6 blocks x 117 knots,10000.0,,lambda_max,122.91
+0.4,1.0,half,46,50,50,898,False,2189,B3-CV,0.009237174659160564,False,,31,31 non-empty bins of 32 requested; equal-count quantile,,32,,0.08
+0.4,1.0,half,46,50,50,898,False,2189,B6,0.011207474271560759,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.19
+0.4,1.0,half,46,50,50,898,False,2189,B3@8,0.00981761671101367,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,1.0,half,46,50,50,898,False,2189,B3-H,0.013616618362650938,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,1.0,half,46,50,50,898,False,2189,M2-noPool,0.0229870108218643,False,,702,6 blocks x 117 knots,0.0,,lambda_min,1.67
+0.4,1.0,half,46,50,50,898,False,2189,M2-noAtom,0.04066321342659258,False,,696,6 blocks x 116 knots,0.31622776601683794,,,87.74
+0.4,1.0,half,47,50,50,889,False,1945,M2,0.01144407094183545,False,,642,6 blocks x 107 knots,10000.0,,lambda_max,93.58
+0.4,1.0,half,47,50,50,889,False,1945,B3-CV,0.009882117615736643,False,,16,16 non-empty bins of 16 requested; equal-count quantile,,16,,0.08
+0.4,1.0,half,47,50,50,889,False,1945,B6,0.021245365384797196,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.05
+0.4,1.0,half,47,50,50,889,False,1945,B3@8,0.009198915264219055,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,1.0,half,47,50,50,889,False,1945,B3-H,0.01025343184592722,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,1.0,half,47,50,50,889,False,1945,M2-noPool,0.013072834382569395,False,,642,6 blocks x 107 knots,0.0,,lambda_min,1.95
+0.4,1.0,half,47,50,50,889,False,1945,M2-noAtom,0.029729938453987758,False,,636,6 blocks x 106 knots,10.0,,,74.7
+0.4,1.0,half,48,50,50,891,False,1903,M2,0.02148307827609536,False,,402,6 blocks x 67 knots,316.22776601683796,,,44.75
+0.4,1.0,half,48,50,50,891,False,1903,B3-CV,0.017519851895150533,False,,15,15 non-empty bins of 16 requested; equal-count quantile,,16,,0.07
+0.4,1.0,half,48,50,50,891,False,1903,B6,0.020443769914188527,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.07
+0.4,1.0,half,48,50,50,891,False,1903,B3@8,0.020342408266281784,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,1.0,half,48,50,50,891,False,1903,B3-H,0.019991231575694837,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,1.0,half,48,50,50,891,False,1903,M2-noPool,0.017824261278979157,False,,402,6 blocks x 67 knots,0.0,,lambda_min,0.78
+0.4,1.0,half,48,50,50,891,False,1903,M2-noAtom,0.03532465442435234,False,,396,6 blocks x 66 knots,10.0,,,29.32
+0.4,1.0,half,49,50,50,902,False,1802,M2,0.006756389521414518,False,,402,6 blocks x 67 knots,10000.0,,lambda_max,46.56
+0.4,1.0,half,49,50,50,902,False,1802,B3-CV,0.009845204316633006,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.07
+0.4,1.0,half,49,50,50,902,False,1802,B6,0.021542662804245664,False,,3000,200 trees x <= 15 leaves; min_child_samples=200,,,,1.06
+0.4,1.0,half,49,50,50,902,False,1802,B3@8,0.009845204316633006,False,,8,8 non-empty bins of 8 requested; equal-count quantile,,8,,0.0
+0.4,1.0,half,49,50,50,902,False,1802,B3-H,0.010066051238133707,False,,6,6 non-empty bins of 8 requested; Hirth edges,,8,,0.0
+0.4,1.0,half,49,50,50,902,False,1802,M2-noPool,0.014492609332907132,False,,402,6 blocks x 67 knots,0.0,,lambda_min,2.22
+0.4,1.0,half,49,50,50,902,False,1802,M2-noAtom,0.026762169823713773,False,,396,6 blocks x 66 knots,10.0,,,41.55
