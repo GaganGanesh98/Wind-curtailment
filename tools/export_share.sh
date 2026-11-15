@@ -61,17 +61,26 @@ while IFS= read -r -d '' f; do
   rm "$f"            # a copy inside the export, never the repo file
 done < <(find "$TARGET" -type f -size +"${MAX_MB}"M -print0)
 
-# 2. literature/ from the working tree, files over the limit left out.
+# 2. literature/ from the working tree. Third-party code keeps its README and code but
+#    not its data/ folders; any other file over the limit is left out too.
 if [ -d literature ]; then
+  for d in literature/06_datasets_and_code/*/data; do
+    [ -d "$d" ] || continue
+    repo=$(dirname "$d")
+    link=$(grep -oE 'https?://[^ )"]+' "$repo/README.md" 2>/dev/null | head -1 || true)
+    EXCLUDED+=("$d/ ($(find "$d" -type f | wc -l | tr -d ' ') files, $(du -sh "$d" | cut -f1)): upstream data; obtain it from the repository behind $repo/README.md (link there: ${link:-none}); no repository URL is recorded locally")
+  done
   while IFS= read -r -d '' f; do
-    EXCLUDED+=("$f ($(( $(stat -f %z "$f") / 1048576 )) MB): download from the upstream repository named in its folder's README.md")
-  done < <(find literature -type f -size +"${MAX_MB}"M -print0)
-  rsync -a --max-size="${MAX_MB}m" --exclude '.DS_Store' literature "$TARGET/"
+    EXCLUDED+=("$f ($(( $(stat -f %z "$f") / 1048576 )) MB): over the size limit; obtain from its source")
+  done < <(find literature -path 'literature/06_datasets_and_code/*/data' -prune -o \
+                -type f -size +"${MAX_MB}"M -print0)
+  rsync -a --max-size="${MAX_MB}m" --exclude '.DS_Store' \
+        --exclude '/literature/06_datasets_and_code/*/data/' literature "$TARGET/"
 fi
 
 # 3. Never-exported items, stated so the reader knows they exist.
 EXCLUDED+=("data/ except data/reference/: raw and processed data; rebuild with docs/00_START_HERE.md section 5")
-EXCLUDED+=(".git/, .venv/, .claude/, __pycache__/, .pytest_cache/, demo/output/: repository and local state")
+EXCLUDED+=(".git/, .venv/, .claude/, __pycache__/, .pytest_cache/, demo/output/, every .DS_Store: repository and local state")
 EXCLUDED+=("working-tree λ-grid edit (src/censoring/m2.py, tb_methods.py, tb_lambda_widening.py): uncommitted; committed copies in artifacts/TB_lambda/")
 
 find "$TARGET" \( -name '__pycache__' -o -name '.DS_Store' \) -prune -exec rm -rf {} + 2>/dev/null || true

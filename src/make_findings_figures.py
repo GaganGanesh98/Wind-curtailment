@@ -241,8 +241,9 @@ CAPTIONS = {
         "level_coverage; artifacts/Q6/q6b_summary.csv, rows table = levels, column coverage."),
     "F5_exact_vs_estimated_potential": (
         "P3: median width of the identified set per functional when the potential is exact "
-        "(Arm O, seed 45) and when it is estimated (Arm D), log scale. λ₅ is in GWh and is "
-        "left out.",
+        "(Arm O, seed 45) and when it is estimated (Arm D), log scale.\n"
+        "λ₅ is omitted: it is a counterfactual energy in GWh, not a share of potential, so it "
+        "cannot sit on this axis.",
         "artifacts/P3/p3_synthetic_arm_o.csv (seed = 45) and p3_synthetic_arm_d.csv, rows "
         "feasible, column width, median per lam."),
     "F6_noise_dial": (
