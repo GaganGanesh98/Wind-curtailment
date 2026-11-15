@@ -214,14 +214,79 @@ def build_design(
                         col_depth_bin=col_bin, col_run_level=col_lev, diagnostics=diag)
 
 
+# ------------------------------------------------------------------- compression
+
+
+@dataclass(frozen=True)
+class Compressed:
+    """Identical rows of X collapsed, exactly, with the within-row spread kept aside.
+
+    Rows of X take far fewer distinct values than there are quarter-hours: a row is
+    determined by which (cohort, depth bin, run level) cells are active, and depth is
+    a deterministic function of the price, so thousands of quarter-hours share a
+    handful of patterns. Collapsing them turns a 35,000-row programme into a
+    few-hundred-row one with no approximation at all, because
+
+        sum_t ((X r)_u - c_t)^2  =  n_u ((X r)_u - cbar_u)^2  +  SS_within,u
+
+    and `SS_within` does not depend on r. It is carried through the constraint rather
+    than dropped, so the feasible set is identical to the uncompressed one.
+
+    `ss_within` is also a result in its own right: `sqrt(ss_within / T)` is the
+    smallest RMS residual ANY response can achieve on this design. If eps falls below
+    it the identified set is empty, and the reason is that c_hat varies between
+    quarter-hours the design cannot tell apart.
+    """
+
+    Xu: np.ndarray
+    cbar: np.ndarray
+    n: np.ndarray
+    ss_within: float
+    n_rows_original: int
+
+    @property
+    def rms_floor(self) -> float:
+        return float(np.sqrt(self.ss_within / max(self.n_rows_original, 1)))
+
+
+def compress_rows(X: np.ndarray, c_hat: np.ndarray) -> Compressed:
+    """Collapse identical rows of X, keeping the within-group sum of squares."""
+    X = np.asarray(X, dtype=float)
+    c = np.asarray(c_hat, dtype=float)
+    if c.shape[0] != X.shape[0]:
+        raise ValueError(f"c_hat has {c.shape[0]} entries for {X.shape[0]} rows")
+    _, inv = np.unique(X, axis=0, return_inverse=True)
+    inv = np.asarray(inv).ravel()
+    g = int(inv.max()) + 1 if inv.size else 0
+    n = np.bincount(inv, minlength=g).astype(float)
+    s1 = np.bincount(inv, weights=c, minlength=g)
+    s2 = np.bincount(inv, weights=c * c, minlength=g)
+    cbar = s1 / np.maximum(n, 1.0)
+    ss_within = float((s2 - n * cbar ** 2).sum())
+    first = np.zeros(g, dtype=int)
+    seen = np.zeros(g, dtype=bool)
+    for i, u in enumerate(inv):
+        if not seen[u]:
+            first[u], seen[u] = i, True
+    return Compressed(Xu=X[first], cbar=cbar, n=n, ss_within=max(ss_within, 0.0),
+                      n_rows_original=int(X.shape[0]))
+
+
 # ------------------------------------------------------------------ the point fit
 
 
 def _solve(objective_sense: str, design: BoundsDesign, c_hat: np.ndarray,
-           lam: np.ndarray | None, eps: float | None) -> dict:
-    """One convex programme. `lam=None` with `eps=None` is the constrained least squares."""
+           lam: np.ndarray | None, eps: float | None,
+           comp: "Compressed | None" = None) -> dict:
+    """One convex programme. `lam=None` with `eps=None` is the constrained least squares.
+
+    The programme is always solved on the compressed rows (`compress_rows`), which is
+    exact rather than approximate: the dropped within-group sum of squares is a
+    constant in r and is carried into the constraint's right-hand side.
+    """
     import cvxpy as cp
 
+    comp = comp if comp is not None else compress_rows(design.X, c_hat)
     n = design.n_cols
     r = cp.Variable(n)
     cons = [r >= 0.0, r <= 1.0]
@@ -229,10 +294,16 @@ def _solve(objective_sense: str, design: BoundsDesign, c_hat: np.ndarray,
         cons.append(design.A_depth @ r >= 0.0)
     if design.A_run.shape[0]:
         cons.append(design.A_run @ r >= 0.0)
-    resid = design.X @ r - c_hat
+
+    rt = np.sqrt(comp.n)
+    resid = cp.multiply(rt, comp.Xu @ r - comp.cbar)
+    t_n = comp.n_rows_original
     if eps is not None:
-        # ||resid||_2 <= eps * sqrt(T)  is  RMS(resid) <= eps
-        cons.append(cp.norm(resid, 2) <= float(eps) * np.sqrt(design.n_rows))
+        budget = t_n * float(eps) ** 2 - comp.ss_within
+        if budget < 0.0:
+            return {"status": "infeasible_below_within_row_floor", "value": float("nan"),
+                    "r": None, "solver": "CLARABEL", "rms_floor": comp.rms_floor}
+        cons.append(cp.norm(resid, 2) <= float(np.sqrt(budget)))
 
     if lam is None:
         prob = cp.Problem(cp.Minimize(cp.sum_squares(resid)), cons)
@@ -245,17 +316,19 @@ def _solve(objective_sense: str, design: BoundsDesign, c_hat: np.ndarray,
         prob.solve(solver=cp.CLARABEL)
     except Exception as exc:                                    # noqa: BLE001
         return {"status": f"error: {type(exc).__name__}", "value": float("nan"),
-                "r": None, "solver": "CLARABEL"}
+                "r": None, "solver": "CLARABEL", "rms_floor": comp.rms_floor}
     if prob.status not in ("optimal", "optimal_inaccurate") or r.value is None:
         return {"status": str(prob.status), "value": float("nan"), "r": None,
-                "solver": "CLARABEL"}
+                "solver": "CLARABEL", "rms_floor": comp.rms_floor}
     return {"status": str(prob.status), "value": float(prob.value),
-            "r": np.asarray(r.value, dtype=float), "solver": "CLARABEL"}
+            "r": np.asarray(r.value, dtype=float), "solver": "CLARABEL",
+            "rms_floor": comp.rms_floor}
 
 
-def point_fit(design: BoundsDesign, c_hat: np.ndarray) -> dict:
+def point_fit(design: BoundsDesign, c_hat: np.ndarray,
+              comp: "Compressed | None" = None) -> dict:
     """Constrained least squares: the r-hat that `eps` is measured around."""
-    out = _solve("min", design, c_hat, None, None)
+    out = _solve("min", design, c_hat, None, None, comp)
     if out["r"] is not None:
         out["rms_residual"] = float(np.sqrt(np.mean((design.X @ out["r"] - c_hat) ** 2)))
     else:
@@ -366,12 +439,13 @@ def in_row_space(X: np.ndarray, lam: np.ndarray) -> dict:
 
 
 def identified_set(design: BoundsDesign, c_hat: np.ndarray, lam: np.ndarray,
-                   eps: float) -> dict:
+                   eps: float, comp: "Compressed | None" = None) -> dict:
     """[min, max] of lambda' r over the identified set."""
-    lo = _solve("min", design, c_hat, np.asarray(lam, dtype=float), eps)
-    hi = _solve("max", design, c_hat, np.asarray(lam, dtype=float), eps)
+    comp = comp if comp is not None else compress_rows(design.X, c_hat)
+    lo = _solve("min", design, c_hat, np.asarray(lam, dtype=float), eps, comp)
+    hi = _solve("max", design, c_hat, np.asarray(lam, dtype=float), eps, comp)
     width = (hi["value"] - lo["value"]
              if np.isfinite(lo["value"]) and np.isfinite(hi["value"]) else float("nan"))
     return {"lo": lo["value"], "hi": hi["value"], "width": width,
             "status_lo": lo["status"], "status_hi": hi["status"],
-            "feasible": bool(np.isfinite(width))}
+            "rms_floor": comp.rms_floor, "feasible": bool(np.isfinite(width))}

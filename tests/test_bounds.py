@@ -243,3 +243,43 @@ def test_band_mean_is_the_mean_of_c_over_the_band():
     p = price[d.rows]
     m = (p > -50.0) & (p <= -20.0)
     np.testing.assert_allclose(spec["lam"] @ r, (d.X @ r)[m].mean(), rtol=1e-12)
+
+
+# ------------------------------------------------------------------ compression
+
+
+def test_row_compression_is_exact_not_an_approximation():
+    """The compressed programme must give the same answers as the raw one."""
+    from src.identification.bounds import compress_rows
+
+    d, s, depth, runlen, w, price, days = _design(T=300)
+    rng = np.random.default_rng(3)
+    c = d.X @ np.clip(0.3 + 0.01 * d.col_depth_bin, 0, 1) + 0.02 * rng.standard_normal(d.n_rows)
+    comp = compress_rows(d.X, c)
+    assert comp.Xu.shape[0] < d.n_rows, "nothing was collapsed; the test is vacuous"
+
+    # the identity the compression rests on, checked numerically
+    r = np.clip(rng.random(d.n_cols), 0, 1)
+    raw = float(((d.X @ r - c) ** 2).sum())
+    packed = float((comp.n * (comp.Xu @ r - comp.cbar) ** 2).sum() + comp.ss_within)
+    np.testing.assert_allclose(raw, packed, rtol=1e-10)
+
+    pf = point_fit(d, c)
+    eps = max(epsilon_from_bootstrap(d, c, days[d.rows], pf["r"])["eps"], 1e-4)
+    lam = fx.band_mean(d, price, -80.0, -5.0)["lam"]
+    iv = identified_set(d, c, lam, eps)
+    assert iv["feasible"] and iv["width"] >= 0
+    assert iv["rms_floor"] <= pf["rms_residual"] + 1e-9
+
+
+def test_an_epsilon_below_the_within_row_floor_is_named_as_such():
+    from src.identification.bounds import compress_rows
+
+    d, s, depth, runlen, w, price, days = _design(T=300)
+    rng = np.random.default_rng(4)
+    c = d.X @ np.full(d.n_cols, 0.5) + 0.05 * rng.standard_normal(d.n_rows)
+    floor = compress_rows(d.X, c).rms_floor
+    assert floor > 0
+    iv = identified_set(d, c, d.X.mean(axis=0), floor * 0.5)
+    assert not iv["feasible"]
+    assert iv["status_lo"] == "infeasible_below_within_row_floor"
