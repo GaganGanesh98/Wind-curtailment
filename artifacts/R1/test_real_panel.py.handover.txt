@@ -1,0 +1,177 @@
+HANDOVER FILE — not a live test, and deliberately not named test_*.py here.
+
+Apply as `tests/test_real_panel.py` in the MAIN CHECKOUT
+(/Users/gagan/msc-thesis-wind-curtailment), on branch
+`mechanism-aware-censoring-gate-and-test2`, where `src/censoring/real_panel.py`
+lives. It cannot be placed from the Phase P worktree: a PreToolUse hook blocks this
+session from writing into the primary checkout, and this branch does not contain
+`real_panel.py`, so the import would fail collection here. See
+`docs/R1_reconciliation.md` section 2.
+
+Run it from the main checkout with:
+
+    .venv/bin/python -m pytest tests/test_real_panel.py -q
+
+=============================== file content below ===============================
+
+"""`src/censoring/real_panel.py` -- the real-data adapter T-D and T-E fit through.
+
+Written 15 November 2026 during the R1 reconciliation. The module had been untracked
+since 2 November and had no tests at all, while `docs/10` section 4 already cites a
+result produced through it (`results/26_td_iii_identification.csv`). These tests pin
+the three things that would silently corrupt such a result rather than fail loudly:
+
+  * the synthetic truth fields must refuse to be used, not return something;
+  * exposure and depth must be exactly what `theta_and_exposure` defines, not an
+    approximation of it;
+  * a month with no published market value must RAISE, because defaulting theta to 0
+    there manufactures exposure out of nothing.
+
+The market-value file is in ct/kWh and the panel in EUR/MWh, so the unit conversion
+is pinned too: it is the kind of error that leaves every number plausible and every
+number wrong by a factor of ten.
+"""
+
+from __future__ import annotations
+
+import numpy as np
+import pytest
+
+from src.censoring.real_panel import (
+    MV_SANITY_EUR_MWH,
+    RealPanel,
+    _num_de,
+    _year_month,
+    build_real_panel,
+    load_published_monthly_mv,
+)
+
+# A week inside the month that identifies the cohort structure (docs/09 section 4.4,
+# docs/10 section 4): April 2026 has the most negative-price quarter-hours and a
+# published market value.
+WEEK_START, WEEK_END = "2026-04-01", "2026-04-07"
+
+
+# --------------------------------------------------------------- small helpers
+
+
+@pytest.mark.parametrize("cell,want", [
+    ("5,718", 5.718), ("1.234,5", 1234.5), ("0", 0.0), ("-0,37", -0.37),
+    ("", None), ("   ", None), ("-", None), ("n/a", None), ("N/A", None),
+    ("nonsense", None),
+])
+def test_german_decimals_parse_and_blanks_become_none(cell, want):
+    got = _num_de(cell)
+    if want is None:
+        assert got is None
+    else:
+        assert got == pytest.approx(want)
+
+
+def test_year_month_slices_iso_dates_and_rejects_anything_else():
+    y, m = _year_month(np.array(["2026-04-01", "2025-12-31"]))
+    assert y.tolist() == [2026, 2025] and m.tolist() == [4, 12]
+    with pytest.raises(ValueError, match="ISO-8601"):
+        _year_month(np.array(["01/04/2026"]))
+
+
+# ------------------------------------------------------------- the market value
+
+
+def test_published_market_value_is_eur_per_mwh_not_ct_per_kwh():
+    """A factor-of-ten error here leaves every downstream number plausible."""
+    mv = load_published_monthly_mv()
+    assert mv, "no published monthly market value was read at all"
+    lo, hi = MV_SANITY_EUR_MWH
+    assert all(lo <= v <= hi for v in mv.values())
+    # Onshore wind market values sit in tens of EUR/MWh; in ct/kWh they would be
+    # single digits, so this separates the two scales rather than merely bounding one.
+    assert max(mv.values()) > 20.0
+    assert all(isinstance(k, tuple) and len(k) == 2 for k in mv)
+
+
+def test_the_identifying_month_has_a_market_value():
+    assert (2026, 4) in load_published_monthly_mv()
+
+
+# --------------------------------------------------- the truth fields are absent
+
+
+@pytest.mark.parametrize("field", ["a_true_mw", "c_true", "r_true"])
+def test_every_synthetic_truth_field_raises_and_names_itself(field):
+    with pytest.raises(AttributeError, match=field):
+        bool(getattr(RealPanel, field))
+
+
+def test_censored_has_no_real_counterpart_and_says_why():
+    panel = build_real_panel(start=WEEK_START, end=WEEK_END)
+    with pytest.raises(AttributeError, match="synthetic field"):
+        _ = panel.censored
+
+
+# ------------------------------------------------------- exposure and depth
+
+
+def test_exposure_and_depth_are_exactly_what_theta_and_exposure_defines():
+    panel = build_real_panel(start=WEEK_START, end=WEEK_END)
+    price = panel.price_eur_mwh
+    theta, s, depth = panel.theta, panel.s, panel.depth
+
+    assert theta.shape == s.shape == depth.shape
+    assert theta.shape[1] == price.size
+    # theta is 0 or minus a non-negative premium, never positive.
+    assert theta.max() <= 0.0 + 1e-12
+    np.testing.assert_array_equal(s, (price[None, :] < theta).astype(float))
+    np.testing.assert_allclose(depth, np.maximum(0.0, theta - price[None, :]) * s,
+                               rtol=0, atol=1e-12)
+    assert (depth[s == 0.0] == 0.0).all()
+    assert panel.exposed_any.shape == price.shape
+    np.testing.assert_array_equal(panel.exposed_any, s.max(axis=0) > 0.0)
+
+
+def test_the_window_is_contiguous_and_the_inputs_are_finite():
+    panel = build_real_panel(start=WEEK_START, end=WEEK_END)
+    assert len(panel) == 7 * 96
+    assert np.diff(panel.ts_utc_ns).tolist() == [15 * 60 * 1_000_000_000] * (len(panel) - 1)
+    for arr in (panel.price_eur_mwh, panel.forecast_mw, panel.g_obs_mw):
+        assert np.isfinite(arr).all()
+    assert panel.diagnostics["n_qh"] == len(panel)
+
+
+def test_onshore_is_the_default_and_offshore_is_opt_in():
+    on = build_real_panel(start=WEEK_START, end=WEEK_END)
+    both = build_real_panel(start=WEEK_START, end=WEEK_END, include_offshore=True)
+    assert on.diagnostics["forecast_col"] == "da_onshore_mw"
+    assert both.diagnostics["forecast_col"] == "da_wind_mw"
+    assert (both.forecast_mw >= on.forecast_mw - 1e-9).all()
+
+
+# ---------------------------------------------------------------- the guards
+
+
+def test_a_month_without_a_market_value_raises_rather_than_defaulting_theta_to_zero():
+    """The guard that stops exposure being manufactured.
+
+    October 2026 has no published monthly market value. Defaulting it would set every
+    theta to 0, which reads as "every cohort exposed whenever the price is negative"
+    -- an exposure pattern invented by a missing file.
+    """
+    with pytest.raises(ValueError, match="no market value"):
+        build_real_panel(start="2026-10-01", end="2026-10-15")
+
+
+def test_an_unknown_mode_and_a_reversed_range_both_raise():
+    with pytest.raises(ValueError, match="mode must be"):
+        build_real_panel(start=WEEK_START, end=WEEK_END, mode="T3")
+    with pytest.raises(ValueError, match="precedes"):
+        build_real_panel(start=WEEK_END, end=WEEK_START)
+
+
+def test_t1_and_t2_build_different_thresholds():
+    """Rule 17: T1 may use the published monthly value, T2 may not."""
+    t1 = build_real_panel(start=WEEK_START, end=WEEK_END, mode="T1")
+    t2 = build_real_panel(start=WEEK_START, end=WEEK_END, mode="T2")
+    assert t1.config.mv_mode == "T1" and t2.config.mv_mode == "T2"
+    assert t1.mv_by_month != t2.mv_by_month, (
+        "T1 and T2 returned the same market value; the two series are supposed to "
+        "differ, and if they stop differing rule 17's guard is not being exercised")

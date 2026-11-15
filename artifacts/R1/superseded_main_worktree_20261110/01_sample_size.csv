@@ -1,0 +1,6 @@
+metric,value,pivot_threshold,passes
+negative QHs (price < 0),5987,150,True
+event-days (>=1 negative QH),283,20,True
+negative QHs with DE DA wind forecast >= 10 GW,4091,150,True
+event-days with DE DA wind forecast >= 10 GW,198,20,True
+"total QHs in period (usable, DE)",98976,,

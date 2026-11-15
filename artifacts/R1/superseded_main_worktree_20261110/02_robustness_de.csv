@@ -1,0 +1,9 @@
+variant,qhs,days,mean_e_mw,ci_lo_mw,ci_hi_mw,ci_excludes_zero,mean_da_forecast_mw,rel_bias_pct,rel_ci_lo_pct,rel_ci_hi_pct,rel_ci_excludes_zero
+all negative QHs,5987,283,-1805.5,-2231.7,-1417.7,True,18028.4,-10.01,-11.97,-8.18,True
+without 5-6 Apr 2026,5879,281,-1618.4,-1938.5,-1308.6,True,17725.8,-9.13,-10.61,-7.64,True
+without 5 worst days (by mean e; v2 def),5823,278,-1540.2,-1840.2,-1244.3,True,17622.8,-8.74,-10.19,-7.32,True
+without 5 worst days (by total error),5688,278,-1482.2,-1773.5,-1201.4,True,16830.9,-8.81,-10.43,-7.27,True
+windy only (DE DA forecast >= 10 GW),4091,198,-2357.3,-2913.8,-1838.8,True,24013.9,-9.82,-11.88,-7.82,True
+not windy (DE DA forecast < 10 GW),1896,123,-614.8,-870.4,-370.6,True,5113.4,-12.02,-16.61,-7.49,True
+"top-5-day share of total negative-QH error (days ranked by mean e; v2 def), %",,,17.0,,,,,,,,
+"top-5-day share of total negative-QH error (days ranked by total error), %",,,22.0,,,,,,,,
