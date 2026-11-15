@@ -65,6 +65,48 @@ L7_COHORT = "pre2016_out_of_support"
 TOL_COVER = 1e-6
 
 
+#: Stage A depends on the price process and NOT on the response shape or the cohort
+#: offsets, so one fit serves all six cells that share (rate, gamma, seed). It is
+#: trained on price > 5 EUR/MWh quarter-hours, where no cohort is exposed and
+#: `g_obs == a_true` whatever r* is, and it predicts from the forecast, the weather
+#: proxy and the hour -- none of which the shape touches. `docs/09` Amendment 6
+#: states the same property for E1 v2's stage A.
+#:
+#: VERIFIED, not assumed, before this cache was introduced: fitting stage A
+#: independently for (step, homogeneous), (half, homogeneous) and (step, split) at
+#: rate 0.10, gamma 0, seed 45 gives a BIT-IDENTICAL `a_hat` in all three, on an
+#: identical safe mask of 78,075 quarter-hours. The guard below re-checks the price
+#: series on every cache hit, so a cell that does not in fact share the process
+#: raises instead of silently reusing the wrong array.
+_STAGE_A_CACHE: dict[tuple, tuple[bytes, object]] = {}
+
+
+def _price_key(price: np.ndarray) -> bytes:
+    import hashlib
+    return hashlib.sha256(np.ascontiguousarray(price, dtype=np.float64).tobytes()).digest()
+
+
+def _shared_stage_a(data, rate: float, gamma: float, seed: int):
+    """One stage A per price process, with the process checked on every reuse."""
+    from src.censoring.m2 import fit_shared_stage_a
+
+    key = (round(float(rate), 6), round(float(gamma), 6), int(seed))
+    phash = _price_key(data.price_eur_mwh)
+    hit = _STAGE_A_CACHE.get(key)
+    if hit is not None:
+        cached_hash, sa = hit
+        if cached_hash != phash:
+            raise AssertionError(
+                f"stage-A cache key {key} was built on a different price series. The "
+                "cache rests on stage A depending only on the price process; if that "
+                "has stopped being true the cache is wrong and must be removed, not "
+                "widened.")
+        return sa, True
+    sa = fit_shared_stage_a(data, check=False)
+    _STAGE_A_CACHE[key] = (phash, sa)
+    return sa, False
+
+
 def git_head() -> str:
     try:
         return subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
@@ -166,12 +208,12 @@ def run_cell(rate: float, gamma: float, shape: str, seed: int, hetero: str,
         potential = np.asarray(data.a_true_mw, dtype=float)
         stage_a_note = "c_hat = c_true (Arm O)"
     else:
-        from src.censoring.m2 import fit_shared_stage_a
-        sa = fit_shared_stage_a(data, check=False)
+        sa, reused = _shared_stage_a(data, rate, gamma, seed)
         a_hat = np.maximum(np.asarray(sa.a_hat, dtype=float), 1e-9)
         c_hat_full = 1.0 - np.asarray(data.g_obs_mw, dtype=float) / a_hat
         potential = a_hat
-        stage_a_note = "c_hat = 1 - G/A_hat, shared cross-fitted stage A (Arm D)"
+        stage_a_note = ("c_hat = 1 - G/A_hat, shared cross-fitted stage A (Arm D"
+                        + (", stage A reused across shape/config)" if reused else ")"))
 
     c_hat = c_hat_full[rows]
     comp = compress_rows(design.X, c_hat)
@@ -271,8 +313,10 @@ def main() -> None:
 
     gammas = tuple(float(x) for x in args.gammas.split(",")) if args.gammas else GAMMAS
     seeds = tuple(int(x) for x in args.seeds.split(",")) if args.seeds else SEEDS
-    cells = [(r, g, sh, sd, h) for h in HETERO for r in RATES for g in gammas
-             for sh in SHAPES for sd in seeds]
+    # Ordered so that the cells sharing a (rate, gamma, seed) price process -- and
+    # therefore a stage A -- are adjacent, which is what makes the cache pay.
+    cells = [(r, g, sh, sd, h) for r in RATES for g in gammas for sd in seeds
+             for h in HETERO for sh in SHAPES]
     if args.limit:
         cells = cells[:args.limit]
 

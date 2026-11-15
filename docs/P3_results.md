@@ -418,6 +418,22 @@ the artifacts say.
 
 ### 2.4 Arm D — derived ĉ — `[PENDING]`
 
-Running at the time of this commit (54 cells: both configurations × 3 rates × 3 γ ×
-3 shapes, seed 45, each needing five cross-fitted torch fits for the shared stage A).
-Its file is deliberately **not** committed while partial, under hard rule 20.
+54 cells: both configurations × 3 rates × 3 γ × 3 shapes, seed 45. Running at the
+time of this commit; its file is deliberately **not** committed while partial, under
+hard rule 20, and no figure from it appears anywhere in this note.
+
+**One engineering note, because it changed the run rather than the result.** The
+first attempt fitted the shared stage A once per cell and was going to take about
+seven hours. Stage A is trained on price > 5 €/MWh quarter-hours, where no cohort is
+exposed and `g_obs == a_true` whatever `r*` is, and it predicts from the forecast,
+the weather proxy and the hour — none of which the response shape or the cohort
+offsets touch. So it depends on the price process alone, and the six cells sharing a
+(rate, γ, seed) share it. `docs/09` Amendment 6 states the same property for E1 v2.
+
+That was **verified before being relied on**, not assumed: fitting stage A
+independently for (step, homogeneous), (half, homogeneous) and (step, split) at rate
+0.10, γ = 0, seed 45 returns a **bit-identical** `a_hat` in all three, on an identical
+safe mask of 78,075 quarter-hours. The cache re-checks a SHA-256 of the price series
+on every hit and raises if it differs, so a cell that does not in fact share the
+process cannot silently reuse the wrong array. Nine fits replace fifty-four and no
+number moves.
