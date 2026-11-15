@@ -790,6 +790,35 @@ def _guide_checks():
     return out
 
 
+def _c1_checks():
+    """`docs/C1_conclusions_table.md`: every table cell and every prose line, re-derived.
+
+    The note is rebuilt from the artifacts by `src/build_conclusions_table.py`; each table
+    cell of the committed note must equal the rebuilt cell (one check per cell), and every
+    other line must match too. A hand edit to any figure in the note fails here.
+    """
+    from src import build_conclusions_table as bct
+    note = REPO_ROOT / "docs" / "C1_conclusions_table.md"
+    if not note.exists() or not (Q5D / "q5_real.csv").exists():
+        return []
+    have = note.read_text(encoding="utf-8").splitlines()
+    want = bct.markdown(bct.build()).splitlines()
+    out = [("C1 note line count", len(have), len(want), 0)]
+    header = None
+    for i, (h, w) in enumerate(zip(have, want)):
+        if w.startswith("| row "):
+            header = [c.strip() for c in w.strip("|").split("|")]
+        if w.startswith("| ") and not w.startswith("| row ") and header:
+            hc = [c.strip() for c in h.strip("|").split("|")]
+            wc = [c.strip() for c in w.strip("|").split("|")]
+            for col, a, b in zip(header, hc, wc):
+                out.append((f"C1 {wc[0]} / {col}", float(a == b), 1.0, 0))
+            out.append((f"C1 {wc[0]} cell count", len(hc), len(wc), 0))
+        else:
+            out.append((f"C1 line {i + 1}", float(h == w), 1.0, 0))
+    return out
+
+
 def _collect():
     """All checks whose artifacts are on disk, as (id, got, want, tol)."""
     out, skipped = [], []
@@ -845,6 +874,7 @@ def _collect():
     else:
         skipped.append("Q1")
     out += _guide_checks()
+    out += _c1_checks()
     return out, skipped
 
 
