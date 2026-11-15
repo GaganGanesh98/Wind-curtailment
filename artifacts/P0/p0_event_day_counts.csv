@@ -1,0 +1,141 @@
+area,series,set,n_qh,n_event_days,note,git_head,run_date
+DE,onshore,negative_all,2059,99,price < 0,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,onshore,"band (-5,0)",1461,99,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,onshore,"band [-20,-5]",301,38,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,onshore,"band [-50,-20]",148,20,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,onshore,band <=-50,149,12,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,onshore,S2_test_deep (<= -20),297,20,S2 test set; P0 STOP if < 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,onshore,"S2_train_shallow_negative (-20, 0)",1762,99,negative QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,onshore,S2_train_all (> -20),37339,392,all QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,onshore,S1_negative_event_days,2059,99,leave-one-event-day-out folds = event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,onshore,negative_forecast_above_40gw,95,7,thin-overlap arm,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,onshore,positive_all,35577,392,S3 placebo pool before matching,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,onshore,positive_safe (> 5),34303,391,S3 primary placebo pool,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,onshore,positive_0_to_5,1274,138,"Hirth's 0-5 band, consistency only",581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,onshore,stop_p0_deep_days_below_15,0,20,1 if the deep test set has fewer than 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,total,negative_all,2059,99,price < 0,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,total,"band (-5,0)",1461,99,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,total,"band [-20,-5]",301,38,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,total,"band [-50,-20]",148,20,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,total,band <=-50,149,12,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,total,S2_test_deep (<= -20),297,20,S2 test set; P0 STOP if < 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,total,"S2_train_shallow_negative (-20, 0)",1762,99,negative QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,total,S2_train_all (> -20),37339,392,all QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,total,S1_negative_event_days,2059,99,leave-one-event-day-out folds = event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,total,negative_forecast_above_40gw,253,14,thin-overlap arm,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,total,positive_all,35577,392,S3 placebo pool before matching,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,total,positive_safe (> 5),34303,391,S3 primary placebo pool,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,total,positive_0_to_5,1274,138,"Hirth's 0-5 band, consistency only",581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+DE,total,stop_p0_deep_days_below_15,0,20,1 if the deep test set has fewer than 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,onshore,negative_all,2059,99,price < 0,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,onshore,"band (-5,0)",1461,99,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,onshore,"band [-20,-5]",301,38,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,onshore,"band [-50,-20]",148,20,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,onshore,band <=-50,149,12,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,onshore,S2_test_deep (<= -20),297,20,S2 test set; P0 STOP if < 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,onshore,"S2_train_shallow_negative (-20, 0)",1762,99,negative QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,onshore,S2_train_all (> -20),37428,393,all QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,onshore,S1_negative_event_days,2059,99,leave-one-event-day-out folds = event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,onshore,negative_forecast_above_40gw,0,0,thin-overlap arm,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,onshore,positive_all,35666,393,S3 placebo pool before matching,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,onshore,positive_safe (> 5),34377,392,S3 primary placebo pool,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,onshore,positive_0_to_5,1289,139,"Hirth's 0-5 band, consistency only",581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,onshore,stop_p0_deep_days_below_15,0,20,1 if the deep test set has fewer than 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,total,negative_all,2059,99,price < 0,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,total,"band (-5,0)",1461,99,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,total,"band [-20,-5]",301,38,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,total,"band [-50,-20]",148,20,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,total,band <=-50,149,12,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,total,S2_test_deep (<= -20),297,20,S2 test set; P0 STOP if < 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,total,"S2_train_shallow_negative (-20, 0)",1762,99,negative QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,total,S2_train_all (> -20),37428,393,all QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,total,S1_negative_event_days,2059,99,leave-one-event-day-out folds = event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,total,negative_forecast_above_40gw,0,0,thin-overlap arm,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,total,positive_all,35666,393,S3 placebo pool before matching,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,total,positive_safe (> 5),34377,392,S3 primary placebo pool,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,total,positive_0_to_5,1289,139,"Hirth's 0-5 band, consistency only",581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+50Hertz,total,stop_p0_deep_days_below_15,0,20,1 if the deep test set has fewer than 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,onshore,negative_all,2059,99,price < 0,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,onshore,"band (-5,0)",1461,99,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,onshore,"band [-20,-5]",301,38,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,onshore,"band [-50,-20]",148,20,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,onshore,band <=-50,149,12,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,onshore,S2_test_deep (<= -20),297,20,S2 test set; P0 STOP if < 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,onshore,"S2_train_shallow_negative (-20, 0)",1762,99,negative QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,onshore,S2_train_all (> -20),37339,392,all QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,onshore,S1_negative_event_days,2059,99,leave-one-event-day-out folds = event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,onshore,negative_forecast_above_40gw,0,0,thin-overlap arm,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,onshore,positive_all,35577,392,S3 placebo pool before matching,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,onshore,positive_safe (> 5),34288,391,S3 primary placebo pool,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,onshore,positive_0_to_5,1289,139,"Hirth's 0-5 band, consistency only",581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,onshore,stop_p0_deep_days_below_15,0,20,1 if the deep test set has fewer than 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,total,negative_all,2059,99,price < 0,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,total,"band (-5,0)",1461,99,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,total,"band [-20,-5]",301,38,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,total,"band [-50,-20]",148,20,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,total,band <=-50,149,12,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,total,S2_test_deep (<= -20),297,20,S2 test set; P0 STOP if < 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,total,"S2_train_shallow_negative (-20, 0)",1762,99,negative QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,total,S2_train_all (> -20),37339,392,all QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,total,S1_negative_event_days,2059,99,leave-one-event-day-out folds = event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,total,negative_forecast_above_40gw,0,0,thin-overlap arm,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,total,positive_all,35577,392,S3 placebo pool before matching,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,total,positive_safe (> 5),34288,391,S3 primary placebo pool,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,total,positive_0_to_5,1289,139,"Hirth's 0-5 band, consistency only",581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+Amprion,total,stop_p0_deep_days_below_15,0,20,1 if the deep test set has fewer than 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,onshore,negative_all,2059,99,price < 0,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,onshore,"band (-5,0)",1461,99,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,onshore,"band [-20,-5]",301,38,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,onshore,"band [-50,-20]",148,20,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,onshore,band <=-50,149,12,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,onshore,S2_test_deep (<= -20),297,20,S2 test set; P0 STOP if < 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,onshore,"S2_train_shallow_negative (-20, 0)",1762,99,negative QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,onshore,S2_train_all (> -20),37435,393,all QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,onshore,S1_negative_event_days,2059,99,leave-one-event-day-out folds = event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,onshore,negative_forecast_above_40gw,0,0,thin-overlap arm,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,onshore,positive_all,35673,393,S3 placebo pool before matching,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,onshore,positive_safe (> 5),34384,392,S3 primary placebo pool,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,onshore,positive_0_to_5,1289,139,"Hirth's 0-5 band, consistency only",581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,onshore,stop_p0_deep_days_below_15,0,20,1 if the deep test set has fewer than 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,total,negative_all,2059,99,price < 0,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,total,"band (-5,0)",1461,99,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,total,"band [-20,-5]",301,38,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,total,"band [-50,-20]",148,20,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,total,band <=-50,149,12,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,total,S2_test_deep (<= -20),297,20,S2 test set; P0 STOP if < 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,total,"S2_train_shallow_negative (-20, 0)",1762,99,negative QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,total,S2_train_all (> -20),37435,393,all QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,total,S1_negative_event_days,2059,99,leave-one-event-day-out folds = event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,total,negative_forecast_above_40gw,0,0,thin-overlap arm,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,total,positive_all,35673,393,S3 placebo pool before matching,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,total,positive_safe (> 5),34384,392,S3 primary placebo pool,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,total,positive_0_to_5,1289,139,"Hirth's 0-5 band, consistency only",581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TenneT,total,stop_p0_deep_days_below_15,0,20,1 if the deep test set has fewer than 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,onshore,negative_all,2059,99,price < 0,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,onshore,"band (-5,0)",1461,99,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,onshore,"band [-20,-5]",301,38,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,onshore,"band [-50,-20]",148,20,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,onshore,band <=-50,149,12,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,onshore,S2_test_deep (<= -20),297,20,S2 test set; P0 STOP if < 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,onshore,"S2_train_shallow_negative (-20, 0)",1762,99,negative QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,onshore,S2_train_all (> -20),37243,391,all QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,onshore,S1_negative_event_days,2059,99,leave-one-event-day-out folds = event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,onshore,negative_forecast_above_40gw,0,0,thin-overlap arm,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,onshore,positive_all,35481,391,S3 placebo pool before matching,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,onshore,positive_safe (> 5),34207,390,S3 primary placebo pool,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,onshore,positive_0_to_5,1274,138,"Hirth's 0-5 band, consistency only",581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,onshore,stop_p0_deep_days_below_15,0,20,1 if the deep test set has fewer than 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,total,negative_all,2059,99,price < 0,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,total,"band (-5,0)",1461,99,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,total,"band [-20,-5]",301,38,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,total,"band [-50,-20]",148,20,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,total,band <=-50,149,12,,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,total,S2_test_deep (<= -20),297,20,S2 test set; P0 STOP if < 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,total,"S2_train_shallow_negative (-20, 0)",1762,99,negative QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,total,S2_train_all (> -20),37243,391,all QHs available to S2 training,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,total,S1_negative_event_days,2059,99,leave-one-event-day-out folds = event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,total,negative_forecast_above_40gw,0,0,thin-overlap arm,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,total,positive_all,35481,391,S3 placebo pool before matching,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,total,positive_safe (> 5),34207,390,S3 primary placebo pool,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,total,positive_0_to_5,1274,138,"Hirth's 0-5 band, consistency only",581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
+TransnetBW,total,stop_p0_deep_days_below_15,0,20,1 if the deep test set has fewer than 15 event-days,581b75cbedafaa3cbedfb0b25b541d45d6cd01b0,2026-11-14
