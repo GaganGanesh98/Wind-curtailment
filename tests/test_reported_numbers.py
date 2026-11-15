@@ -24,6 +24,7 @@ artifact is present must match it.
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -760,6 +761,35 @@ def _tb_lambda_checks():
     return out
 
 
+#: Plain-language guides, Phase S4. They report no new figure: every number in them
+#: must already appear in a docs note. Text between the skip markers (the measured
+#: demo step times) is exempt, and so are paths and code in backticks.
+GUIDES = ("README.md", "docs/00_START_HERE.md")
+_SKIP = re.compile(r"<!-- numbers-check: skip -->.*?<!-- /numbers-check -->", re.S)
+_CODE = re.compile(r"```.*?```|`[^`\n]*`|\]\([^)]*\)", re.S)
+_NUM = re.compile(r"\d[\d,]*(?:\.\d+)?")
+
+
+def _numbers(text: str) -> set[str]:
+    return {m.group().rstrip(",") for m in _NUM.finditer(text)}
+
+
+def _guide_checks():
+    """README.md and docs/00_START_HERE.md: each number is traced to a docs note."""
+    guides = {g: REPO_ROOT / g for g in GUIDES}
+    if not all(p.exists() for p in guides.values()):
+        return []
+    sources = [p for p in sorted((REPO_ROOT / "docs").glob("*.md"))
+               if p.resolve() not in {g.resolve() for g in guides.values()}]
+    known = set().union(*(_numbers(p.read_text(encoding="utf-8")) for p in sources))
+    out = []
+    for g, p in guides.items():
+        text = _CODE.sub(" ", _SKIP.sub(" ", p.read_text(encoding="utf-8")))
+        for n in sorted(_numbers(text)):
+            out.append((f"guide {g} number {n} appears in a docs note", float(n in known), 1.0, 0))
+    return out
+
+
 def _collect():
     """All checks whose artifacts are on disk, as (id, got, want, tol)."""
     out, skipped = [], []
@@ -814,6 +844,7 @@ def _collect():
         out += _q1_checks()
     else:
         skipped.append("Q1")
+    out += _guide_checks()
     return out, skipped
 
 
