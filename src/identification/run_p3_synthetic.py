@@ -186,8 +186,14 @@ def _truths(data, design, shares, level, price, potential) -> dict[str, float]:
     return out
 
 
-def run_cell(rate: float, gamma: float, shape: str, seed: int, hetero: str,
-             arm: str) -> list[dict]:
+def prepare_cell(rate: float, gamma: float, shape: str, seed: int,
+                 hetero: str) -> dict:
+    """The deterministic part of a cell: generate, then build the bounds design.
+
+    Split out of `run_cell` on 15 November 2026 for Phase Q, which needs to score the
+    SAME cell under many potentials without regenerating it. Nothing here depends on
+    which potential the share estimator will be handed.
+    """
     base = placeholder_cohort_set()
     ids = [c.cohort_id for c in base]
     cfg = SyntheticConfig(censoring_rate=rate, gamma=gamma, r_shape=shape, seed=seed,
@@ -202,18 +208,32 @@ def run_cell(rate: float, gamma: float, shape: str, seed: int, hetero: str,
     design = build_design(s, depth, shares, runlen, cohort_ids=tuple(ids))
     level = fx.run_levels(design, runlen, s)
     rows = design.rows
+    return {"rate": rate, "gamma": gamma, "shape": shape, "seed": seed,
+            "hetero": hetero, "data": data, "ids": ids, "s": s, "depth": depth,
+            "shares": shares, "runlen": runlen, "price": price, "design": design,
+            "level": level, "rows": rows}
 
-    if arm == "O":
-        c_hat_full = np.asarray(data.c_true, dtype=float)
-        potential = np.asarray(data.a_true_mw, dtype=float)
-        stage_a_note = "c_hat = c_true (Arm O)"
-    else:
-        sa, reused = _shared_stage_a(data, rate, gamma, seed)
-        a_hat = np.maximum(np.asarray(sa.a_hat, dtype=float), 1e-9)
-        c_hat_full = 1.0 - np.asarray(data.g_obs_mw, dtype=float) / a_hat
-        potential = a_hat
-        stage_a_note = ("c_hat = 1 - G/A_hat, shared cross-fitted stage A (Arm D"
-                        + (", stage A reused across shape/config)" if reused else ")"))
+
+def score_cell(prep: dict, c_hat_full: np.ndarray, potential: np.ndarray, *,
+               arm: str, stage_a_note: str, extra: dict | None = None) -> list[dict]:
+    """THE DEGRADATION HOOK. Score one prepared cell under a given share estimate.
+
+    `c_hat_full` is the curtailed-share estimate on every quarter-hour and `potential`
+    the potential it was formed from (it also builds lambda-5's energy coefficients
+    and truth, exactly as in P3). Arm O passes `c_true` and `a_true`; Arm D passes
+    `1 - G/A_hat` and `A_hat`; Phase Q passes `1 - G/P` and `P` for a degraded `P`.
+    One scoring path for all three is the point: Phase Q hard rule 1 forbids a
+    parallel path, and a dial built on a copy of the scorer would not be a dial on
+    THIS scorer.
+
+    `extra` is merged into every row last, so a caller can add its own columns and
+    override `preregistration_commit`.
+    """
+    rate, gamma, shape, seed, hetero = (prep["rate"], prep["gamma"], prep["shape"],
+                                        prep["seed"], prep["hetero"])
+    data, ids, s, depth = prep["data"], prep["ids"], prep["s"], prep["depth"]
+    shares, price, design = prep["shares"], prep["price"], prep["design"]
+    level, rows = prep["level"], prep["rows"]
 
     c_hat = c_hat_full[rows]
     comp = compress_rows(design.X, c_hat)
@@ -221,7 +241,7 @@ def run_cell(rate: float, gamma: float, shape: str, seed: int, hetero: str,
     if pf["r"] is None:
         return [{"arm": arm, "hetero": hetero, "rate": rate, "gamma": gamma,
                  "r_shape": shape, "seed": seed, "lam": "ALL", "defined": False,
-                 "note": f"point fit failed: {pf['status']}"}]
+                 "note": f"point fit failed: {pf['status']}", **(extra or {})}]
     eps_info = epsilon_from_bootstrap(design, c_hat, np.asarray(data.berlin_date)[rows],
                                       pf["r"])
     eps = eps_info["eps"]
@@ -254,6 +274,7 @@ def run_cell(rate: float, gamma: float, shape: str, seed: int, hetero: str,
         "mean_c_true": float(np.mean(data.c_true)),
         "n_event_days": eps_info["n_days"], "run_levels": design.n_run_levels,
         "stage_a": stage_a_note, "preregistration_commit": PREREG_COMMIT,
+        **(extra or {}),
     }
 
     rows_out = []
@@ -300,6 +321,26 @@ def run_cell(rate: float, gamma: float, shape: str, seed: int, hetero: str,
         })
         rows_out.append(row)
     return rows_out
+
+
+def run_cell(rate: float, gamma: float, shape: str, seed: int, hetero: str,
+             arm: str) -> list[dict]:
+    """Arm O or Arm D on one cell: `prepare_cell`, choose the share, `score_cell`."""
+    prep = prepare_cell(rate, gamma, shape, seed, hetero)
+    data = prep["data"]
+    if arm == "O":
+        c_hat_full = np.asarray(data.c_true, dtype=float)
+        potential = np.asarray(data.a_true_mw, dtype=float)
+        stage_a_note = "c_hat = c_true (Arm O)"
+    else:
+        sa, reused = _shared_stage_a(data, rate, gamma, seed)
+        a_hat = np.maximum(np.asarray(sa.a_hat, dtype=float), 1e-9)
+        c_hat_full = 1.0 - np.asarray(data.g_obs_mw, dtype=float) / a_hat
+        potential = a_hat
+        stage_a_note = ("c_hat = 1 - G/A_hat, shared cross-fitted stage A (Arm D"
+                        + (", stage A reused across shape/config)" if reused else ")"))
+
+    return score_cell(prep, c_hat_full, potential, arm=arm, stage_a_note=stage_a_note)
 
 
 def main() -> None:
