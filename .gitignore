@@ -10,3 +10,7 @@ __pycache__/
 
 # Phase S6: live demo output, regenerated on every run.
 /demo/output/
+
+# Local tool state
+.claude/
+.vscode/
