@@ -18,7 +18,11 @@ import polars as pl
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-ACTIVE_DOCS = ("README.md",)
+ACTIVE_DOCS = ("README.md", "docs/00_start_here.md", "docs/01_objective.md", "docs/02_method.md",
+               "docs/03_available_power_estimate.md", "docs/04_exp1_known_truth_validation.md",
+               "docs/05_exp2_bias_robustness_validation.md", "docs/06_exp3_german_application.md",
+               "docs/07_limitations_and_future_work.md")
+_GENERATED = re.compile(r"<!-- generated:[a-z0-9_]+ -->.*?<!-- /generated -->", re.S)
 _SKIP = re.compile(r"<!-- numbers-check: skip -->.*?<!-- /numbers-check -->", re.S)
 _CODE = re.compile(r"```.*?```|`[^`\n]*`|\]\([^)]*\)", re.S)
 _NUM = re.compile(r"\d[\d,]*(?:\.\d+)?")
@@ -38,7 +42,7 @@ def _trace_checks():
         p = REPO_ROOT / d
         if not p.exists():
             continue
-        text = _CODE.sub(" ", _SKIP.sub(" ", p.read_text(encoding="utf-8")))
+        text = _CODE.sub(" ", _SKIP.sub(" ", _GENERATED.sub(" ", p.read_text(encoding="utf-8"))))
         for n in sorted(_numbers(text)):
             out.append((f"{d} number {n} appears in a source note", float(n in known), 1.0, 0))
     return out
@@ -98,8 +102,66 @@ def _guarded(fn):
         pl.DataFrame.filter, pl.Series.all, pl.Series.any = orig_filter, orig_all, orig_any
 
 
+def _table_checks():
+    """Every generated results table in an active doc must equal a fresh regeneration from
+    the artifacts (`src/experiments/doc_tables.py`), cell for cell."""
+    from src.experiments import doc_tables as dt
+    out = []
+    for d in ACTIVE_DOCS:
+        p = REPO_ROOT / d
+        if not p.exists():
+            continue
+        for name, have in dt.blocks(p.read_text(encoding="utf-8")).items():
+            want = dt.TABLES[name]() + "\n"
+            hl, wl = have.splitlines(), want.splitlines()
+            out.append((f"{d} table {name} rows", len(hl), len(wl), 0))
+            for i, (a, b) in enumerate(zip(hl, wl)):
+                out.append((f"{d} table {name} line {i + 1}", float(a == b), 1.0, 0))
+    return out
+
+
+def _mapping_checks():
+    """`docs/archive_mapping.md`: the class counts it states equal the rows of its own table."""
+    p = REPO_ROOT / "docs" / "archive_mapping.md"
+    if not p.exists():
+        return []
+    text = p.read_text(encoding="utf-8")
+    table = text[text.index("## 5. Full mapping table"):]
+    rows = [l for l in table.splitlines() if l.startswith("| `")]
+    cls = [l.split("|")[2].strip() for l in rows]
+    stated = re.search(r"\*\*(\d+) KEEP \(renamed\), (\d+) KEEP-AS-COMPONENT, (\d+) ARCHIVE\.\*\*", text)
+    total = re.search(r"\n(\d+) tracked files at", text)
+    return [("mapping KEEP", cls.count("KEEP"), int(stated.group(1)), 0),
+            ("mapping KEEP-AS-COMPONENT", cls.count("KEEP-AS-COMPONENT"), int(stated.group(2)), 0),
+            ("mapping ARCHIVE", cls.count("ARCHIVE"), int(stated.group(3)), 0),
+            ("mapping total", len(rows), int(total.group(1)), 0)]
+
+
+def _norm(s: str) -> str:
+    s = re.sub(r"(?m)^\s*>\s?", " ", s)               # block-quote markers
+    s = s.replace("*", "").replace("\\", "")          # bold/italic, escapes
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def _quote_checks():
+    """Every quoted passage of 20+ characters in an active doc must appear, word for word
+    (formatting aside), in an archived note: verdicts are quoted, never reworded."""
+    corpus = _norm(" ".join(p.read_text(encoding="utf-8")
+                            for p in sorted((REPO_ROOT / "archive" / "docs").glob("*.md"))))
+    out = []
+    for d in ACTIVE_DOCS:
+        p = REPO_ROOT / d
+        if not p.exists():
+            continue
+        text = _CODE.sub(" ", _GENERATED.sub(" ", p.read_text(encoding="utf-8")))
+        for q in re.findall(r'"([^"]{20,}?)"', text, flags=re.S):
+            out.append((f"{d} quote '{_norm(q)[:50]}…' is in an archived note",
+                        float(_norm(q) in corpus), 1.0, 0))
+    return out
+
+
 def _collect():
-    out = _trace_checks()
+    out = _trace_checks() + _table_checks() + _mapping_checks() + _quote_checks()
     return out, []
 
 
@@ -114,7 +176,7 @@ def test_quoted_figure_reproduces(name, got, want, tol):
 
 
 def test_the_checker_is_actually_checking_something():
-    assert len(_CHECKS) >= 1, f"only {len(_CHECKS)} checks collected"
+    assert len(_CHECKS) >= 100, f"only {len(_CHECKS)} checks collected"
 
 
 def test_zero_row_guard_bites_and_cleans_up():
