@@ -73,6 +73,7 @@ Verdicts are quoted or closely paraphrased from the results file in the same row
 | Q0b | empirical evaluation | 15 Nov | Does the quality-assured projection add back market curtailment? | `docs/Q0b_preregistration.md` | `docs/Q0b_results.md`, `artifacts/Q0b/` | **ADDS BACK**, on the deciding aggregate (D = +0.2893, 95% CI [+0.2484, +0.3344]) and in every control area. |
 | Q0c | supporting / appendix | 15 Nov | Does the three-area projection volume agree with Hirth v2? | `docs/Q0c_preregistration.md` | `docs/Q0c_results.md`, `artifacts/Q0c/q0c_volume.csv` | **NOT TESTABLE** at national scale: 1.644 TWh, interval [1.162, 2.200], against Hirth's 2.5 TWh. No agreement is claimed. |
 | Q1 | controlled uncertainty | 15 Nov | At what noise level does the fleet response stop being informative? | `docs/Q0_preregistration.md` §3 | `docs/Q1_results.md`, `artifacts/Q1/` | **σ\* ≥ 0.35, censored at the top of the pre-registered grid**: a lower bound, not a value. Coverage of the known truth is 100% at all levels. |
+| Q2 | controlled uncertainty | 16 Nov | Do the bounds stay honest if the available-power estimate is biased? | `docs/Q0_preregistration.md` §4 | `docs/Q2_results.md`, `artifacts/Q2/` | **Coverage of the known truth falls below 95% at every non-zero bias level tested**, at every noise level (126 of 378 at Anchor H's bias, 162 of 378 at Anchor T's); intervals stay narrow and miss the truth. Widths at biased levels withheld. |
 | Q5 | empirical evaluation | 15 Nov | With the projection as the potential, which real-data quantities become informative? | `docs/Q5_preregistration.md` | `docs/Q5_results.md`, `artifacts/Q5/` | **2 of 59 main-setting functional-months, 3.4%, become informative** when `H` replaces `F`; 5 go the other way. |
 | Q6a | exploratory diagnostic | 15 Nov | Is the real-data floor day-to-day behavioural heterogeneity? | `docs/Q6_preregistration.md` | `docs/Q6_results.md`, `artifacts/Q6/q6a_cells.csv` | **PRESENT.** In all 8 testable cells the between-day variance exceeds what Anchor H's σ = 0.066 produces alone. |
 | Q6b | exploratory diagnostic | 15 Nov | Can a synthetic day effect reproduce the real-data signatures? | `docs/Q6_preregistration.md` | `docs/Q6_results.md`, `artifacts/Q6/q6b_summary.csv` | **NOT SUPPORTED.** No σ_r meets either signature. |
@@ -126,6 +127,7 @@ tables).
 | `Q0c_preregistration.md` | pre-registration | volume against Hirth v2; cites `Literature Review/2609.10053v2.pdf`, now `literature/01_closest_work/Hirth_2026_Curtail-at-negative-prices_arXiv-v2.pdf` |
 | `Q0c_results.md` | results note | NOT TESTABLE |
 | `Q1_results.md` | results note | variance dial, σ\* ≥ 0.35 |
+| `Q2_results.md` | results note | bias dial and crossed grid: coverage fails under any tested bias |
 | `Q5_preregistration.md` | pre-registration | real-data bounds with the projection |
 | `Q5_results.md` | results note | 2 of 59 become informative |
 | `Q6_preregistration.md` | pre-registration | real-data floor as heterogeneity (Q6a, Q6b) |

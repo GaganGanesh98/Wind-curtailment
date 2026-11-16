@@ -819,6 +819,85 @@ def _c1_checks():
     return out
 
 
+def _q2_prose(cov: pl.DataFrame, s: pl.DataFrame) -> list:
+    """The figures `docs/Q2_results.md` quotes in prose (sections 1 and 4)."""
+    def lvl(dial, sg, b):
+        return cov.filter((pl.col("dial") == dial) & (pl.col("sigma") == sg)
+                          & ((pl.col("b") - b).abs() < 1e-9)).row(0, named=True)
+    h, t = lvl("q2a", 0.0, -0.047), lvl("q2a", 0.0, 0.033)
+    l1 = s.filter((pl.col("dial") == "q2a") & ((pl.col("b") + 0.047).abs() < 1e-9)
+                  & (pl.col("lam") == "L1")).row(0, named=True)
+    return [("Q2 prose Anchor H bias covered 126", h["n_covered"], 126, 0),
+            ("Q2 prose Anchor H bias coverage 0.333", h["level_coverage"], 0.333, 5e-4),
+            ("Q2 prose Anchor T bias covered 162", t["n_covered"], 162, 0),
+            ("Q2 prose Anchor T bias coverage 0.429", t["level_coverage"], 0.429, 5e-4),
+            ("Q2 prose lambda1 at b-0.047 informative 54", l1["n_informative"], 54, 0),
+            ("Q2 prose lambda1 at b-0.047 missed 54", l1["n_informative_and_missed"], 54, 0),
+            ("Q2 prose b-0.10 coverage s0 0.310", lvl("q2b", 0.0, -0.1)["level_coverage"], 0.310, 5e-4),
+            ("Q2 prose b-0.10 coverage s0.066 0.511", lvl("q2b", 0.066, -0.1)["level_coverage"], 0.511, 5e-4),
+            ("Q2 prose b-0.10 coverage s0.18 0.860", lvl("q2b", 0.18, -0.1)["level_coverage"], 0.860, 5e-4),
+            ("Q2 prose no crossed level reaches 95% with bias",
+             float((cov.filter((pl.col("dial") == "q2b") & (pl.col("b") != 0))["level_coverage"]
+                    < 0.95).all()), 1.0, 0)]
+
+
+def _q2_checks():
+    """`docs/Q2_results.md`: every table cell parsed from the note against the artifacts,
+    plus the figures quoted in the prose."""
+    q2 = REPO_ROOT / "artifacts" / "Q2"
+    note = REPO_ROOT / "docs" / "Q2_results.md"
+    if not (q2 / "q2_summary_by_level.csv").exists() or not note.exists():
+        return []
+    cov = pl.read_csv(q2 / "q2_coverage_by_level.csv")
+    s = pl.read_csv(q2 / "q2_summary_by_level.csv", infer_schema_length=None)
+    lam_of = {"λ₁": "L1", "λ₂": "L2", "λ₃": "L3", "λ₄": "L4", "λ₅": "L5", "λ₆": "L6", "λ₇": "L7"}
+    out, sigma, bs = [], None, None
+    for line in note.read_text(encoding="utf-8").splitlines():
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if line.startswith("| q2a ") or line.startswith("| q2b "):
+            dial, sg, b = cells[0], float(cells[1]), float(cells[2])
+            r = cov.filter((pl.col("dial") == dial) & (pl.col("sigma") == sg)
+                           & ((pl.col("b") - b).abs() < 1e-9)).row(0, named=True)
+            k, n = (int(x) for x in cells[3].split("/"))
+            tag = f"Q2 cov {dial} s{sg:g} b{b:+.3f}"
+            out += [(f"{tag} covered", r["n_covered"], k, 0), (f"{tag} scored", r["n_scored"], n, 0),
+                    (f"{tag} coverage", r["level_coverage"], float(cells[4]), 5e-4),
+                    (f"{tag} informative-and-missed", r["n_informative_and_missed"], int(cells[5]), 0),
+                    (f"{tag} widths flag", float(r["level_coverage_ok"]),
+                     float(cells[6] == "reported"), 0)]
+        elif re.fullmatch(r"σ = [0-9.]+( \(.*\))?:", line.strip()):
+            sigma = float(line.split()[2].rstrip(":"))
+        elif line.startswith("| functional |") and sigma is not None:
+            bs = [float(c.split()[1]) for c in cells[1:]]
+        elif cells and cells[0] in lam_of and bs is not None:
+            for b, c in zip(bs, cells[1:]):
+                k, m = (int(x) for x in c.split("/"))
+                r = s.filter((pl.col("sigma") == sigma) & ((pl.col("b") - b).abs() < 1e-9)
+                             & (pl.col("lam") == lam_of[cells[0]])).row(0, named=True)
+                tag = f"Q2 s{sigma:g} b{b:+.3f} {lam_of[cells[0]]}"
+                out += [(f"{tag} informative", r["n_informative"], k, 0),
+                        (f"{tag} informative-and-missed", r["n_informative_and_missed"], m, 0)]
+    rows_a = pl.read_csv(q2 / "q2a_bias_dial.csv", infer_schema_length=0)
+    rows_b = pl.read_csv(q2 / "q2b_crossed.csv", infer_schema_length=0)
+    q0 = pl.read_csv(Q0 / "q0_anchors.csv").filter(
+        (pl.col("anchor") == "H") & pl.col("area").str.starts_with("DE excl")
+        & (pl.col("sample") == "price >= 0"))
+    q1 = pl.read_csv(Q1D / "q1_summary_by_level.csv").filter(pl.col("noise") == "iid")
+    z = s.filter((pl.col("b") == 0) & (pl.col("dial") == "q2b")).join(
+        q1.select(["sigma", "lam", pl.col("n_informative").alias("q1")]), on=["sigma", "lam"])
+    out += [("Q2 q2a rows", rows_a.height, 1890, 0), ("Q2 q2b rows", rows_b.height, 3402, 0),
+            ("Q2 prereg commit on every row",
+             float(set(rows_a["preregistration_commit"]) | set(rows_b["preregistration_commit"])
+                   == {"b261c9f"}), 1.0, 0),
+            ("Q2 Anchor H bias quoted", float(q0["bias"][0]), -0.0472, 5e-5),
+            ("Q2 unbiased rows reproduce Q1 (21 functional-levels)",
+             float(z.height == 21 and (z["n_informative"] == z["q1"]).all()), 1.0, 0),
+            *_q2_prose(cov, s),
+            ("Q2 every biased level below 95%",
+             float((cov.filter(pl.col("b") != 0)["level_coverage"] < 0.95).all()), 1.0, 0)]
+    return out
+
+
 def _collect():
     """All checks whose artifacts are on disk, as (id, got, want, tol)."""
     out, skipped = [], []
@@ -875,6 +954,7 @@ def _collect():
         skipped.append("Q1")
     out += _guide_checks()
     out += _c1_checks()
+    out += _q2_checks()
     return out, skipped
 
 

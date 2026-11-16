@@ -182,6 +182,13 @@ def evidence_rows() -> list[dict]:
     n6, k6 = q6a.height, int(q6a["heterogeneous"].sum())
     q6b = pl.read_csv(ART / "Q6" / "q6b_summary.csv", infer_schema_length=0).filter(
         pl.col("table") == "verdict")["verdict"][0]
+    q2 = pl.read_csv(ART / "Q2" / "q2_coverage_by_level.csv").filter(pl.col("dial") == "q2a")
+
+    def q2cov(b):
+        r = q2.filter((pl.col("b") - b).abs() < 1e-9).row(0, named=True)
+        return r["n_covered"], r["n_scored"]
+
+    q2h, q2t = q2cov(-0.047), q2cov(0.033)
     blank = {k: None for k in ("syn_T_k", "syn_T_n", "syn_H_k", "syn_H_n", "real_F_k", "real_F_n",
                                "real_F_undefined", "real_H_k", "real_H_n", "real_H_undefined",
                                "narrow_lo", "narrow_hi", "narrow_width", "window_lo",
@@ -226,6 +233,15 @@ def evidence_rows() -> list[dict]:
          "verdict": (f"Exploratory. Q6a: PRESENT in {k6} of {n6} testable cells. "
                      f"Q6b: {q6b}."),
          "depends_on": "exploratory diagnostic, not a proposition"},
+        {**base, "row": "Q2",
+         "question": "Do the bounds stay honest if the available-power estimate is biased?",
+         "quantity": "coverage of the known truth at σ = 0, biases of Anchor T and Anchor H",
+         "evidence": "Q2 (artifacts/Q2/q2_coverage_by_level.csv); added after C0, see note",
+         "syn_T_k": q2t[0], "syn_T_n": q2t[1], "syn_H_k": q2h[0], "syn_H_n": q2h[1],
+         "highest_sigma_half": "—",
+         "verdict": ("Coverage falls below 95% at every non-zero bias level tested, at every "
+                     "noise level; intervals stay narrow and miss the truth. Synthetic only."),
+         "depends_on": "an unbiased potential; H's bias at negative prices is not measured"},
     ]
 
 
@@ -290,6 +306,10 @@ def markdown(df: pl.DataFrame) -> str:
                  f"| {_kn(r['real_F_k'], r['real_F_n'], r['real_F_undefined'])} "
                  f"| {_kn(r['real_H_k'], r['real_H_n'], r['real_H_undefined'])} "
                  f"| {r['verdict']} | {r['depends_on']} |")
+    L.append("\nFor the Q2 row the synthetic columns count cell-functionals that cover the known "
+             "truth at Anchor T's bias (+0.033) and Anchor H's bias (−0.047), σ = 0. The Q2 row "
+             "was added on 16 November 2026, after C0, at the student's instruction; C0 fixed four "
+             "evidence rows. It carries no verdict under the C0 rule and changes no other row.")
     L.append("\nFor the pooled row the synthetic columns count split cells that reject a single "
              "common response (the most of any functional), not informative cells.\n")
     L.append("## What the verdicts mean\n")

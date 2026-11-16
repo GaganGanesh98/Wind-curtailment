@@ -26,6 +26,9 @@ Real-data counts are monthly functional-months in the main award setting, 50Hert
 | Q5 | Does a better available-power estimate help? (F vs H) | Q5 (artifacts/Q5/q5_summary.csv) | — | — | 6/59 (11 undefined) | 3/59 (11 undefined) | 2 of 59 main-setting functional-months become informative when H replaces F; 5 go the other way. | H as the potential; one award setting shown (main) |
 | Q0b | Does the projection behave as if market curtailment is added back? | Q0b (artifacts/Q0b/q0b_verdicts.csv) | — | — | — | — | ADDS BACK on the deciding aggregate (D = +0.2893, 95% CI [+0.2484, +0.3344]) and in every control area. Supporting evidence, not ground truth. | TenneT excluded (T-D(vii)); not every gap is voluntary curtailment |
 | Q6 | Does the synthetic uncertainty model explain real data? | Q6 (artifacts/Q6/q6a_cells.csv, q6b_summary.csv) | — | — | — | — | Exploratory. Q6a: PRESENT in 8 of 8 testable cells. Q6b: NOT SUPPORTED. | exploratory diagnostic, not a proposition |
+| Q2 | Do the bounds stay honest if the available-power estimate is biased? | Q2 (artifacts/Q2/q2_coverage_by_level.csv); added after C0, see note | 162/378 | 126/378 | — | — | Coverage falls below 95% at every non-zero bias level tested, at every noise level; intervals stay narrow and miss the truth. Synthetic only. | an unbiased potential; H's bias at negative prices is not measured |
+
+For the Q2 row the synthetic columns count cell-functionals that cover the known truth at Anchor T's bias (+0.033) and Anchor H's bias (−0.047), σ = 0. The Q2 row was added on 16 November 2026, after C0, at the student's instruction; C0 fixed four evidence rows. It carries no verdict under the C0 rule and changes no other row.
 
 For the pooled row the synthetic columns count split cells that reject a single common response (the most of any functional), not informative cells.
 
