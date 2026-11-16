@@ -244,7 +244,7 @@ def main() -> None:
         print(f"  {setting:<10}{int(dd.sum()):>15,}{nd:>13,}{verdict:>24}")
         setting_rows.append({"setting": setting, "qh_differing": int(dd.sum()),
                              "event_days": nd, "threshold": 10, "verdict": verdict})
-    with open(RESULTS_DIR / "38_rule18_settings.csv", "w", newline="",
+    with open(REPO_ROOT / "artifacts" / "method_inputs" / "cohort_parameter_settings.csv", "w", newline="",
               encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=list(setting_rows[0]), lineterminator="\n")
         w.writeheader()
@@ -253,7 +253,7 @@ def main() -> None:
     print("  these settings is the primary real-data identification check (spec I4).")
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(RESULTS_DIR / "38_rule18_real.csv", "w", newline="",
+    with open(REPO_ROOT / "artifacts" / "method_inputs" / "cohort_parameters.csv", "w", newline="",
               encoding="utf-8") as fh:
         w = csv.writer(fh, lineterminator="\n")
         w.writerow(["metric", "value"])

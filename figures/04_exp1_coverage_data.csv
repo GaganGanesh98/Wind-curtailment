@@ -1,0 +1,11 @@
+study,setting,n_scored,n_covered,coverage,source
+arm,exact potential,1127,1127,1.0,"artifacts/exp1_known_truth_validation/exact_potential_cells.csv, column cov"
+arm,estimated potential,378,378,1.0,"artifacts/exp1_known_truth_validation/estimated_potential_cells.csv, column cov"
+noise dial,"noise dial, i.i.d. σ = 0",,,1.0,"artifacts/exp1_known_truth_validation/noise_dial_summary.csv, column level_coverage"
+noise dial,"noise dial, i.i.d. σ = 0.033",,,1.0,"artifacts/exp1_known_truth_validation/noise_dial_summary.csv, column level_coverage"
+noise dial,"noise dial, i.i.d. σ = 0.066",,,1.0,"artifacts/exp1_known_truth_validation/noise_dial_summary.csv, column level_coverage"
+noise dial,"noise dial, i.i.d. σ = 0.12",,,1.0,"artifacts/exp1_known_truth_validation/noise_dial_summary.csv, column level_coverage"
+noise dial,"noise dial, i.i.d. σ = 0.18",,,1.0,"artifacts/exp1_known_truth_validation/noise_dial_summary.csv, column level_coverage"
+noise dial,"noise dial, i.i.d. σ = 0.25",,,1.0,"artifacts/exp1_known_truth_validation/noise_dial_summary.csv, column level_coverage"
+noise dial,"noise dial, i.i.d. σ = 0.35",,,1.0,"artifacts/exp1_known_truth_validation/noise_dial_summary.csv, column level_coverage"
+noise dial,"noise dial, AR(1) σ = 0.18",,,0.9841269841269841,"artifacts/exp1_known_truth_validation/noise_dial_summary.csv, column level_coverage"

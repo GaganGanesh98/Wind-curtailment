@@ -4,12 +4,12 @@
 
 Implements `docs/Q0b_preregistration.md` (commit 06de287) and nothing else: the
 statistic, bands, baseline, bootstrap, clauses and verdict rule are all fixed there.
-Writes, under `artifacts/Q0b/`:
+Writes, under `artifacts/available_power_estimate/`:
 
-  q0b_gap_shares.csv   gap share sum(P - G - R)/sum(P) and the mean MW gap, per series,
+  gap_shares.csv   gap share sum(P - G - R)/sum(P) and the mean MW gap, per series,
                        estimator (H or F), area and quarter-hour set, with 95% CIs
-  q0b_verdicts.csv     clause A, clause B and the verdict, per series and area
-  q0b_h_agreement.csv  sigma and bias of log(G/H) and corr(H, G) on positive-price
+  adds_back_verdicts.csv  clause A, clause B and the verdict, per series and area
+  agreement_at_positive_prices.csv  sigma and bias of log(G/H) and corr(H, G) on positive-price
                        quarter-hours -- the evidence `docs/Q0_preregistration.md`
                        Amendment 1 rests on
 
@@ -33,7 +33,7 @@ from src.method.day_bootstrap import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-OUT_DIR = REPO_ROOT / "artifacts" / "Q0b"
+OUT_DIR = REPO_ROOT / "artifacts" / "available_power_estimate"
 PREREG_COMMIT = "06de287"
 QS_DIR = (REPO_ROOT / "data" / "raw" / "netztransparenz"
           / "hochrechnung_wind_onshore_qualitaetsgesichert")
@@ -269,8 +269,8 @@ def main() -> None:
                   f"A={v['clause_a']}  B={v['clause_b']} ({v['bands_with_data']} bands)  "
                   f"-> {v['verdict']}{'   <- DECIDES' if v['deciding'] else ''}")
             print(f"  {'':<28} bands: {v['band_shares_shallow_to_deep']}")
-    for name, rows in (("q0b_gap_shares.csv", shares), ("q0b_verdicts.csv", verdicts),
-                       ("q0b_h_agreement.csv", agree)):
+    for name, rows in (("gap_shares.csv", shares), ("adds_back_verdicts.csv", verdicts),
+                       ("agreement_at_positive_prices.csv", agree)):
         print("wrote", _write(name, rows, head, today))
 
 

@@ -3,12 +3,12 @@
     python -m src.experiments.exp1_noise_dial_summary
 
 Written before any Q1 number was read, so the reduction cannot be shaped by them.
-Reads `artifacts/Q1/q1_variance_dial.csv`; writes, beside it:
+Reads `artifacts/exp1_known_truth_validation/noise_dial_cells.csv`; writes, beside it:
 
-  q1_summary_by_level.csv   per (noise kind, sigma, functional): coverage, median and
+  noise_dial_summary.csv   per (noise kind, sigma, functional): coverage, median and
                             interquartile width, share informative, pooled-response
                             rejection rate in `split` cells, floor-to-residual ratio
-  q1_headline.csv           sigma*, the secondary statistic per functional, the
+  noise_dial_headline.csv           sigma*, the secondary statistic per functional, the
                             coverage guard per level, and the AR(1) comparison
 
 The rules are Q0's, applied mechanically:
@@ -38,14 +38,14 @@ import polars as pl
 from src.method.read_results import load
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-Q1 = REPO_ROOT / "artifacts" / "Q1"
+Q1 = REPO_ROOT / "artifacts" / "exp1_known_truth_validation"
 COVERAGE_FLOOR = 0.95
 HALF = 0.5
 FUNCTIONALS = ("L1", "L2", "L3", "L4", "L5", "L6", "L7")
 
 
 def _load() -> pl.DataFrame:
-    d = load(Q1 / "q1_variance_dial.csv")
+    d = load(Q1 / "noise_dial_cells.csv")
     for c in ("sigma", "mu", "rho", "width_over_max", "logical_max_width"):
         if c in d.columns:
             d = d.with_columns(pl.col(c).cast(pl.Float64, strict=False))
@@ -150,15 +150,15 @@ def main() -> None:
           f"{sorted(set(zip(d['noise'].to_list(), d['sigma'].to_list())))}")
     rows = by_level(d)
     head = headline(rows)
-    _write(Q1 / "q1_summary_by_level.csv", rows)
-    _write(Q1 / "q1_headline.csv", head)
+    _write(Q1 / "noise_dial_summary.csv", rows)
+    _write(Q1 / "noise_dial_headline.csv", head)
     with pl.Config(tbl_rows=80, tbl_width_chars=200, float_precision=4):
         print(pl.DataFrame(rows).select(["noise", "sigma", "lam", "level_coverage",
                                          "median_width", "q25_width", "q75_width",
                                          "share_informative", "pooled_rejection_split",
                                          "median_floor_ratio"]))
         print(pl.DataFrame(head))
-    print(f"wrote {Q1 / 'q1_summary_by_level.csv'} and {Q1 / 'q1_headline.csv'}")
+    print(f"wrote {Q1 / 'noise_dial_summary.csv'} and {Q1 / 'noise_dial_headline.csv'}")
 
 
 if __name__ == "__main__":

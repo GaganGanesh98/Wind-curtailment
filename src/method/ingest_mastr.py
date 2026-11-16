@@ -499,12 +499,12 @@ def main() -> None:
 
     shares = cohort_shares(df)
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(RESULTS_DIR / "30_mastr_cohort_shares.csv", "w", newline="",
+    with open(REPO_ROOT / "artifacts" / "method_inputs" / "mastr_cohort_shares.csv", "w", newline="",
               encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=shares.columns, lineterminator="\n")
         w.writeheader()
         w.writerows(shares.to_dicts())
-    with open(RESULTS_DIR / "30_mastr_zuschlagsnummer_fill.csv", "w", newline="",
+    with open(REPO_ROOT / "artifacts" / "method_inputs" / "mastr_zuschlagsnummer_fill.csv", "w", newline="",
               encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=list(fr), lineterminator="\n")
         w.writeheader()

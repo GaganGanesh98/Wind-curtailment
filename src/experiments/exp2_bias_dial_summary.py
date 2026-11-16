@@ -8,13 +8,13 @@ grouped by (dial, sigma, bias), and adds the one count Q1 did not need: how ofte
 interval is **informative and misses the truth** -- a narrow interval in the wrong place,
 the failure a bias can cause and a variance cannot.
 
-Reads `artifacts/Q2/q2a_bias_dial.csv` (sigma = 0, five biases) and
-`artifacts/Q2/q2b_crossed.csv` (sigma in {0, 0.066, 0.18} x b in {-0.10, 0, +0.10});
+Reads `artifacts/exp2_bias_robustness_validation/bias_dial_cells.csv` (sigma = 0, five biases) and
+`artifacts/exp2_bias_robustness_validation/bias_noise_crossed_cells.csv` (sigma in {0, 0.066, 0.18} x b in {-0.10, 0, +0.10});
 writes beside them:
 
-  q2_summary_by_level.csv   per (dial, sigma, b, functional): coverage, widths, share
+  bias_dial_summary.csv   per (dial, sigma, b, functional): coverage, widths, share
                             informative, informative-and-missed
-  q2_coverage_by_level.csv  per (dial, sigma, b): the coverage guard, all functionals
+  bias_dial_coverage.csv  per (dial, sigma, b): the coverage guard, all functionals
 
 Hard rule 4, as in Q1: at a level whose coverage of the known truth is below 95%, the
 bounds are broken there; widths and the informative *share* are withheld
@@ -33,10 +33,10 @@ import polars as pl
 from src.method.read_results import load
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-Q2 = REPO_ROOT / "artifacts" / "Q2"
+Q2 = REPO_ROOT / "artifacts" / "exp2_bias_robustness_validation"
 COVERAGE_FLOOR = 0.95
 FUNCTIONALS = ("L1", "L2", "L3", "L4", "L5", "L6", "L7")
-FILES = {"q2a": "q2a_bias_dial.csv", "q2b": "q2b_crossed.csv"}
+FILES = {"q2a": "bias_dial_cells.csv", "q2b": "bias_noise_crossed_cells.csv"}
 
 
 def _load(name: str) -> pl.DataFrame:
@@ -97,14 +97,14 @@ def _write(path: Path, rows: list[dict]) -> None:
 def main() -> None:
     d = pl.concat([_load(n) for n in FILES], how="diagonal_relaxed")
     rows, cov_rows = by_level(d)
-    _write(Q2 / "q2_summary_by_level.csv", rows)
-    _write(Q2 / "q2_coverage_by_level.csv", cov_rows)
+    _write(Q2 / "bias_dial_summary.csv", rows)
+    _write(Q2 / "bias_dial_coverage.csv", cov_rows)
     for r in cov_rows:
         flag = "" if r["level_coverage_ok"] else "   BELOW 95%: widths withheld"
         print(f"{r['dial']}  sigma {r['sigma']:.3f}  b {r['b']:+.3f}  coverage "
               f"{r['n_covered']}/{r['n_scored']} = {r['level_coverage']:.3f}  "
               f"informative-and-missed {r['n_informative_and_missed']}{flag}")
-    print(f"wrote {Q2 / 'q2_summary_by_level.csv'}\nwrote {Q2 / 'q2_coverage_by_level.csv'}")
+    print(f"wrote {Q2 / 'bias_dial_summary.csv'}\nwrote {Q2 / 'bias_dial_coverage.csv'}")
 
 
 if __name__ == "__main__":

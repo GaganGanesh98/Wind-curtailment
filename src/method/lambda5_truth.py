@@ -23,7 +23,7 @@ from pathlib import Path
 import polars as pl
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-ARM_O = REPO_ROOT / "artifacts" / "P3" / "p3_synthetic_arm_o.csv"
+ARM_O = REPO_ROOT / "artifacts" / "exp1_known_truth_validation" / "exact_potential_cells.csv"
 CELL = ["hetero", "rate", "gamma", "r_shape", "seed"]
 TOL_COVER = 1e-6                                  # run_p3_synthetic.TOL_COVER
 

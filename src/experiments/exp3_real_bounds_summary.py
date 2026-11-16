@@ -2,7 +2,7 @@
 
     python -m src.experiments.exp3_real_bounds_summary
 
-Reads `artifacts/Q5/q5_real.csv`; writes `artifacts/Q5/q5_summary.csv`.
+Reads `artifacts/exp3_german_application/monthly_bounds_cells.csv`; writes `artifacts/exp3_german_application/monthly_bounds_summary.csv`.
 
 Headline: of all (functional, month) pairs at `main` defined in BOTH arms, the share
 NOT informative under Q5-F and informative under Q5-H. Beside it, deciding nothing:
@@ -22,7 +22,7 @@ import polars as pl
 from src.method.read_results import load
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-Q5 = REPO_ROOT / "artifacts" / "Q5"
+Q5 = REPO_ROOT / "artifacts" / "exp3_german_application"
 
 
 def _flag(d: pl.DataFrame) -> pl.DataFrame:
@@ -77,13 +77,13 @@ def per_arm(d: pl.DataFrame) -> list[dict]:
 
 
 def main() -> None:
-    d = load(Q5 / "q5_real.csv")
+    d = load(Q5 / "monthly_bounds_cells.csv")
     for c in ("eps", "rms_floor", "rms_point", "width"):
         d = d.with_columns(pl.col(c).cast(pl.Float64, strict=False))
     d = _flag(d)
     rows = [transitions(d, s, m) for s in ("main", "low", "high") for m in (True, False)]
     arm = per_arm(d)
-    out = Q5 / "q5_summary.csv"
+    out = Q5 / "monthly_bounds_summary.csv"
     fields: list[str] = []
     for r in rows + arm:
         fields += [k for k in r if k not in fields]

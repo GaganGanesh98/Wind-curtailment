@@ -1,0 +1,5 @@
+04_exp1_coverage
+
+Experiment 1: coverage of the known truth by the identified sets with an unbiased potential — exact potential, estimated potential, and every level of the noise dial. Dashed line: the pre-registered 95% target (binding for the exact-potential arm). With a biased potential coverage fails; see figure 08.
+
+Source: artifacts/exp1_known_truth_validation/exact_potential_cells.csv and estimated_potential_cells.csv, column cov (via src/method/read_results.load); artifacts/exp1_known_truth_validation/noise_dial_summary.csv, column level_coverage.

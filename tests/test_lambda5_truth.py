@@ -43,6 +43,6 @@ def test_stored_rows_are_rescored_against_the_true_potential():
     raw = pl.read_csv(l5.ARM_O, infer_schema_length=0).filter(pl.col("lam") == "L5")
     assert int(o.filter(pl.col("cov").is_not_null())["cov"].sum()) == 1127    # Arm O unchanged
     assert o.filter(pl.col("lam") == "L5").height == raw.height
-    q1 = load(l5.REPO_ROOT / "artifacts" / "Q1" / "q1_variance_dial.csv")
+    q1 = load(l5.REPO_ROOT / "artifacts" / "exp1_known_truth_validation" / "noise_dial_cells.csv")
     ar1 = q1.filter((pl.col("lam") == "L5") & (pl.col("noise") == "ar1"))
     assert int(ar1["cov"].sum()) == 48 and ar1.height == 54                   # was 54 of 54

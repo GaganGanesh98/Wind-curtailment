@@ -53,7 +53,7 @@ from src.method.exposure import build_clock_features  # noqa: E402
 
 RAW = REPO_ROOT / "data" / "raw" / "netztransparenz"
 PANEL = REPO_ROOT / "data" / "processed" / "panel_qh.parquet"
-OUT_CSV = REPO_ROOT / "results" / "18_market_value_validation.csv"
+OUT_CSV = REPO_ROOT / "artifacts" / "method_inputs" / "market_value_validation.csv"
 
 MONTHS_DE = {"Jan": 1, "Feb": 2, "Mär": 3, "Mrz": 3, "Apr": 4, "Mai": 5, "Jun": 6,
              "Jul": 7, "Aug": 8, "Sep": 9, "Okt": 10, "Nov": 11, "Dez": 12}

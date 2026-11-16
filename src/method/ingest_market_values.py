@@ -326,7 +326,7 @@ def main() -> None:
 
     mtd = month_to_date()
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(RESULTS_DIR / "32_market_values.csv", "w", newline="",
+    with open(REPO_ROOT / "artifacts" / "method_inputs" / "market_values.csv", "w", newline="",
               encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=cmp.columns, lineterminator="\n")
         w.writeheader()

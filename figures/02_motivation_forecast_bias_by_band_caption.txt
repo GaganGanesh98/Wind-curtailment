@@ -1,0 +1,5 @@
+02_motivation_forecast_bias_by_band
+
+Motivation. Mean forecast error (actual minus day-ahead forecast) by negative price band, Germany, with 95% event-day bootstrap intervals. Window 2025-10-01 to 2026-10-28. A forecast-versus-generation discrepancy, not a causal measure of voluntary curtailment.
+
+Source: archive/results/02_bias_by_price_band.csv, rows area = DE, columns price_band_eur_mwh, mean_e_mw, ci_lo_mw, ci_hi_mw, qhs, days; totals from archive/results/01_sample_size.csv, column value.

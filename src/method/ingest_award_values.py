@@ -385,7 +385,7 @@ def main() -> None:
 
     aw = cohort_award_values(df)
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(RESULTS_DIR / "31_award_values.csv", "w", newline="",
+    with open(REPO_ROOT / "artifacts" / "method_inputs" / "award_values.csv", "w", newline="",
               encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=aw.columns, lineterminator="\n")
         w.writeheader()
@@ -403,7 +403,7 @@ def main() -> None:
             print(f"      {r['status']}")
 
     mpz = market_premium_zero_shares(df)
-    with open(RESULTS_DIR / "35_market_premium_zero.csv", "w", newline="",
+    with open(REPO_ROOT / "artifacts" / "method_inputs" / "market_premium_zero.csv", "w", newline="",
               encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=mpz.columns, lineterminator="\n")
         w.writeheader()
@@ -452,7 +452,7 @@ def main() -> None:
                         "round_code", "round_date", "ref_period"]).write_parquet(
                 PROCESSED_DIR / "mastr_reference_period.parquet")
 
-    with open(RESULTS_DIR / "33_reference_period.csv", "w", newline="",
+    with open(REPO_ROOT / "artifacts" / "method_inputs" / "reference_period.csv", "w", newline="",
               encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
         w.writeheader()

@@ -23,8 +23,8 @@ def main() -> None:
     if ap.parse_args().fits:
         show(FITS)
         return
-    run("src.method.read_results", "artifacts/P3/p3_synthetic_arm_o.csv")
-    run("src.method.read_results", "artifacts/P3/p3_synthetic_arm_d.csv")
+    run("src.method.read_results", "artifacts/exp1_known_truth_validation/exact_potential_cells.csv")
+    run("src.method.read_results", "artifacts/exp1_known_truth_validation/estimated_potential_cells.csv")
     run("src.experiments.exp1_noise_dial_summary")
 
 

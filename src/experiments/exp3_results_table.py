@@ -18,7 +18,8 @@ import polars as pl
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ART = REPO_ROOT / "artifacts"
-CSV_OUT = REPO_ROOT / "results" / "C1_conclusions_table.csv"
+ARCHIVED_ART = REPO_ROOT / "archive" / "artifacts"   # Q6 is archived; its verdict row stays
+CSV_OUT = REPO_ROOT / "artifacts" / "exp3_german_application" / "results_table.csv"
 MD_OUT = REPO_ROOT / "docs" / "C1_conclusions_table.md"
 C0_COMMIT = "a67f69a"
 
@@ -58,11 +59,11 @@ def _fmt(v: float, lam: str) -> str:
 
 
 def _q1() -> pl.DataFrame:
-    return pl.read_csv(ART / "Q1" / "q1_summary_by_level.csv").filter(pl.col("noise") == "iid")
+    return pl.read_csv(ART / "exp1_known_truth_validation" / "noise_dial_summary.csv").filter(pl.col("noise") == "iid")
 
 
 def _q5_main() -> pl.DataFrame:
-    d = pl.read_csv(ART / "Q5" / "q5_real.csv", infer_schema_length=0)
+    d = pl.read_csv(ART / "exp3_german_application" / "monthly_bounds_cells.csv", infer_schema_length=0)
     return d.filter((pl.col("setting") == "main")
                     & pl.col("c_hat").str.contains("recalibrated").not_())
 
@@ -185,7 +186,7 @@ def quantity_rows() -> list[dict]:
 
 def evidence_rows() -> list[dict]:
     q1 = _q1()
-    head = pl.read_csv(ART / "Q1" / "q1_headline.csv")
+    head = pl.read_csv(ART / "exp1_known_truth_validation" / "noise_dial_headline.csv")
     pooled_top = (head.filter(pl.col("statistic") == "pooled_rejection_above_half_max_sigma")
                       .with_columns(pl.col("value").cast(pl.Float64, strict=False))
                       .drop_nulls("value").filter(pl.col("value").is_not_nan())["value"].max())
@@ -197,7 +198,7 @@ def evidence_rows() -> list[dict]:
 
     pt, ph = rejected(SIGMA_T), rejected(SIGMA_H)
     p0 = rejected(0.0)
-    s5 = pl.read_csv(ART / "Q5" / "q5_summary.csv").filter(
+    s5 = pl.read_csv(ART / "exp3_german_application" / "monthly_bounds_summary.csv").filter(
         (pl.col("table") == "transitions") & (pl.col("setting") == "main")
         & (pl.col("scope") == "months"))
     n5 = int(s5["n_pairs_both"][0])
@@ -205,14 +206,14 @@ def evidence_rows() -> list[dict]:
     h5 = round(float(s5["share_informative_H"][0]) * n5)
     up, down = int(s5["n_become_informative"][0]), int(s5["n_reverse"][0])
     und5 = int(s5["n_pairs_neither_arm"][0])
-    vb = pl.read_csv(ART / "Q0b" / "q0b_verdicts.csv", infer_schema_length=0).filter(
+    vb = pl.read_csv(ART / "available_power_estimate" / "adds_back_verdicts.csv", infer_schema_length=0).filter(
         (pl.col("series") == "quality-assured") & (pl.col("area") == "50Hertz+Amprion+TransnetBW"))
     d, dlo, dhi = (float(vb[c][0]) for c in ("D", "D_lo", "D_hi"))
-    q6a = pl.read_csv(ART / "Q6" / "q6a_cells.csv").filter(pl.col("primary") & pl.col("testable"))
+    q6a = pl.read_csv(ARCHIVED_ART / "Q6" / "q6a_cells.csv").filter(pl.col("primary") & pl.col("testable"))
     n6, k6 = q6a.height, int(q6a["heterogeneous"].sum())
-    q6b = pl.read_csv(ART / "Q6" / "q6b_summary.csv", infer_schema_length=0).filter(
+    q6b = pl.read_csv(ARCHIVED_ART / "Q6" / "q6b_summary.csv", infer_schema_length=0).filter(
         pl.col("table") == "verdict")["verdict"][0]
-    q2 = pl.read_csv(ART / "Q2" / "q2_coverage_by_level.csv").filter(pl.col("dial") == "q2a")
+    q2 = pl.read_csv(ART / "exp2_bias_robustness_validation" / "bias_dial_coverage.csv").filter(pl.col("dial") == "q2a")
 
     def q2cov(b):
         r = q2.filter((pl.col("b") - b).abs() < 1e-9).row(0, named=True)
@@ -294,8 +295,8 @@ def _interval(lo, hi, lam, extra="") -> str:
 def _breakdown_section() -> list[str]:
     """Phase V (`docs/V0_preregistration.md`, `docs/V_results.md`): how much constant bias in
     H each full-window reading survives. Read from `artifacts/V/`; descriptive, no verdict."""
-    bd = pl.read_csv(ART / "V" / "v2_breakdown.csv", infer_schema_length=0)
-    v1 = pl.read_csv(ART / "V" / "v1_coverage.csv", infer_schema_length=None).filter(
+    bd = pl.read_csv(ART / "exp3_german_application" / "breakdown_points.csv", infer_schema_length=0)
+    v1 = pl.read_csv(ART / "exp2_bias_robustness_validation" / "bias_robust_coverage.csv", infer_schema_length=None).filter(
         pl.col("criterion_applies").cast(pl.String).str.to_lowercase() == "true")
     sym = {"L1": "λ₁", "L2": "λ₂", "L3": "λ₃", "L6": "λ₆"}
     rule = {"L1": "width ≥ 0.25", "L2": "lower bound < 0.5", "L3": "upper bound > 0.75",

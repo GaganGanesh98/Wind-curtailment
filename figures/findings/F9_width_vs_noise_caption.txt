@@ -1,5 +1,0 @@
-F9_width_vs_noise
-
-Q1: median width of the identified set (line) and interquartile range (band) across the 54 synthetic cells, against i.i.d. noise σ in the potential, on the tested grid only. Left: fleet functionals; right: cohort functionals. Log scale. Vertical lines: the statutory projection H (σ is a lower bound on its error) and the TSO forecast. Dashed horizontal line: 0.25, the informative limit for λ₁–λ₄ and λ₇ (λ₆'s is 0.5). λ₅ is omitted: it is an energy in GWh, not a share of potential.
-
-Source: artifacts/Q1/q1_summary_by_level.csv, rows noise = iid, lam in L1-L4, L6, L7, columns sigma, median_width, q25_width, q75_width; anchors from artifacts/Q0/q0_anchors.csv as in F6.

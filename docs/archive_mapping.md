@@ -124,9 +124,9 @@ new docs) are not in the table.
 | `artifacts/P3/p3_real.csv` | ARCHIVE | `archive/artifacts/P3/p3_real.csv` | P3 real data uses F; exp3 uses H |
 | `artifacts/P3/p3_real_summary.csv` | ARCHIVE | `archive/artifacts/P3/p3_real_summary.csv` | P3 real data uses F; exp3 uses H |
 | `artifacts/P3/p3_synthetic_arm_d.csv` | KEEP | `artifacts/exp1_known_truth_validation/estimated_potential_cells.csv` |  |
-| `artifacts/P3/p3_synthetic_arm_d_summary.csv` | KEEP | `artifacts/exp1_known_truth_validation/estimated_potential_summary.csv` |  |
+| `artifacts/P3/p3_synthetic_arm_d_summary.csv` | KEEP | `artifacts/exp1_known_truth_validation/estimated_potential_cells_summary.csv` |  |
 | `artifacts/P3/p3_synthetic_arm_o.csv` | KEEP | `artifacts/exp1_known_truth_validation/exact_potential_cells.csv` |  |
-| `artifacts/P3/p3_synthetic_arm_o_summary.csv` | KEEP | `artifacts/exp1_known_truth_validation/exact_potential_summary.csv` |  |
+| `artifacts/P3/p3_synthetic_arm_o_summary.csv` | KEEP | `artifacts/exp1_known_truth_validation/exact_potential_cells_summary.csv` |  |
 | `artifacts/Q0/q0_anchors.csv` | KEEP | `artifacts/available_power_estimate/error_anchors.csv` |  |
 | `artifacts/Q0b/q0b_gap_shares.csv` | KEEP | `artifacts/available_power_estimate/gap_shares.csv` |  |
 | `artifacts/Q0b/q0b_h_agreement.csv` | KEEP | `artifacts/available_power_estimate/agreement_at_positive_prices.csv` |  |

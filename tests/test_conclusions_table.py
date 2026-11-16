@@ -13,7 +13,7 @@ import pytest
 
 from src.experiments import exp3_results_table as bct
 
-pytestmark = pytest.mark.skipif(not (bct.ART / "Q5" / "q5_real.csv").exists(),
+pytestmark = pytest.mark.skipif(not (bct.ART / "exp3_german_application" / "monthly_bounds_cells.csv").exists(),
                                 reason="Q1/Q5 artifacts not on disk")
 
 

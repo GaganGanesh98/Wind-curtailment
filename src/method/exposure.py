@@ -569,7 +569,7 @@ def placeholder_cohort_set(
 
 # --------------------------------------------------- the real fleet, from MaStR
 
-MASTR_SHARES_PATH = REPO_ROOT / "results" / "30_mastr_cohort_shares.csv"
+MASTR_SHARES_PATH = REPO_ROOT / "artifacts" / "method_inputs" / "mastr_cohort_shares.csv"
 
 # Award values remain PLACEHOLDERS until the tender results are ingested (rule 19:
 # a range, three settings, keyed to the Zuschlagsnummer). The capacity SHARES below

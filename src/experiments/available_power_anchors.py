@@ -3,7 +3,7 @@
     python -m src.experiments.available_power_anchors
 
 Phase Q hard rule 5: the anchor levels come from this repo's own panel, measured
-here, never from a paper or from the brief. Writes `artifacts/Q0/q0_anchors.csv`.
+here, never from a paper or from the brief. Writes `artifacts/available_power_estimate/error_anchors.csv`.
 
 WHAT AN ANCHOR IS
 -----------------
@@ -69,7 +69,7 @@ from src.method.day_bootstrap import (
     bootstrap_day_sums, ci95, day_index, load_window,
 )
 
-OUT_DIR = ARTIFACTS / "Q0"
+OUT_DIR = ARTIFACTS / "available_power_estimate"
 
 #: The forecast-level band Q cares about: where the negative-price quarter-hours
 #: actually sit. Percentiles of F over the negative-price quarter-hours of the same
@@ -312,7 +312,7 @@ def main() -> None:
             if k not in fields:
                 fields.append(k)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    path = OUT_DIR / "q0_anchors.csv"
+    path = OUT_DIR / "error_anchors.csv"
     with open(path, "w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=fields)
         w.writeheader()

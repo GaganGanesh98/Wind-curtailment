@@ -240,7 +240,7 @@ def main() -> None:
                      "negative_qh": int(nq["neg_qh"][0]) if nq.height else 0})
 
     tab = pl.DataFrame(rows)
-    with open(RESULTS_DIR / "35_market_premium_zero.csv", "w", newline="",
+    with open(REPO_ROOT / "artifacts" / "method_inputs" / "market_premium_zero.csv", "w", newline="",
               encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=tab.columns, lineterminator="\n")
         w.writeheader()

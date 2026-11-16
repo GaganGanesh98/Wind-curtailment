@@ -36,14 +36,15 @@ import pytest
 from src.method.read_results import load
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-P3 = REPO_ROOT / "artifacts" / "P3"
-Q0 = REPO_ROOT / "artifacts" / "Q0"
-Q0B = REPO_ROOT / "artifacts" / "Q0b"
-Q1D = REPO_ROOT / "artifacts" / "Q1"
-Q0C = REPO_ROOT / "artifacts" / "Q0c"
-Q5D = REPO_ROOT / "artifacts" / "Q5"
-Q6D = REPO_ROOT / "artifacts" / "Q6"
-TBL = REPO_ROOT / "artifacts" / "TB_lambda"
+P3 = REPO_ROOT / "artifacts" / "exp1_known_truth_validation"                 # exact and estimated potential cells
+P3_REAL = REPO_ROOT / "archive" / "artifacts" / "P3"  # P3 real data (F), archived
+Q0 = REPO_ROOT / "artifacts" / "available_power_estimate"
+Q0B = REPO_ROOT / "artifacts" / "available_power_estimate"
+Q1D = REPO_ROOT / "artifacts" / "exp1_known_truth_validation"
+Q0C = REPO_ROOT / "archive" / "artifacts" / "Q0c"
+Q5D = REPO_ROOT / "artifacts" / "exp3_german_application"
+Q6D = REPO_ROOT / "archive" / "artifacts" / "Q6"
+TBL = REPO_ROOT / "archive" / "artifacts" / "TB_lambda"
 QS_FILE = (REPO_ROOT / "data" / "raw" / "netztransparenz"
            / "hochrechnung_wind_onshore_qualitaetsgesichert"
            / "online_hochrechnung_wind_onshore_qs_2025-10-01_2026-10-31_dl2026-11-15.csv")
@@ -386,8 +387,8 @@ def _q0b_checks(sh: pl.DataFrame, v: pl.DataFrame, ag: pl.DataFrame):
 def _amendment1_checks():
     """`docs/Q0_preregistration.md` A1.4 -- the values traced to results/36 and /34."""
     import csv as _csv
-    r36 = {r["area"]: r for r in _csv.DictReader(open(REPO_ROOT / "results" / "36_hochrechnung_onshore_check.csv"))}
-    r34 = {r["area"]: r for r in _csv.DictReader(open(REPO_ROOT / "results" / "34_hochrechnung_check.csv"))}
+    r36 = {r["area"]: r for r in _csv.DictReader(open(REPO_ROOT / "artifacts" / "available_power_estimate" / "projection_check_onshore.csv"))}
+    r34 = {r["area"]: r for r in _csv.DictReader(open(REPO_ROOT / "artifacts" / "available_power_estimate" / "projection_check_operational.csv"))}
     hr = sum(float(r36[a]["hr_mean_mw"]) for a in r36)
     sm = sum(float(r36[a]["smard_mean_mw"]) for a in r36)
     ex = {a: float(r36[a]["hr_mean_mw"]) - float(r36[a]["smard_mean_mw"]) for a in r36}
@@ -419,9 +420,9 @@ def _qs_file_checks():
 
 def _q1_checks():
     """`docs/Q1_results.md`."""
-    lv = pl.read_csv(Q1D / "q1_summary_by_level.csv")
-    hd = pl.read_csv(Q1D / "q1_headline.csv")
-    raw = load(Q1D / "q1_variance_dial.csv").with_columns(
+    lv = pl.read_csv(Q1D / "noise_dial_summary.csv")
+    hd = pl.read_csv(Q1D / "noise_dial_headline.csv")
+    raw = load(Q1D / "noise_dial_cells.csv").with_columns(
         pl.col("sigma").cast(pl.Float64, strict=False))
 
     def L(sig, lam, col, noise="iid"):
@@ -498,7 +499,7 @@ def _q1_checks():
 
 def _open_list_checks():
     """`docs/R1_reconciliation.md` section 6 item 6: TenneT correlation, re-measured."""
-    ag = pl.read_csv(Q0B / "q0b_h_agreement.csv")
+    ag = pl.read_csv(Q0B / "agreement_at_positive_prices.csv")
     out = []
     for series, n, c in (("operational", 5422, 0.9913), ("quality-assured", 35673, 0.9914)):
         q = ag.filter((pl.col("series") == series) & (pl.col("area") == "TenneT")
@@ -536,8 +537,8 @@ def _q0c_checks():
 
 def _q5_checks():
     """`docs/Q5_results.md`."""
-    sm = pl.read_csv(Q5D / "q5_summary.csv")
-    raw = load(Q5D / "q5_real.csv")
+    sm = pl.read_csv(Q5D / "monthly_bounds_summary.csv")
+    raw = load(Q5D / "monthly_bounds_cells.csv")
 
     def T(setting, scope, col):
         q = sm.filter((pl.col("table") == "transitions") & (pl.col("setting") == setting)
@@ -708,7 +709,7 @@ def _tb_lambda_checks():
             float("T-B VERDICT at n = 50: FAIL" in (TBL / "42_verdict_report.txt").read_text()), 1.0, 0)]
     for f, h in (("21_tb_primary.csv", "a8d38855b7ea2b22"),
                  ("21_tb_primary_report_20261110.txt", "ed9f694d24036fc6")):
-        p = REPO_ROOT / "results" / f
+        p = REPO_ROOT / "archive" / "results" / f
         if p.exists():
             got = hashlib.sha256(p.read_bytes()).hexdigest()[:16]
             out.append((f"TB-lambda {f} untouched", float(got == h), 1.0, 0))
@@ -727,7 +728,7 @@ def _tb_lambda_checks():
                     float(m2.filter(pl.col("r_shape") == shape)["m2"].mean()), mean, 5e-7))
     b3 = d.filter((pl.col("method") == "B3-CV") & (pl.col("r_shape") == "half"))
     out.append(("TB-lambda B3-CV half mean", float(b3["int_abs_r"].mean()), 0.010641, 5e-7))
-    rep = REPO_ROOT / "results" / "21_tb_primary_report_20261110.txt"
+    rep = REPO_ROOT / "archive" / "results" / "21_tb_primary_report_20261110.txt"
     if rep.exists():
         lines = rep.read_text().splitlines()
 
@@ -745,7 +746,7 @@ def _tb_lambda_checks():
                     (f"TB committed {shape} vs {rival} p", got_p, p, 5e-5)]
         out.append(("TB committed verdict PASS",
                     float("T-B VERDICT at n = 50: PASS" in rep.read_text()), 1.0, 0))
-    old = REPO_ROOT / "results" / "21_tb_primary.csv"
+    old = REPO_ROOT / "archive" / "results" / "21_tb_primary.csv"
     if old.exists():
         o = pl.read_csv(old, infer_schema_length=0).filter(
             (pl.col("method") == "M2") & (pl.col("n_event_days_requested") == "50")).select(
@@ -800,7 +801,7 @@ def _c1_checks():
     """
     from src.experiments import exp3_results_table as bct
     note = REPO_ROOT / "docs" / "C1_conclusions_table.md"
-    if not note.exists() or not (Q5D / "q5_real.csv").exists():
+    if not note.exists() or not (Q5D / "monthly_bounds_cells.csv").exists():
         return []
     have = note.read_text(encoding="utf-8").splitlines()
     want = bct.markdown(bct.build()).splitlines()
@@ -845,12 +846,12 @@ def _q2_prose(cov: pl.DataFrame, s: pl.DataFrame) -> list:
 def _q2_checks():
     """`docs/Q2_results.md`: every table cell parsed from the note against the artifacts,
     plus the figures quoted in the prose."""
-    q2 = REPO_ROOT / "artifacts" / "Q2"
+    q2 = REPO_ROOT / "artifacts" / "exp2_bias_robustness_validation"
     note = REPO_ROOT / "docs" / "Q2_results.md"
-    if not (q2 / "q2_summary_by_level.csv").exists() or not note.exists():
+    if not (q2 / "bias_dial_summary.csv").exists() or not note.exists():
         return []
-    cov = pl.read_csv(q2 / "q2_coverage_by_level.csv")
-    s = pl.read_csv(q2 / "q2_summary_by_level.csv", infer_schema_length=None)
+    cov = pl.read_csv(q2 / "bias_dial_coverage.csv")
+    s = pl.read_csv(q2 / "bias_dial_summary.csv", infer_schema_length=None)
     lam_of = {"λ₁": "L1", "λ₂": "L2", "λ₃": "L3", "λ₄": "L4", "λ₅": "L5", "λ₆": "L6", "λ₇": "L7"}
     out, sigma, bs = [], None, None
     for line in note.read_text(encoding="utf-8").splitlines():
@@ -878,12 +879,12 @@ def _q2_checks():
                 tag = f"Q2 s{sigma:g} b{b:+.3f} {lam_of[cells[0]]}"
                 out += [(f"{tag} informative", r["n_informative"], k, 0),
                         (f"{tag} informative-and-missed", r["n_informative_and_missed"], m, 0)]
-    rows_a = pl.read_csv(q2 / "q2a_bias_dial.csv", infer_schema_length=0)
-    rows_b = pl.read_csv(q2 / "q2b_crossed.csv", infer_schema_length=0)
-    q0 = pl.read_csv(Q0 / "q0_anchors.csv").filter(
+    rows_a = pl.read_csv(q2 / "bias_dial_cells.csv", infer_schema_length=0)
+    rows_b = pl.read_csv(q2 / "bias_noise_crossed_cells.csv", infer_schema_length=0)
+    q0 = pl.read_csv(Q0 / "error_anchors.csv").filter(
         (pl.col("anchor") == "H") & pl.col("area").str.starts_with("DE excl")
         & (pl.col("sample") == "price >= 0"))
-    q1 = pl.read_csv(Q1D / "q1_summary_by_level.csv").filter(pl.col("noise") == "iid")
+    q1 = pl.read_csv(Q1D / "noise_dial_summary.csv").filter(pl.col("noise") == "iid")
     z = s.filter((pl.col("b") == 0) & (pl.col("dial") == "q2b")).join(
         q1.select(["sigma", "lam", pl.col("n_informative").alias("q1")]), on=["sigma", "lam"])
     out += [("Q2 q2a rows", rows_a.height, 1890, 0), ("Q2 q2b rows", rows_b.height, 3402, 0),
@@ -901,12 +902,12 @@ def _q2_checks():
 
 def _v1_checks():
     """`docs/V_results.md` V1: both tables parsed from the note, plus the prose figures."""
-    vd = REPO_ROOT / "artifacts" / "V"
+    vd = REPO_ROOT / "artifacts" / "exp2_bias_robustness_validation"
     note = REPO_ROOT / "docs" / "V_results.md"
-    if not (vd / "v1_coverage.csv").exists() or not note.exists():
+    if not (vd / "bias_robust_coverage.csv").exists() or not note.exists():
         return []
-    cov = pl.read_csv(vd / "v1_coverage.csv", infer_schema_length=None)
-    fun = pl.read_csv(vd / "v1_by_functional.csv", infer_schema_length=None)
+    cov = pl.read_csv(vd / "bias_robust_coverage.csv", infer_schema_length=None)
+    fun = pl.read_csv(vd / "bias_robust_by_functional.csv", infer_schema_length=None)
     lam_of = {"λ₁": "L1", "λ₂": "L2", "λ₃": "L3", "λ₄": "L4", "λ₆": "L6", "λ₇": "L7"}
     out, section = [], None
     for line in note.read_text(encoding="utf-8").splitlines():
@@ -941,12 +942,12 @@ def _v1_checks():
                     (f"{tag} covered", r["n_covered"], kc, 0), (f"{tag} scored", r["n_scored"], nc, 0)]
     raw = pl.concat([pl.read_csv(f, infer_schema_length=0, columns=["hetero", "rate", "gamma", "r_shape",
                                                                      "seed", "s", "v0_commit"])
-                     for f in sorted(vd.glob("v1_raw_shard*of4.csv"))])
+                     for f in sorted(vd.glob("bias_robust_cells_shard*of4.csv"))])
     per_cell = raw.group_by(["hetero", "rate", "gamma", "r_shape", "seed"]).agg(pl.col("s").n_unique())
     applies = cov.filter(pl.col("criterion_applies").cast(pl.String).str.to_lowercase() == "true")
-    q2 = pl.read_csv(REPO_ROOT / "artifacts" / "Q2" / "q2_coverage_by_level.csv").filter(
+    q2 = pl.read_csv(REPO_ROOT / "artifacts" / "exp2_bias_robustness_validation" / "bias_dial_coverage.csv").filter(
         (pl.col("dial") == "q2a") & ((pl.col("b") + 0.047).abs() < 1e-9))
-    q2l5 = pl.read_csv(REPO_ROOT / "artifacts" / "Q2" / "q2_summary_by_level.csv").filter(
+    q2l5 = pl.read_csv(REPO_ROOT / "artifacts" / "exp2_bias_robustness_validation" / "bias_dial_summary.csv").filter(
         (pl.col("dial") == "q2a") & ((pl.col("b") + 0.047).abs() < 1e-9) & (pl.col("lam") == "L5"))
     out += [("V1 54 cells", per_cell.height, 54, 0),
             ("V1 70 potentials in every cell", float((per_cell["s"] == 70).all()), 1.0, 0),
@@ -963,11 +964,11 @@ def _v1_checks():
 
 def _v2_checks():
     """`docs/V_results.md` V2: the breakdown table parsed from the note, plus reproduction."""
-    vd = REPO_ROOT / "artifacts" / "V"
+    vd = REPO_ROOT / "artifacts" / "exp3_german_application"
     note = REPO_ROOT / "docs" / "V_results.md"
-    if not (vd / "v2_breakdown.csv").exists() or not note.exists():
+    if not (vd / "breakdown_points.csv").exists() or not note.exists():
         return []
-    bd = {r["lam"]: r for r in pl.read_csv(vd / "v2_breakdown.csv", infer_schema_length=0).iter_rows(named=True)}
+    bd = {r["lam"]: r for r in pl.read_csv(vd / "breakdown_points.csv", infer_schema_length=0).iter_rows(named=True)}
     lam_of = {"λ₁": "L1", "λ₂": "L2", "λ₃": "L3", "λ₆": "L6"}
     out, section = [], None
 
@@ -990,20 +991,20 @@ def _v2_checks():
         out += iv(c[4], r["lo_B0"], r["hi_B0"], f"{tag} B0")
         out += iv(c[5], r["lo_at_break"], r["hi_at_break"], f"{tag} at break")
         out += iv(c[6], r["lo_B015"], r["hi_B015"], f"{tag} B0.15")
-    raw = pl.read_csv(vd / "v2_real_raw.csv", infer_schema_length=0).with_columns(
+    raw = pl.read_csv(vd / "bias_robust_full_window_cells.csv", infer_schema_length=0).with_columns(
         pl.col("b").cast(pl.Float64))
-    q5 = pl.read_csv(Q5D / "q5_real.csv", infer_schema_length=0).filter(
+    q5 = pl.read_csv(Q5D / "monthly_bounds_cells.csv", infer_schema_length=0).filter(
         (pl.col("setting") == "main") & (pl.col("potential") == "H") & (pl.col("period") == "window")
         & pl.col("c_hat").str.contains("recalibrated").not_())
     j = raw.filter(pl.col("b") == 0).join(q5.select(["lam", pl.col("lo").alias("qlo"), pl.col("hi").alias("qhi")]),
                                           on="lam")
-    q0 = pl.read_csv(Q0 / "q0_anchors.csv").filter(
+    q0 = pl.read_csv(Q0 / "error_anchors.csv").filter(
         (pl.col("anchor") == "H") & pl.col("area").str.starts_with("DE excl") & (pl.col("sample") == "price >= 0"))
     out += [("V2 31 scorings", raw["b"].n_unique(), 31, 0),
             ("V2 b=0 reproduces Q5 window H, all functionals",
              float(j.height == 7 and (j["lo"] == j["qlo"]).all() and (j["hi"] == j["qhi"]).all()), 1.0, 0),
             ("V2 scale: H bias -0.0472", float(q0["bias"][0]), -0.0472, 5e-5)]
-    hv = pl.read_csv(vd / "v2_robust_intervals.csv")
+    hv = pl.read_csv(vd / "bias_robust_full_window_intervals.csv")
 
     def holds(lam, B):
         return float(hv.filter((pl.col("lam") == lam) & ((pl.col("B") - B).abs() < 1e-9))
@@ -1021,8 +1022,8 @@ def _erratum_checks():
     note = REPO_ROOT / "docs" / "ERRATUM_lambda5.md"
     if not note.exists():
         return []
-    files = {"Q1": Q1D / "q1_variance_dial.csv", "Q2a": REPO_ROOT / "artifacts" / "Q2" / "q2a_bias_dial.csv",
-             "Q2b": REPO_ROOT / "artifacts" / "Q2" / "q2b_crossed.csv"}
+    files = {"Q1": Q1D / "noise_dial_cells.csv", "Q2a": REPO_ROOT / "artifacts" / "exp2_bias_robustness_validation" / "bias_dial_cells.csv",
+             "Q2b": REPO_ROOT / "artifacts" / "exp2_bias_robustness_validation" / "bias_noise_crossed_cells.csv"}
     if not all(f.exists() for f in files.values()):
         return []
     out = []
@@ -1045,7 +1046,7 @@ def _erratum_checks():
         out += [(f"{tag} stored", int((r["covered"] == "True").sum()), int(c[2]), 0),
                 (f"{tag} corrected", int(n["cov"].sum()), int(c[3]), 0),
                 (f"{tag} scored", n.height, int(c[4]), 0), (f"{tag} rows", r.height, int(c[4]), 0)]
-    v = pl.read_csv(REPO_ROOT / "artifacts" / "V" / "v1_by_functional.csv", infer_schema_length=None)
+    v = pl.read_csv(REPO_ROOT / "artifacts" / "exp2_bias_robustness_validation" / "bias_robust_by_functional.csv", infer_schema_length=None)
     ap = v.filter((pl.col("lam") == "L5") & (pl.col("B") + 1e-9 >= pl.col("b_true").abs()))
     out += [("Erratum V1 lambda-5 applicable levels", ap.height, 9, 0),
             ("Erratum V1 lambda-5 54/54 at every applicable level",
@@ -1077,7 +1078,7 @@ def _k0_checks():
 
 def _k1_checks():
     """`docs/K_results.md` K1: both tables parsed from the note, the verdict, the diagnostics."""
-    k1 = REPO_ROOT / "artifacts" / "K1"
+    k1 = REPO_ROOT / "archive" / "artifacts" / "K1"
     note = REPO_ROOT / "docs" / "K_results.md"
     if not (k1 / "k1_summary.csv").exists() or not note.exists():
         return []
@@ -1181,10 +1182,10 @@ def _collect():
     """All checks whose artifacts are on disk, as (id, got, want, tol)."""
     out, skipped = [], []
     try:
-        o = load(P3 / "p3_synthetic_arm_o.csv")
-        r = load(P3 / "p3_real.csv")
+        o = load(P3 / "exact_potential_cells.csv")
+        r = load(P3_REAL / "p3_real.csv")
         out += _checks(o, r)
-        d = P3 / "p3_synthetic_arm_d.csv"
+        d = P3 / "estimated_potential_cells.csv"
         if d.exists():
             dd = load(d)
             out += _checks_arm_d(dd, o)
@@ -1193,15 +1194,15 @@ def _collect():
             skipped.append("P3 Arm D")
     except FileNotFoundError:
         skipped.append("P3")
-    q = Q0 / "q0_anchors.csv"
+    q = Q0 / "error_anchors.csv"
     if q.exists():
         out += _q0_checks(load(q))
     else:
         skipped.append("Q0 anchors")
-    if (Q0B / "q0b_verdicts.csv").exists():
-        out += _q0b_checks(load(Q0B / "q0b_gap_shares.csv"),
-                           load(Q0B / "q0b_verdicts.csv"),
-                           load(Q0B / "q0b_h_agreement.csv"))
+    if (Q0B / "adds_back_verdicts.csv").exists():
+        out += _q0b_checks(load(Q0B / "gap_shares.csv"),
+                           load(Q0B / "adds_back_verdicts.csv"),
+                           load(Q0B / "agreement_at_positive_prices.csv"))
         out += _amendment1_checks()
         out += _open_list_checks()
     else:
@@ -1211,7 +1212,7 @@ def _collect():
         out += _q0c_checks()
     else:
         skipped.append("Q0c")
-    if (Q5D / "q5_summary.csv").exists():
+    if (Q5D / "monthly_bounds_summary.csv").exists():
         out += _q5_checks()
     else:
         skipped.append("Q5")
@@ -1227,7 +1228,7 @@ def _collect():
         out += _tb_lambda_checks()
     else:
         skipped.append("T-B lambda sensitivity")
-    if (Q1D / "q1_summary_by_level.csv").exists():
+    if (Q1D / "noise_dial_summary.csv").exists():
         out += _q1_checks()
     else:
         skipped.append("Q1")

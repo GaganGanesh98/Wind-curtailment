@@ -1,0 +1,5 @@
+09_exp3_bias_breakdown
+
+Experiment 3: the bias-robust full-window interval with the projection H, main setting, for the four functionals with a reading, against the bias budget B (the hull over every constant multiplicative bias |b| ≤ B on a 0.01 grid). Dashed line: the bound the reading needs (λ₁: width below 0.25, shown as the interval itself). Vertical line: the breakdown B, the smallest B at which the reading no longer holds. Dotted line, for scale only: |−0.0472|, the projection's measured bias on price ≥ 0 quarter-hours; its bias during negative prices is not measured.
+
+Source: artifacts/exp3_german_application/bias_robust_full_window_intervals.csv (columns lam, B, lo, hi, width) and breakdown_points.csv (column breakdown_B); scale line from artifacts/available_power_estimate/error_anchors.csv, column bias (anchor H, DE excl. TenneT, price >= 0).

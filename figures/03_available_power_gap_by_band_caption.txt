@@ -1,0 +1,5 @@
+03_available_power_gap_by_band
+
+Available-power estimate: share of the potential estimate not produced once redispatch is removed, (P − G − R) / P, by negative price band and, as reference, over all quarter-hours with price ≥ 0, for the quality-assured projection H and the day-ahead forecast F. 50Hertz + Amprion + TransnetBW (TenneT excluded), 95% intervals.
+
+Source: artifacts/available_power_estimate/gap_shares.csv, rows series = quality-assured, area = 50Hertz+Amprion+TransnetBW, set = band ... and price >= 0, columns estimator, gap_share, ci_lo, ci_hi.

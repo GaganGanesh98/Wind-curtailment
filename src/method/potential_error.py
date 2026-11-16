@@ -158,7 +158,7 @@ def port_check(rows: list[dict]) -> list[str]:
 
     from src.method.read_results import load
 
-    ref = load(REPO_ROOT / "artifacts" / "P3" / "p3_synthetic_arm_o.csv")
+    ref = load(REPO_ROOT / "artifacts" / "exp1_known_truth_validation" / "exact_potential_cells.csv")
     out = []
     for r in rows:
         if r.get("sigma") != 0.0 or r.get("mu") != 0.0 or r.get("noise") != "iid":
@@ -195,10 +195,10 @@ def main() -> None:
         cells = cells[:args.limit]
     steps = plan(args.dial)
 
-    out_dir = REPO_ROOT / "artifacts" / ("Q1" if args.dial == "q1" else "Q2")
+    out_dir = REPO_ROOT / "artifacts" / ("exp1_known_truth_validation" if args.dial == "q1" else "exp2_bias_robustness_validation")
     out_dir.mkdir(parents=True, exist_ok=True)
-    names = {"q1": "q1_variance_dial.csv", "q2a": "q2a_bias_dial.csv",
-             "q2b": "q2b_crossed.csv"}
+    names = {"q1": "noise_dial_cells.csv", "q2a": "bias_dial_cells.csv",
+             "q2b": "bias_noise_crossed_cells.csv"}
     out_path = Path(args.out) if args.out else out_dir / names[args.dial]
     head, today = git_head(), date.today().isoformat()
 

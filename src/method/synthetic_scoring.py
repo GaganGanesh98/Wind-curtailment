@@ -43,7 +43,7 @@ from src.method.bounds import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-OUT_DIR = REPO_ROOT / "artifacts" / "P3"
+OUT_DIR = REPO_ROOT / "artifacts" / "exp1_known_truth_validation"
 PREREG_COMMIT = "1cd4b30"
 
 RATES = (0.10, 0.20, 0.40)
@@ -399,7 +399,7 @@ def main() -> None:
         cells = cells[:args.limit]
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    out_path = Path(args.out) if args.out else OUT_DIR / f"p3_synthetic_arm_{args.arm.lower()}.csv"
+    out_path = Path(args.out) if args.out else (OUT_DIR / ("exact_potential_cells.csv" if args.arm == "O" else "estimated_potential_cells.csv"))
     head, today = git_head(), date.today().isoformat()
     fh = writer = None
     try:

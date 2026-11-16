@@ -256,7 +256,7 @@ def main() -> None:
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     if out:
-        with open(RESULTS_DIR / "39_nr51_compliance.csv", "w", newline="",
+        with open(REPO_ROOT / "artifacts" / "available_power_estimate" / "projection_adds_back_curtailment.csv", "w", newline="",
                   encoding="utf-8") as fh:
             w = csv.DictWriter(fh, fieldnames=list(out[0]), lineterminator="\n")
             w.writeheader()

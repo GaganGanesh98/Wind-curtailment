@@ -26,7 +26,8 @@ from src.method.synthetic_scoring import GAMMAS, HETERO, RATES, SHAPES, prepare_
 from src.method.potential_error import BIAS_GRID, SEED_GEN, git_head, score_under_potential
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-OUT_DIR = REPO_ROOT / "artifacts" / "V"
+OUT_DIR = REPO_ROOT / "artifacts" / "exp2_bias_robustness_validation"          # synthetic (exp 2)
+OUT_DIR_REAL = REPO_ROOT / "artifacts" / "exp3_german_application"     # real data (exp 3)
 V0_COMMIT = "3277ea6"
 STEP = 0.01
 V1_BMAX = 0.10
@@ -50,7 +51,7 @@ def run_v1(shard: int, n_shards: int) -> Path:
     mine = [c for i, c in enumerate(cells) if i % n_shards == shard]
     sums = v1_sums()
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    out = OUT_DIR / f"v1_raw_shard{shard}of{n_shards}.csv"
+    out = OUT_DIR / f"bias_robust_cells_shard{shard}of{n_shards}.csv"
     head = git_head()
     print(f"V1 shard {shard}/{n_shards}: {len(mine)} cells x {len(sums)} potentials -> {out}",
           flush=True)
@@ -81,8 +82,8 @@ def run_v1(shard: int, n_shards: int) -> Path:
 def run_v2() -> Path:
     from src.method.real_panel import THREE_AREA, load_panel, run_arm
     panel = load_panel(THREE_AREA, "H")
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    out = OUT_DIR / "v2_real_raw.csv"
+    OUT_DIR_REAL.mkdir(parents=True, exist_ok=True)
+    out = OUT_DIR_REAL / "bias_robust_full_window_cells.csv"
     head = git_head()
     fh = writer = None
     try:

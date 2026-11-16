@@ -1,0 +1,6 @@
+05_exp1_exact_vs_estimated_potential
+
+Experiment 1: median width of the identified set per functional when the potential is exact (seed 45) and when it is estimated, log scale.
+λ₅ is omitted: it is a counterfactual energy in GWh, not a share of potential, so it cannot sit on this axis.
+
+Source: artifacts/exp1_known_truth_validation/exact_potential_cells.csv (seed = 45) and estimated_potential_cells.csv, rows feasible, column width, median per lam.

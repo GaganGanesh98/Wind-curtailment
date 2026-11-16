@@ -2,15 +2,15 @@
 
     python -m src.method.bias_robust_summary
 
-Reads the raw rows of `run_v_bias_robust` and writes, in `artifacts/V/`:
+Reads the raw rows of `run_v_bias_robust` and writes, in `artifacts/exp2_bias_robustness_validation/` (synthetic) and `artifacts/exp3_german_application/` (real):
 
-  v1_coverage.csv      per (B, b*): coverage of S_B over the scored functionals, and whether
+  bias_robust_coverage.csv  per (B, b*): coverage of S_B over the scored functionals, and whether
                        V0's criterion applies there (B >= |b*|) and passes
-  v1_by_functional.csv per (B, b*, functional): coverage, median width, informative count
-  v1_width_cost.csv    per (B, functional) at b* = 0: median over cells of
+  bias_robust_by_functional.csv per (B, b*, functional): coverage, median width, informative count
+  bias_robust_width_cost.csv    per (B, functional) at b* = 0: median over cells of
                        width(S_B) / width(S_0)
-  v2_robust_intervals.csv  per (functional, B): S_B on the real full window with H
-  v2_breakdown.csv     per functional: the smallest B at which its reading breaks
+  bias_robust_full_window_intervals.csv  per (functional, B): S_B on the real full window with H
+  breakdown_points.csv  per functional: the smallest B at which its reading breaks
 
 Hull, coverage slack and the informative rule are V0's: S_B = [min lo, max hi] over the
 feasible b in G_B; covered when truth lies in [lo - slack, hi + slack] with P3's
@@ -32,7 +32,8 @@ from src.method.potential_error import BIAS_GRID
 from src.method.bias_robust import V2_BMAX, grid, v1_sums
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-V = REPO_ROOT / "artifacts" / "V"
+V = REPO_ROOT / "artifacts" / "exp2_bias_robustness_validation"          # synthetic (exp 2)
+V_REAL = REPO_ROOT / "artifacts" / "exp3_german_application"     # real data (exp 3)
 V1_B = (0.0, 0.05, 0.10)
 V1_SCORED = ("L1", "L2", "L3", "L4", "L6", "L7")
 COVERAGE_FLOOR = 0.95
@@ -61,7 +62,7 @@ def _write(path: Path, rows: list[dict]) -> None:
 
 def v1_hulls() -> pl.DataFrame:
     raw = pl.concat([pl.read_csv(p, infer_schema_length=0)
-                     for p in sorted(V.glob("v1_raw_shard*of*.csv"))])
+                     for p in sorted(V.glob("bias_robust_cells_shard*of*.csv"))])
     raw = _num(raw, ("rate", "gamma", "seed", "s", "lo", "hi", "width", "truth",
                      "logical_max_width"))
     raw = raw.with_columns((pl.col("feasible") == "True").alias("feasible"),
@@ -134,7 +135,7 @@ def v1_tables(h: pl.DataFrame) -> tuple[list[dict], list[dict], list[dict]]:
 
 
 def v2_tables() -> tuple[list[dict], list[dict]]:
-    raw = _num(pl.read_csv(V / "v2_real_raw.csv", infer_schema_length=0),
+    raw = _num(pl.read_csv(V_REAL / "bias_robust_full_window_cells.csv", infer_schema_length=0),
                ("b", "lo", "hi", "width")).with_columns(pl.col("b").round(2),
                                                        (pl.col("feasible") == "True").alias("feasible"))
     budgets = [round(i * 0.01, 2) for i in range(int(round(V2_BMAX / 0.01)) + 1)]
@@ -163,16 +164,16 @@ def v2_tables() -> tuple[list[dict], list[dict]]:
 
 def main() -> None:
     iv, bd = v2_tables()
-    _write(V / "v2_robust_intervals.csv", iv)
-    _write(V / "v2_breakdown.csv", bd)
+    _write(V_REAL / "bias_robust_full_window_intervals.csv", iv)
+    _write(V_REAL / "breakdown_points.csv", bd)
     for r in bd:
         print(f"V2 {r['lam']}: {r['reading']:<26} holds at 0: {r['holds_at_B0']}  "
               f"breakdown B = {r['breakdown_B']}")
-    if len(list(V.glob("v1_raw_shard*of*.csv"))) == 4:
+    if len(list(V.glob("bias_robust_cells_shard*of*.csv"))) == 4:
         cov, fun, cost = v1_tables(v1_hulls())
-        _write(V / "v1_coverage.csv", cov)
-        _write(V / "v1_by_functional.csv", fun)
-        _write(V / "v1_width_cost.csv", cost)
+        _write(V / "bias_robust_coverage.csv", cov)
+        _write(V / "bias_robust_by_functional.csv", fun)
+        _write(V / "bias_robust_width_cost.csv", cost)
         for r in cov:
             flag = "" if not r["criterion_applies"] else ("  PASS" if r["passes"] else "  FAIL")
             print(f"V1 B {r['B']:.2f} b* {r['b_true']:+.3f}: {r['n_covered']}/{r['n_scored']} "

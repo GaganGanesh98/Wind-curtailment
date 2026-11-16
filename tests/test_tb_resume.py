@@ -118,7 +118,7 @@ def test_the_real_tb_file_never_duplicates_a_cell():
     import csv
     from pathlib import Path
 
-    p = Path(__file__).resolve().parents[1] / "results" / "21_tb_primary.csv"
+    p = Path(__file__).resolve().parents[1] / "archive" / "results" / "21_tb_primary.csv"
     if not p.exists():
         pytest.skip("21_tb_primary.csv not present")
     with open(p, encoding="utf-8", newline="") as fh:

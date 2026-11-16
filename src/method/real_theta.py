@@ -43,7 +43,7 @@ ARTIFACT_DIR = REPO_ROOT / "data" / "processed" / "e1_gate_artifacts"
 MERGED_ARTIFACT_DIR = REPO_ROOT / "data" / "processed" / "e1_gate_artifacts_merged"
 PANEL = REPO_ROOT / "data" / "processed" / "panel_qh.parquet"
 RESULTS_DIR = REPO_ROOT / "results"
-OUT_CSV = RESULTS_DIR / "39_identification_gate.csv"
+OUT_CSV = REPO_ROOT / "archive" / "results" / "39_identification_gate.csv"   # E1 gate, archived
 AW_SETTINGS = ("low", "main", "high", "stress")
 
 

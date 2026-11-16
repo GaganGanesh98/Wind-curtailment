@@ -11,7 +11,7 @@ real-data arm (`run_p3_real.run_arm`) except the region and the potential:
 Both arms use the same quarter-hours (`run_p3_real._three_area_series`). H is ex post:
 T1 bounds only, never a day-ahead input (`src/postauction/leakage.py`).
 
-Writes `artifacts/Q5/q5_real.csv`, one row per (potential, setting, period, functional),
+Writes `artifacts/exp3_german_application/monthly_bounds_cells.csv`, one row per (potential, setting, period, functional),
 with the runner's own `informative` flag: width below 0.25 of the logical maximum
 (1; 2 for L6; `l5_energy_full_gwh` for L5), Q0 section 5.
 """
@@ -29,7 +29,7 @@ from src.method.real_panel import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-OUT = REPO_ROOT / "artifacts" / "Q5" / "q5_real.csv"
+OUT = REPO_ROOT / "artifacts" / "exp3_german_application" / "monthly_bounds_cells.csv"
 PREREG_COMMIT = "60efa6e"
 INFORMATIVE_FRACTION = 0.25
 

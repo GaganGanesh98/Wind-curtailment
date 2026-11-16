@@ -43,7 +43,7 @@ from src.method.bounds import (
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PANEL = REPO_ROOT / "data" / "processed" / "panel_qh.parquet"
-OUT_DIR = REPO_ROOT / "artifacts" / "P3"
+OUT_DIR = REPO_ROOT / "archive" / "artifacts" / "P3"   # P3 real data (F) is archived
 PREREG_COMMIT = "1cd4b30"
 
 SETTINGS = ("low", "main", "high")
@@ -91,7 +91,7 @@ def _region_shares(cohorts, region: str) -> np.ndarray:
     if region == AREA:
         return np.array([c.capacity_share for c in cohorts], dtype=float)
     areas = THREE_AREA.split("+")
-    with open(REPO_ROOT / "results" / "30_mastr_cohort_shares.csv", newline="",
+    with open(REPO_ROOT / "artifacts" / "method_inputs" / "mastr_cohort_shares.csv", newline="",
               encoding="utf-8") as fh:
         rows = [r for r in csv.DictReader(fh) if r["area"] in areas]
     mw = {c.cohort_id: 0.0 for c in cohorts}
