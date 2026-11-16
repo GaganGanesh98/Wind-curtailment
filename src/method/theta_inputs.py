@@ -10,7 +10,7 @@ NOT used: they disagree with the BNetzA statistics, notably for 2021-22.
 
 **Non-tendered capacity** — all pre-2016, most of 2016-2020 — takes a **status A**
 estimate from Hirth (2026) Table A1, Appendix A2, pp. 26-28, archived at
-`docs/literature/hirth_2026_2609.10053v1.pdf`, with a ±15% band:
+`docs/sources/literature/hirth_2026_2609.10053v1.pdf`, with a ±15% band:
 
     up to 2002, market premium   8.0 ct/kWh blended   (0.00 GW: nothing left)
     2003-2011,  market premium   8.5 ct/kWh blended

@@ -63,7 +63,7 @@ PROCESSED_DIR = REPO_ROOT / "data" / "processed"
 # Hirth (2026) Table A1.
 CORRECTION_FACTOR_MAIN = 1.226
 
-# EEG 2023 section 36h(1), read from docs/legal/s36h_EEG2023.pdf on 31 Oct 2026.
+# EEG 2023 section 36h(1), read from docs/sources/legal/s36h_EEG2023.pdf on 31 Oct 2026.
 # Quality factor (Guetefaktor, site yield over reference yield, %) -> correction
 # factor. Linear interpolation between neighbouring values; above 150% the factor
 # is 0.79; below 60% it is 1.42, and below 50% it is 1.55 but only for plants in
@@ -98,7 +98,7 @@ def s36h_correction(quality_factor_pct: float, southern_region: bool = False) ->
     return S36H_CORRECTION[lo] + w * (S36H_CORRECTION[hi] - S36H_CORRECTION[lo])
 
 
-# EEG 2023 Anlage 1 Nr. 2, read from docs/legal/anlage1_EEG2023.pdf on 31 Oct 2026:
+# EEG 2023 Anlage 1 Nr. 2, read from docs/sources/legal/anlage1_EEG2023.pdf on 31 Oct 2026:
 # "For electricity from installations that were commissioned before January 1,
 # 2023, OR for which the award was granted before January 1, 2023, the market
 # premium is calculated based on the ... monthly market value. For electricity
@@ -470,7 +470,7 @@ def main() -> None:
     print(f"  the open [VERIFY] moves {abs(monthly_a - monthly_b):,.0f} MW "
           f"between the two reference periods")
 
-    print("\nCorrection-factor settings (EEG s.36h(1), docs/legal/s36h_EEG2023.pdf):")
+    print("\nCorrection-factor settings (EEG s.36h(1), docs/sources/legal/s36h_EEG2023.pdf):")
     for k, v in CORRECTION_SETTINGS.items():
         print(f"  {k:<18}{v:.3f}")
     print(f"  the main 1.226 implies a mean quality factor of about 75% on the "

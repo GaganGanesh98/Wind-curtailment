@@ -20,7 +20,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 ART = REPO_ROOT / "artifacts"
 ARCHIVED_ART = REPO_ROOT / "archive" / "artifacts"   # Q6 is archived; its verdict row stays
 CSV_OUT = REPO_ROOT / "artifacts" / "exp3_german_application" / "results_table.csv"
-MD_OUT = REPO_ROOT / "docs" / "C1_conclusions_table.md"
+MD_OUT = REPO_ROOT / "archive" / "docs" / "C1_conclusions_table.md"   # the archived C1 note, rebuilt byte for byte
 C0_COMMIT = "a67f69a"
 
 GRID = (0.0, 0.033, 0.066, 0.12, 0.18, 0.25, 0.35)
