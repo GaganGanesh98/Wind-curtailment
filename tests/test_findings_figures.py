@@ -139,3 +139,15 @@ def test_f9_widths_are_the_q1_summary():
     anc = mf.anchors()
     _same(d.with_columns(pl.lit(anc["H"]).alias("anchor_h_sigma"),
                          pl.lit(anc["T"]).alias("anchor_t_sigma")), _committed("F9_width_vs_noise"))
+
+
+def test_f10_is_the_v2_hulls():
+    if not (mf.ART / "V" / "v2_robust_intervals.csv").exists():
+        pytest.skip("Phase V artifacts not on disk")
+    d = mf.f10_data()
+    assert set(d["lam"]) == {"L1", "L2", "L3", "L6"} and d.height == 4 * 16
+    l1 = d.filter((pl.col("lam") == "L1") & (pl.col("B") == 0.0))
+    assert abs(l1["lo"][0] - 0.300) < 5e-4 and abs(l1["hi"][0] - 0.508) < 5e-4
+    assert d.filter(pl.col("lam") == "L1")["breakdown_B"][0] == "0.04"
+    _same(d.with_columns(pl.lit(abs(mf.anchors_bias_h())).alias("abs_bias_h_positive_prices")),
+          _committed("F10_bias_breakdown"))

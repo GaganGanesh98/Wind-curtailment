@@ -163,6 +163,14 @@ def anchors() -> dict:
     return {"H": float(h[0]), "T": float(t[0])}
 
 
+def anchors_bias_h() -> float:
+    a = pl.read_csv(ART / "Q0" / "q0_anchors.csv")
+    h = a.filter((pl.col("anchor") == "H") & pl.col("area").str.starts_with("DE excl. TenneT")
+                 & (pl.col("sample") == "price >= 0"))["bias"]
+    assert h.len() == 1
+    return float(h[0])
+
+
 def f7_data() -> pl.DataFrame:
     """Share informative per functional: Q1 synthetic at Anchor H vs Q5 real with H."""
     q1 = (pl.read_csv(ART / "Q1" / "q1_summary_by_level.csv")
@@ -200,6 +208,17 @@ def f9_data() -> pl.DataFrame:
               .select(["group", "lam", "sigma", "n_cells", "median_width", "q25_width",
                        "q75_width"])
               .sort(["group", "lam", "sigma"], descending=[True, False, False]))
+
+
+V2_THRESHOLD = {"L1": None, "L2": 0.5, "L3": 0.75, "L6": 0.5}
+
+
+def f10_data() -> pl.DataFrame:
+    """Phase V2: bias-robust full-window interval S_B against the budget B, with breakdown."""
+    iv = pl.read_csv(ART / "V" / "v2_robust_intervals.csv")
+    bd = pl.read_csv(ART / "V" / "v2_breakdown.csv", infer_schema_length=0).select(
+        "lam", pl.col("breakdown_B").alias("breakdown_B"))
+    return iv.join(bd, on="lam").sort(["lam", "B"])
 
 
 def f8_data() -> pl.DataFrame:
@@ -289,6 +308,17 @@ CAPTIONS = {
         "artifacts/Q1/q1_summary_by_level.csv, rows noise = iid, lam in L1-L4, L6, L7, columns "
         "sigma, median_width, q25_width, q75_width; anchors from artifacts/Q0/q0_anchors.csv as "
         "in F6."),
+    "F10_bias_breakdown": (
+        "Phase V2: the bias-robust full-window interval with the projection H, main setting, "
+        "for the four functionals with a reading in the conclusions table, against the bias "
+        "budget B (the hull over every constant multiplicative bias |b| ≤ B on a 0.01 grid). "
+        "Dashed line: the bound the reading needs (λ₁: width below 0.25, shown as the "
+        "interval itself). Vertical line: the breakdown B, the smallest B at which the reading "
+        "no longer holds. Dotted line, for scale only: |−0.0472|, the projection's measured "
+        "bias on price ≥ 0 quarter-hours; its bias during negative prices is not measured.",
+        "artifacts/V/v2_robust_intervals.csv (columns lam, B, lo, hi, width) and "
+        "artifacts/V/v2_breakdown.csv (column breakdown_B); scale line from "
+        "artifacts/Q0/q0_anchors.csv, column bias (anchor H, DE excl. TenneT, price >= 0)."),
     "F8_day_heterogeneity": (
         "Q6a: between-day variance of the curtailed share per testable cell (95% interval) "
         "against the variance that measurement error at Anchor H's σ alone would produce.",
@@ -539,6 +569,41 @@ def make_all(out: Path) -> list[Path]:
                  fontsize=15)
     save(fig, "F9_width_vs_noise", d.with_columns(pl.lit(anc["H"]).alias("anchor_h_sigma"),
                                                   pl.lit(anc["T"]).alias("anchor_t_sigma")))
+
+    # F10
+    if (ART / "V" / "v2_robust_intervals.csv").exists():
+        d = f10_data()
+        hb = abs(anchors_bias_h())
+        fig, axes = plt.subplots(2, 2, figsize=(12, 8.5), sharex=True)
+        for ax, lam, col in zip(axes.flat, ("L1", "L2", "L3", "L6"),
+                                (BLUE, ORANGE, GREEN, PURPLE)):
+            q = d.filter(pl.col("lam") == lam)
+            B = q["B"].to_numpy()
+            ax.fill_between(B, q["lo"].to_numpy(), q["hi"].to_numpy(), color=col, alpha=0.25,
+                            lw=0)
+            ax.plot(B, q["lo"].to_numpy(), color=col, lw=2)
+            ax.plot(B, q["hi"].to_numpy(), color=col, lw=2)
+            thr = V2_THRESHOLD[lam]
+            if thr is not None:
+                ax.axhline(thr, color="black", ls="--", lw=1.2)
+            bk = q["breakdown_B"][0]
+            if bk not in ("> 0.15",):
+                ax.axvline(float(bk), color=VERMILION, lw=2)
+                what = " (width ≥ 0.25)" if lam == "L1" else ""
+                ax.text(float(bk) + 0.003, 0.5, f"breakdown\nB = {float(bk):g}{what}",
+                        transform=ax.get_xaxis_transform(), va="center", fontsize=11,
+                        color=VERMILION, bbox={"facecolor": "white", "alpha": 0.85, "lw": 0})
+            else:
+                ax.text(0.98, 0.45, "no breakdown up to B = 0.15", transform=ax.transAxes,
+                        ha="right", va="center", fontsize=11)
+            ax.axvline(hb, color=GREY, ls=":", lw=1.4)
+            ax.set_title(LAM_LABEL[lam])
+            ax.set_ylabel("bias-robust interval")
+        for ax in axes[1]:
+            ax.set_xlabel("bias budget B")
+        fig.suptitle("Full-window readings with H: how much constant bias they survive",
+                     fontsize=15)
+        save(fig, "F10_bias_breakdown", d.with_columns(pl.lit(hb).alias("abs_bias_h_positive_prices")))
     return written
 
 

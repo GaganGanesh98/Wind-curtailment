@@ -958,6 +958,60 @@ def _v1_checks():
     return out
 
 
+def _v2_checks():
+    """`docs/V_results.md` V2: the breakdown table parsed from the note, plus reproduction."""
+    vd = REPO_ROOT / "artifacts" / "V"
+    note = REPO_ROOT / "docs" / "V_results.md"
+    if not (vd / "v2_breakdown.csv").exists() or not note.exists():
+        return []
+    bd = {r["lam"]: r for r in pl.read_csv(vd / "v2_breakdown.csv", infer_schema_length=0).iter_rows(named=True)}
+    lam_of = {"λ₁": "L1", "λ₂": "L2", "λ₃": "L3", "λ₆": "L6"}
+    out, section = [], None
+
+    def iv(cell, lo, hi, tag):
+        if cell == "—":
+            return [(f"{tag} absent", float(lo is None or lo == ""), 1.0, 0)]
+        a, b = (float(x) for x in cell.strip("[]").split(","))
+        return [(f"{tag} lo", float(lo), a, 5e-4), (f"{tag} hi", float(hi), b, 5e-4)]
+    for line in note.read_text(encoding="utf-8").splitlines():
+        if line.startswith("## "):
+            section = line
+        if not (section and section.startswith("## V2") and line.startswith("| λ")):
+            continue
+        c = [x.strip() for x in line.strip().strip("|").split("|")]
+        r, tag = bd[lam_of[c[0]]], f"V2 {lam_of[c[0]]}"
+        out.append((f"{tag} breakdown", float(c[3] == r["breakdown_B"]
+                                               or (c[3] != "> 0.15" and r["breakdown_B"] != "> 0.15"
+                                                   and abs(float(c[3]) - float(r["breakdown_B"])) < 1e-9)), 1.0, 0))
+        out.append((f"{tag} holds at B=0", float(r["holds_at_B0"] == "True"), 1.0, 0))
+        out += iv(c[4], r["lo_B0"], r["hi_B0"], f"{tag} B0")
+        out += iv(c[5], r["lo_at_break"], r["hi_at_break"], f"{tag} at break")
+        out += iv(c[6], r["lo_B015"], r["hi_B015"], f"{tag} B0.15")
+    raw = pl.read_csv(vd / "v2_real_raw.csv", infer_schema_length=0).with_columns(
+        pl.col("b").cast(pl.Float64))
+    q5 = pl.read_csv(Q5D / "q5_real.csv", infer_schema_length=0).filter(
+        (pl.col("setting") == "main") & (pl.col("potential") == "H") & (pl.col("period") == "window")
+        & pl.col("c_hat").str.contains("recalibrated").not_())
+    j = raw.filter(pl.col("b") == 0).join(q5.select(["lam", pl.col("lo").alias("qlo"), pl.col("hi").alias("qhi")]),
+                                          on="lam")
+    q0 = pl.read_csv(Q0 / "q0_anchors.csv").filter(
+        (pl.col("anchor") == "H") & pl.col("area").str.starts_with("DE excl") & (pl.col("sample") == "price >= 0"))
+    out += [("V2 31 scorings", raw["b"].n_unique(), 31, 0),
+            ("V2 b=0 reproduces Q5 window H, all functionals",
+             float(j.height == 7 and (j["lo"] == j["qlo"]).all() and (j["hi"] == j["qhi"]).all()), 1.0, 0),
+            ("V2 scale: H bias -0.0472", float(q0["bias"][0]), -0.0472, 5e-5)]
+    hv = pl.read_csv(vd / "v2_robust_intervals.csv")
+
+    def holds(lam, B):
+        return float(hv.filter((pl.col("lam") == lam) & ((pl.col("B") - B).abs() < 1e-9))
+                     ["reading_holds"][0])
+    out += [("V2 prose L1 survives 0.03", holds("L1", 0.03), 1.0, 0),
+            ("V2 prose L6 survives 0.03", holds("L6", 0.03), 1.0, 0),
+            ("V2 prose L2 survives 0.05", holds("L2", 0.05), 1.0, 0),
+            ("V2 prose L3 survives 0.15", holds("L3", 0.15), 1.0, 0)]
+    return out
+
+
 def _collect():
     """All checks whose artifacts are on disk, as (id, got, want, tol)."""
     out, skipped = [], []
@@ -1016,6 +1070,7 @@ def _collect():
     out += _c1_checks()
     out += _q2_checks()
     out += _v1_checks()
+    out += _v2_checks()
     return out, skipped
 
 

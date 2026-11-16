@@ -74,3 +74,24 @@ once for V2 and also read the V1 shard files when only 8 of 54 cells existed, pr
 partial V1 lines. Those outputs were moved out of `artifacts/` unread for any decision, a
 guard was added that refuses to summarise V1 until all 54 cells × 70 potentials exist, and
 every V1 number above comes from the complete run.
+
+## V2 — real data, full window, projection H
+
+`run_p3_real.run_arm` on the three-area panel with H, award setting `main`, full window,
+plain ĉ, every b ∈ [−0.15, 0.15] on the 0.01 grid (`artifacts/V/v2_real_raw.csv`, 31 scorings).
+At b = 0 every functional reproduces the committed Q5 full-window row exactly. Hulls per
+budget: `artifacts/V/v2_robust_intervals.csv`; breakdown points: `artifacts/V/v2_breakdown.csv`.
+
+| functional | reading (C1, B = 0) | breaks when | breakdown B | S_B at B = 0 | S_B at breakdown | S_B at B = 0.15 |
+|---|---|---|---|---|---|---|
+| λ₁ | informative | width ≥ 0.25 | 0.04 | [0.300, 0.508] | [0.272, 0.527] | [0.187, 0.574] |
+| λ₂ | at least 0.525 | lower bound < 0.5 | 0.06 | [0.525, 0.860] | [0.496, 0.867] | [0.449, 0.876] |
+| λ₃ | at most 0.579 | upper bound > 0.75 | > 0.15 | [0.000, 0.579] | — | [0.000, 0.658] |
+| λ₆ | at most 0.398 | upper bound > 0.5 | 0.04 | [-0.967, 0.398] | [-1.000, 0.509] | [-1.000, 0.654] |
+
+**What it says.** λ₁'s informative full-window reading and λ₆'s one-sided bound survive a
+constant bias of up to 0.03 in the projection, and break at 0.04. λ₂'s lower bound survives up
+to 0.05 and breaks at 0.06. λ₃'s one-sided bound survives the whole tested range. **For scale
+only** (V0 §3): the projection's measured bias on price ≥ 0 quarter-hours is −0.0472, larger
+than the budget at which λ₁ and λ₆ break; its bias during negative prices is not measured.
+Figure: `figures/findings/F10_bias_breakdown.png`.
