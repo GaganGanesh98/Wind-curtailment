@@ -47,7 +47,7 @@ def correct_l5(d: pl.DataFrame) -> pl.DataFrame:
             or d.filter(pl.col("lam") == "L5").height == 0:
         return d
     j = d.join(true_l5(), on=CELL, how="left")
-    if j.filter((pl.col("lam") == "L5") & pl.col("_l5_true").is_null()).height:
+    if j.select(((pl.col("lam") == "L5") & pl.col("_l5_true").is_null()).sum()).item():
         raise ValueError("a lambda-5 row has no Arm O cell to take its true truth from")
     is5 = pl.col("lam") == "L5"
     t = pl.col("_l5_true")

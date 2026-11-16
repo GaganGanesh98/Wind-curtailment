@@ -491,8 +491,8 @@ def _q1_checks():
     out += [("Q1 inaccurate solves at 0", inacc.filter(pl.col("sigma") == 0.0).height, 20, 0),
             ("Q1 inaccurate solves at 0.25", inacc.filter(pl.col("sigma") == 0.25).height, 1, 0),
             ("Q1 inaccurate solves elsewhere",
-             inacc.filter(~pl.col("sigma").is_in([0.0, 0.25])).height, 0, 0),
-            ("Q1 infeasible solves", st.filter(pl.col("s").str.contains("infeasible")).height, 0, 0)]
+             _count(inacc, ~pl.col("sigma").is_in([0.0, 0.25])), 0, 0),
+            ("Q1 infeasible solves", _count(st, pl.col("s").str.contains("infeasible")), 0, 0)]
     return out
 
 
@@ -594,8 +594,8 @@ def _q5_checks():
                           & (pl.col("potential") == "H") & pl.col("defined"))
     out += [("Q5 H L1 defined months", months.height, 8, 0),
             ("Q5 H L1 informative months",
-             months.filter(pl.col("informative").cast(pl.String) == "true").height
-             + months.filter(pl.col("informative").cast(pl.String) == "True").height, 2, 0)]
+             months.filter(pl.col("informative").cast(pl.String).str.to_lowercase() == "true").height,
+             2, 0)]
     return out
 
 
@@ -1053,6 +1053,54 @@ def _erratum_checks():
     return out
 
 
+# --------------------------------------------------------------------- zero-row guard
+# A check must never pass on nothing (16 Nov 2026: a V1 check passed because a string
+# filter on a boolean column matched no row, and `.all()` of nothing is True). While the
+# checks are collected, every DataFrame.filter that selects zero rows, and every
+# Series.all()/.any() over an empty series, raises EmptySelection naming the line. A check
+# whose honest answer is "zero rows" counts them with `_count`, which never selects.
+
+
+class EmptySelection(AssertionError):
+    """A check's filter selected no row, or reduced an empty series."""
+
+
+def _count(df: pl.DataFrame, expr: pl.Expr) -> int:
+    """Rows of `df` where `expr` holds -- a count that may legitimately be zero."""
+    return int(df.select(expr.sum()).item())
+
+
+def _where() -> str:
+    import traceback
+    frames = [f for f in traceback.extract_stack()[:-2]
+              if f.filename.endswith(("test_reported_numbers.py",)) or "/src/" in f.filename]
+    f = frames[-1] if frames else None
+    return f"{f.filename.rsplit('/', 1)[-1]}:{f.lineno}: {f.line}" if f else "unknown"
+
+
+def _guarded(fn):
+    """Run `fn` with the zero-row guard on, and always restore polars afterwards."""
+    orig_filter, orig_all, orig_any = pl.DataFrame.filter, pl.Series.all, pl.Series.any
+
+    def filt(self, *a, **k):
+        r = orig_filter(self, *a, **k)
+        if r.height == 0 and self.height > 0:
+            raise EmptySelection(f"filter selected 0 of {self.height} rows at {_where()}")
+        return r
+
+    def red(orig):
+        def g(self, *a, **k):
+            if self.len() == 0:
+                raise EmptySelection(f"{orig.__name__}() of an empty series at {_where()}")
+            return orig(self, *a, **k)
+        return g
+    pl.DataFrame.filter, pl.Series.all, pl.Series.any = filt, red(orig_all), red(orig_any)
+    try:
+        return fn()
+    finally:
+        pl.DataFrame.filter, pl.Series.all, pl.Series.any = orig_filter, orig_all, orig_any
+
+
 def _collect():
     """All checks whose artifacts are on disk, as (id, got, want, tol)."""
     out, skipped = [], []
@@ -1116,7 +1164,7 @@ def _collect():
     return out, skipped
 
 
-_CHECKS, _SKIPPED = _collect()
+_CHECKS, _SKIPPED = _guarded(_collect)
 
 
 @pytest.mark.parametrize("name,got,want,tol",
@@ -1139,8 +1187,22 @@ def test_the_checker_is_actually_checking_something():
     assert len(_CHECKS) >= 50, f"only {len(_CHECKS)} checks collected; skipped {_SKIPPED}"
 
 
+def test_zero_row_guard_bites_and_cleans_up():
+    """The guard fails an empty selection and an empty .all(), allows a zero count, and
+    leaves polars as it found it."""
+    df = pl.DataFrame({"x": [1, 2, 3], "flag": [True, False, True]})
+    with pytest.raises(EmptySelection):
+        _guarded(lambda: df.filter(pl.col("flag").cast(pl.String) == "True"))   # the V1 bug
+    with pytest.raises(EmptySelection):
+        _guarded(lambda: df["x"].head(0).all())
+    assert _guarded(lambda: _count(df, pl.col("x") > 5)) == 0
+    assert _guarded(lambda: df.filter(pl.col("flag")).height) == 2
+    assert df.filter(pl.col("x") > 5).height == 0                               # restored
+    assert pl.Series([], dtype=pl.Boolean).all()
+
+
 def main() -> None:
-    checks, skipped = _collect()
+    checks, skipped = _guarded(_collect)
     bad = 0
     for name, got, want, tol in checks:
         good = abs(float(got) - float(want)) <= tol
