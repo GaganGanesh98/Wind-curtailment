@@ -66,5 +66,18 @@ downloads into `data/raw/netztransparenz/` (`docs/sources/data_sources.md`); MaS
 `src/method/ingest_mastr.py --download`; BNetzA award statistics into `data/raw/bnetza/`.
 
 <!-- numbers-check: skip -->
-Demo step times are recorded in Step 6 of the consolidation.
+`demo/run_demo.sh`, measured on the student's laptop on 16 Nov 2026 (wall clock, whole seconds):
+
+| step | shows | time |
+|---|---|---|
+| 1 | environment and commit | 1 s |
+| 2 | experiment 1: one synthetic cell, true value, interval and coverage per functional | 5 s |
+| 3 | experiment 2: one cell with its potential biased by −0.047, plain set vs bias-robust set at B = 0.05 | 9 s |
+| 4 | experiment 3: the German results table, rebuilt from the artifacts | 1 s |
+| 5 | the number checker, active docs and archived notes | 6 s |
+| 6 | figures 01–09 regenerated into `demo/output/figures/` | 3 s |
+| full suite | `bash demo/run_full_suite.sh` | about 35 s |
+
+The demo writes only to `demo/output/` and stops with an error if anything under `artifacts/`
+or `figures/` changed.
 <!-- /numbers-check -->

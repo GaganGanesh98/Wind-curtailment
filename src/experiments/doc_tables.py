@@ -147,7 +147,12 @@ def blocks(text: str) -> dict[str, str]:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--write", action="store_true")
-    if not ap.parse_args().write:
+    ap.add_argument("--table", choices=sorted(TABLES), help="print one table only")
+    args = ap.parse_args()
+    if args.table:
+        print(TABLES[args.table]())
+        return
+    if not args.write:
         for k, f in TABLES.items():
             print(f"\n{k}\n{f()}")
         return

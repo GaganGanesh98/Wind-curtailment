@@ -12,11 +12,16 @@
 set -euo pipefail
 
 MAX_MB=50
-INCLUDE=(README.md requirements.txt docs figures results src tests artifacts
-         data/reference demo/run_demo.sh demo/run_full_suite.sh)
+# The active tree only, plus archive/README.md and the archived documents the active docs
+# cite (pre-registrations and results notes), and the few archived files active code reads.
+INCLUDE=(README.md requirements.txt pytest.ini docs figures src tests artifacts data/reference
+         demo/run_demo.sh demo/run_full_suite.sh archive/README.md archive/docs
+         archive/results/01_sample_size.csv archive/results/02_bias_by_price_band.csv
+         archive/results/02_worst_days_de.csv archive/artifacts/Q6/q6a_cells.csv
+         archive/artifacts/Q6/q6b_summary.csv)
 # The λ-grid edit, uncommitted on purpose (docs/Q_STOP_R1.md), and editor settings.
-KNOWN_DIRTY=(" M src/censoring/m2.py" " M src/censoring/tb_methods.py"
-             "?? src/censoring/tb_lambda_widening.py" "?? .vscode/")
+KNOWN_DIRTY=(" M src/method/stage_a/reservation_depth_model.py" " M archive/src/censoring/tb_methods.py"
+             "?? src/censoring/" "?? .vscode/")
 
 [ $# -eq 1 ] || { echo "usage: bash tools/export_share.sh TARGET_DIR" >&2; exit 2; }
 REPO=$(cd "$(dirname "$0")/.." && pwd -P)
@@ -79,11 +84,14 @@ if [ -d literature ]; then
 fi
 
 # 3. Never-exported items, stated so the reader knows they exist.
-EXCLUDED+=("data/ except data/reference/: raw and processed data; rebuild with docs/00_START_HERE.md section 5")
+EXCLUDED+=("data/ except data/reference/: raw and processed data; rebuild with docs/00_start_here.md, \"How to run\". Without it, the tests that read the panel or the raw downloads fail in this copy; the rest pass")
 EXCLUDED+=(".git/, .venv/, .claude/, __pycache__/, .pytest_cache/, demo/output/, every .DS_Store: repository and local state")
-EXCLUDED+=("working-tree λ-grid edit (src/censoring/m2.py, tb_methods.py, tb_lambda_widening.py): uncommitted; committed copies in artifacts/TB_lambda/")
+EXCLUDED+=("archive/ except README.md, docs/ and the five files the active code reads: the full archive stays in the repository")
+EXCLUDED+=("working-tree λ-grid edit (src/method/stage_a/reservation_depth_model.py, archive/src/censoring/tb_methods.py, src/censoring/tb_lambda_widening.py): uncommitted; committed copies in archive/artifacts/TB_lambda/")
 
 find "$TARGET" \( -name '__pycache__' -o -name '.DS_Store' \) -prune -exec rm -rf {} + 2>/dev/null || true
+# The archived checker is not exported, so the exported suite collects tests/ only.
+printf '[pytest]\n# Exported copy: archive/checks/ is not exported.\ntestpaths = tests\npythonpath = .\n' > "$TARGET/pytest.ini"
 NFILES=$(find "$TARGET" -type f | wc -l | tr -d ' ')
 
 {
@@ -93,7 +101,7 @@ NFILES=$(find "$TARGET" -type f | wc -l | tr -d ' ')
   echo "branch:      $BRANCH"
   echo "file count:  $NFILES (excluding this manifest)"
   echo
-  echo "Start with README.md, then docs/00_START_HERE.md."
+  echo "Start with README.md, then docs/00_start_here.md."
   echo
   echo "Excluded (limit $MAX_MB MB per file):"
   for e in "${EXCLUDED[@]}"; do echo "  - $e"; done

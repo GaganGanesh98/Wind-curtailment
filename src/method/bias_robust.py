@@ -108,11 +108,46 @@ def run_v2() -> Path:
     return out
 
 
+def demo(out: Path, b_true: float = -0.047, budget: float = 0.05) -> Path:
+    """One synthetic cell with a known bias, end to end, in seconds (demo/run_demo.sh).
+
+    The potential carries a constant bias b_true; the plain set (B = 0) and the bias-robust
+    hull for `budget` are printed beside the known truth, per functional.
+    """
+    rate, gamma, shape, seed, hetero = 0.10, 0.0, "step", SEED_GEN, "homogeneous"
+    prep = prepare_cell(rate, gamma, shape, seed, hetero)
+    rows = {}
+    for b in grid(budget):
+        for r in score_under_potential(prep, 0.0, round(b_true + b, 3), "iid", 0.0, "demo"):
+            if r.get("defined") and r.get("feasible"):
+                rows.setdefault(r["lam"], []).append((b, r["lo"], r["hi"], r["truth"]))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    lines = [f"cell: {hetero}, rate {rate}, gamma {gamma}, {shape}, seed {seed}; "
+             f"true bias {b_true:+.3f}, budget B = {budget}"]
+    lines.append(f"{'functional':<11}{'truth':>9}   {'plain set (B = 0)':<22}{'covered':>8}   "
+                 f"{'bias-robust set':<22}{'covered':>8}")
+    for lam in ("L1", "L2", "L3", "L4", "L6", "L7"):           # lambda-5 left out, as in V0
+        v = rows[lam]
+        truth = v[0][3]
+        plain = next((lo, hi) for b, lo, hi, _ in v if abs(b) < 1e-9)
+        lo, hi = min(x[1] for x in v), max(x[2] for x in v)
+        slack = 1e-6 * max(1.0, abs(truth))
+        cov = lambda a, z: "yes" if a - slack <= truth <= z + slack else "NO"
+        lines.append(f"{lam:<11}{truth:>9.4f}   [{plain[0]:.4f}, {plain[1]:.4f}]{'':<4}{cov(*plain):>8}   "
+                     f"[{lo:.4f}, {hi:.4f}]{'':<4}{cov(lo, hi):>8}")
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print("\n".join(lines))
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--part", choices=("v1", "v2"), required=True)
+    ap.add_argument("--part", choices=("v1", "v2", "demo"), required=True)
     ap.add_argument("--shard", default="0/1", help="i/n: run cells with index % n == i (V1)")
     args = ap.parse_args()
+    if args.part == "demo":
+        demo(REPO_ROOT / "demo" / "output" / "bias_robust_cell.txt")
+        return
     if args.part == "v1":
         i, n = (int(x) for x in args.shard.split("/"))
         print(f"wrote {run_v1(i, n)}")
