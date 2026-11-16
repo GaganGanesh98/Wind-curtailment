@@ -74,7 +74,7 @@ import numpy as np
 from src.censoring.metrics import integrated_response_error
 from src.censoring.run_reduced_grid import Writer
 from src.censoring.run_synthetic import DEPTH_GRID
-from src.censoring.synthetic import SyntheticConfig, generate, true_response_curve
+from src.method.synthetic import SyntheticConfig, generate, true_response_curve
 
 # Every criterion, threshold and subsampling rule comes from the registered runner.
 from src.censoring.run_tb import (
@@ -177,7 +177,7 @@ def score_cell_arm(cfg: SyntheticConfig, specs, shared_stage_a, cohorts,
 
 
 def run(cells, arms, out_name: str = OUT_NAME, verbose: bool = True) -> list[dict]:
-    from src.censoring.cohorts import mastr_cohort_set
+    from src.method.exposure import mastr_cohort_set
     from src.censoring.tb_methods import build_specs, make_shared_stage_a
 
     cohorts = mastr_cohort_set("DE")

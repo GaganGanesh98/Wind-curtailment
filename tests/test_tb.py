@@ -154,10 +154,10 @@ def test_inner_cv_sees_only_selected_days_even_when_others_are_corrupted():
     touched days outside the mask would choose a different hyperparameter once those
     days are replaced with garbage, and would fail here.
     """
-    from src.censoring.cohorts import mastr_cohort_set
-    from src.censoring.m2 import fit_shared_stage_a
-    from src.censoring.model import TrainConfig
-    from src.censoring.synthetic import SyntheticConfig, generate
+    from src.method.exposure import mastr_cohort_set
+    from src.method.stage_a.reservation_depth_model import fit_shared_stage_a
+    from src.method.stage_a.latent_model import TrainConfig
+    from src.method.synthetic import SyntheticConfig, generate
     from src.censoring.tb_methods import fit_b3_cv
 
     data = generate(SyntheticConfig(censoring_rate=0.20, gamma=0.0, r_shape="logistic",
@@ -193,8 +193,8 @@ def test_shared_stage_a_is_bit_identical_across_every_response_method():
     response model, which is the single thing it exists to measure.
     """
     from src.censoring.run_tb import MethodSpec, score_cell
-    from src.censoring.synthetic import SyntheticConfig
-    from src.censoring.cohorts import mastr_cohort_set
+    from src.method.synthetic import SyntheticConfig
+    from src.method.exposure import mastr_cohort_set
 
     seen: dict[str, np.ndarray] = {}
     names = ["M2", "B3-CV", "B6", "B3@8", "B3-H"]
@@ -233,11 +233,11 @@ def test_b2_does_not_consume_the_shared_array():
     Asserted behaviourally — B2's a_hat must DIFFER from the shared array — rather
     than by inspecting its signature, which would not catch a quiet rewiring.
     """
-    from src.censoring.baselines import fit_b2
-    from src.censoring.cohorts import mastr_cohort_set
-    from src.censoring.m2 import fit_shared_stage_a
-    from src.censoring.model import TrainConfig
-    from src.censoring.synthetic import SyntheticConfig, generate
+    from src.method.stage_a.baselines import fit_b2
+    from src.method.exposure import mastr_cohort_set
+    from src.method.stage_a.reservation_depth_model import fit_shared_stage_a
+    from src.method.stage_a.latent_model import TrainConfig
+    from src.method.synthetic import SyntheticConfig, generate
 
     d = generate(SyntheticConfig(censoring_rate=0.10, gamma=0.0, r_shape="step",
                                  seed=45), cohorts=mastr_cohort_set("DE"))

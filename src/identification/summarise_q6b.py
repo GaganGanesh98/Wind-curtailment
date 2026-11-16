@@ -21,7 +21,7 @@ import numpy as np
 import polars as pl
 from scipy.stats import beta
 
-from src.identification.summarise_p3 import load
+from src.method.read_results import load
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 Q6 = REPO_ROOT / "artifacts" / "Q6"

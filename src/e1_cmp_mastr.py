@@ -1,8 +1,8 @@
 import sys
 sys.path.insert(0, ".")
 import numpy as np
-from src.censoring.synthetic import SyntheticConfig, generate
-from src.censoring.cohorts import mastr_cohort_set, theta_and_exposure, build_clock_features
+from src.method.synthetic import SyntheticConfig, generate
+from src.method.exposure import mastr_cohort_set, theta_and_exposure, build_clock_features
 
 ms = mastr_cohort_set("DE")
 d = generate(SyntheticConfig(area="DE", censoring_rate=0.20, gamma=0.5,

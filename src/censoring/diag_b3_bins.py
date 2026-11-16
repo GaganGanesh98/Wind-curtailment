@@ -32,7 +32,7 @@ from pathlib import Path
 
 import numpy as np
 
-from src.censoring.baselines import _binned_response, b3_response_curve
+from src.method.stage_a.baselines import _binned_response, b3_response_curve
 from src.censoring.gate_verdict import load_cells
 from src.censoring.metrics import integrated_response_error
 

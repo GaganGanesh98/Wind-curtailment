@@ -75,7 +75,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from src.check_nr51_compliance import redispatch_qh  # noqa: E402
+from src.method.projection_and_redispatch import redispatch_qh  # noqa: E402
 
 PANEL = REPO_ROOT / "data" / "processed" / "panel_qh.parquet"
 OUT_CSV = REPO_ROOT / "results" / "16_4a_proper_placebo.csv"

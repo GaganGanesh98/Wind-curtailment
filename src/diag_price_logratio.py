@@ -62,8 +62,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from src.smard_config import PRICE_BANDS  # noqa: E402
-from src.stats_boot import eventday_bootstrap_mean, eventday_bootstrap_ratio  # noqa: E402
+from src.method.smard_config import PRICE_BANDS  # noqa: E402
+from src.method.event_day_bootstrap import eventday_bootstrap_mean, eventday_bootstrap_ratio  # noqa: E402
 
 PANEL = REPO_ROOT / "data" / "processed" / "panel_qh.parquet"
 OUT_CSV = REPO_ROOT / "results" / "15_4a_response.csv"

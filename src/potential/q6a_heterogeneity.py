@@ -24,9 +24,9 @@ from pathlib import Path
 import numpy as np
 import polars as pl
 
-from src.censoring.cohorts import build_clock_features
-from src.postauction.common import BANDS
-from src.potential.q0b_validate_h import AGG_NAME, PANEL_PATH, git_head, load_frames
+from src.method.exposure import build_clock_features
+from src.method.day_bootstrap import BANDS
+from src.method.available_power import AGG_NAME, PANEL_PATH, git_head, load_frames
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 OUT = REPO_ROOT / "artifacts" / "Q6" / "q6a_cells.csv"

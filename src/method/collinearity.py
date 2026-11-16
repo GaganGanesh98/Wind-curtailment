@@ -1,0 +1,927 @@
+"""Identification diagnostics for the cohort exposure design (spec section 3, I4).
+
+Why this module exists
+----------------------
+The pre-registered I4 / rule-18 check is `cohorts.exposure_differs_by_day`: count the
+event-days on which at least one quarter-hour has two cohorts with different exposure,
+and fall back to two cohorts below 10 days. That question is **not the one that matters**.
+It asks whether cohorts differ *somewhere*; it is satisfied by a single differing pair and
+cannot see that other pairs are identical. Both E1 generators pass it comfortably while
+large capacity shares are exactly unidentified (docs/11).
+
+The structural reason, which makes this predictable rather than empirical:
+
+    s[k, t] = 1[ price_qh[t] < theta[k, t] ]
+
+depends on the cohort **only through theta**. Two cohorts with the same theta trajectory
+therefore have bit-identical exposure, for any price series whatsoever. Identification
+comes from theta separation and from nothing else:
+
+  * the gap between theta = 0 (support zeroed by section 51, or out of support) and
+    theta = -MP (support intact);
+  * the run-length thresholds, which decide when a cohort's theta flips from -MP to 0;
+  * the spread of MP across cohorts, which comes from the award-value range.
+
+Two diagnoses, kept separate
+----------------------------
+**Exact collinearity.** Identical `s` *and* identical `depth`. The two cohorts enter
+`c = sum_k w_k s_k r*(depth_k)` only through `w_i r_i + w_j r_j`; the split is
+unrecoverable from any amount of data. Merging them is the only honest response.
+
+**Weak identification.** Identical `s` but *differing* `depth`. The exposure columns
+coincide, so a model keyed on exposure alone cannot separate the cohorts, but a response
+that is a function of depth can -- badly, in proportion to the depth contrast. This is a
+precision problem, not an impossibility, and it is reported separately because the remedy
+is different (report the contrast, widen it, or accept the variance).
+
+Shape convention
+----------------
+`s`, `theta` and `depth` are (K, T) -- cohorts on axis 0 -- matching the output of
+`cohorts.theta_and_exposure`, so these functions compose with the rest of the package
+without transposing at every call site.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Sequence
+
+import numpy as np
+
+__all__ = [
+    # diagnostics
+    "RankResult",
+    "DuplicateGroup",
+    "CohortCounts",
+    "IdentificationReport",
+    "exposure_rank",
+    "condition_numbers",
+    "duplicate_groups",
+    "per_cohort_counts",
+    "pairwise_differs",
+    "identification_diagnostics",
+    "format_report",
+    # merging indistinguishable cohorts
+    "MERGE_RULES",
+    "MergeGroup",
+    "theta_merge_map",
+    "feature_merge_map",
+    "merge_cohorts",
+    "merge_cohorts_by_theta",
+    "format_merge_map",
+    # the proposed gate criterion
+    "MIN_PAIR_DIFFER_QH",
+    "MAX_COND_S",
+    "GateVerdict",
+    "min_pair_differ",
+    "gate_identification_verdict",
+    # the proposed fallback partition
+    "FALLBACK_MODES",
+    "DEFAULT_FALLBACK_MODE",
+    "FallbackPartition",
+    "FallbackDiagnostics",
+    "fallback_partition",
+    "macro_exposure",
+    "fallback_identifiability",
+    "format_fallback",
+]
+
+
+# --------------------------------------------------------------------------- rank
+
+
+@dataclass(frozen=True)
+class RankResult:
+    rank: int
+    k: int
+    tol: float
+    singular_values: np.ndarray
+
+    @property
+    def full_rank(self) -> bool:
+        return self.rank == self.k
+
+    @property
+    def deficiency(self) -> int:
+        return self.k - self.rank
+
+
+def _svd_tolerance(sv: np.ndarray, shape: tuple[int, int]) -> float:
+    """Explicit rank tolerance, rather than relying on a library default.
+
+    This is numpy's own rule (`largest singular value * max(dim) * eps`) written out so
+    the number appears in the report and a future change to numpy cannot move the
+    verdict silently. For a (K, T) binary matrix with T ~ 9e4 this sits around 1e-9,
+    which is far below any singular value a genuinely distinct cohort produces (the
+    smallest non-trivial value observed in the MaStR set is ~15) and far above the
+    ~1e-13 numerical noise of an exactly duplicated row.
+    """
+    if sv.size == 0:
+        return 0.0
+    return float(sv[0] * max(shape) * np.finfo(float).eps)
+
+
+def exposure_rank(s: np.ndarray, tol: float | None = None) -> RankResult:
+    """Rank of the (K, T) exposure matrix by SVD, with an explicit tolerance."""
+    s = np.asarray(s, dtype=float)
+    if s.ndim != 2:
+        raise ValueError(f"s must be 2-D (K, T); got shape {s.shape}")
+    sv = np.linalg.svd(s, compute_uv=False)
+    t = _svd_tolerance(sv, s.shape) if tol is None else float(tol)
+    return RankResult(rank=int((sv > t).sum()), k=s.shape[0], tol=t,
+                      singular_values=sv)
+
+
+def condition_numbers(s: np.ndarray, w: Sequence[float] | None = None
+                      ) -> tuple[float, float]:
+    """(cond(s), cond(w * s)).
+
+    The capacity-weighted form is the one that matters: `c` is built from
+    `w_k * s_k`, so it is `w * s` a model actually has to invert to recover the
+    per-cohort responses. A cohort with a tiny capacity share contributes a nearly
+    zero row and is poorly identified even when `s` alone looks well conditioned --
+    `pilot_exempt`, at 0.4% of capacity, is the live example.
+    """
+    s = np.asarray(s, dtype=float)
+
+    def _cond(m: np.ndarray) -> float:
+        sv = np.linalg.svd(m, compute_uv=False)
+        if sv.size == 0 or sv[0] == 0.0:
+            return float("inf")
+        smallest = sv[-1]
+        return float("inf") if smallest <= _svd_tolerance(sv, m.shape) else float(sv[0] / smallest)
+
+    cond_s = _cond(s)
+    if w is None:
+        return cond_s, cond_s
+    wv = np.asarray(w, dtype=float)
+    if wv.size != s.shape[0]:
+        raise ValueError(f"w has {wv.size} entries for {s.shape[0]} cohorts")
+    return cond_s, _cond(wv[:, None] * s)
+
+
+# ------------------------------------------------------------------- duplicates
+
+
+def _row_key(row: np.ndarray) -> bytes:
+    """Byte key for an exact row match, normalised so IEEE signed zero cannot split
+    a genuine duplicate.
+
+    `theta` is built as `-np.maximum(0.0, aw - ref)`, which yields **-0.0** wherever
+    the premium is zero, while an out-of-support cohort's `np.zeros_like` yields
+    **+0.0**. The two compare equal under `==` and `np.array_equal` but have
+    different bit patterns, so a raw `tobytes()` key silently treats an exactly
+    collinear pair as distinct. Adding 0.0 maps -0.0 to +0.0 and leaves every other
+    value untouched. NaN is left alone: NaN rows are not duplicates of anything and
+    must not be merged.
+    """
+    return (np.asarray(row, dtype=float) + 0.0).tobytes()
+
+
+@dataclass(frozen=True)
+class DuplicateGroup:
+    """Cohorts whose exposure columns are bit-identical."""
+
+    members: tuple[str, ...]
+    indices: tuple[int, ...]
+    capacity_share: float
+    kind: str                      # "exact" | "weak"
+    depth_mean_abs_diff: float     # 0.0 for "exact"
+    depth_max_abs_diff: float
+
+    @property
+    def is_exact(self) -> bool:
+        return self.kind == "exact"
+
+
+def duplicate_groups(
+    s: np.ndarray,
+    cohort_ids: Sequence[str],
+    w: Sequence[float] | None = None,
+    depth: np.ndarray | None = None,
+) -> list[DuplicateGroup]:
+    """Group cohorts by identical exposure row, and diagnose each group.
+
+    A group is "exact" when its members' `depth` rows are also identical (or when no
+    depth is supplied, in which case exposure is all the information there is) and
+    "weak" when the exposure coincides but the depth profiles differ.
+    """
+    s = np.asarray(s, dtype=float)
+    ids = list(cohort_ids)
+    if len(ids) != s.shape[0]:
+        raise ValueError(f"cohort_ids has {len(ids)} entries for {s.shape[0]} cohorts")
+    shares = (np.zeros(s.shape[0]) if w is None else np.asarray(w, dtype=float))
+
+    by_pattern: dict[bytes, list[int]] = {}
+    for i in range(s.shape[0]):
+        by_pattern.setdefault(_row_key(s[i]), []).append(i)
+
+    out: list[DuplicateGroup] = []
+    for idx in by_pattern.values():
+        if len(idx) < 2:
+            continue
+        mean_d = max_d = 0.0
+        kind = "exact"
+        if depth is not None:
+            d = np.asarray(depth, dtype=float)
+            on = s[idx[0]] > 0
+            diffs = [np.abs(d[a] - d[b])[on] for a in idx for b in idx if a < b]
+            if diffs:
+                allv = np.concatenate(diffs) if on.any() else np.zeros(1)
+                mean_d, max_d = float(allv.mean()), float(allv.max())
+            if max_d > 0.0:
+                kind = "weak"
+        out.append(DuplicateGroup(
+            members=tuple(ids[i] for i in idx),
+            indices=tuple(idx),
+            capacity_share=float(shares[list(idx)].sum()),
+            kind=kind,
+            depth_mean_abs_diff=mean_d,
+            depth_max_abs_diff=max_d,
+        ))
+    return sorted(out, key=lambda g: -g.capacity_share)
+
+
+# ----------------------------------------------------------------- per cohort
+
+
+@dataclass(frozen=True)
+class CohortCounts:
+    cohort_id: str
+    capacity_share: float
+    n_exposed: int
+    n_alone: int                 # exposed, every other cohort unexposed
+    n_differs: int               # exposed, at least one other cohort unexposed
+    n_others_differ: int         # NOT exposed while at least one other cohort is
+    unique_column: bool          # no other cohort has an identical exposure row
+
+
+def per_cohort_counts(
+    s: np.ndarray,
+    cohort_ids: Sequence[str],
+    w: Sequence[float] | None = None,
+) -> list[CohortCounts]:
+    """Per-cohort identifying variation. Never pooled: a pooled count hides exactly
+    the asymmetry that matters (docs/17 section 4.2, where 2,050 differing
+    quarter-hours were 99.5% one direction)."""
+    s = np.asarray(s, dtype=float)
+    ids = list(cohort_ids)
+    shares = (np.zeros(s.shape[0]) if w is None else np.asarray(w, dtype=float))
+    any_unexposed = s.min(axis=0) == 0
+    any_exposed = s.max(axis=0) > 0
+    only_one = s.sum(axis=0) == 1
+    out = []
+    for i, cid in enumerate(ids):
+        on = s[i] > 0
+        dup = any(i != j and np.array_equal(s[i], s[j]) for j in range(s.shape[0]))
+        out.append(CohortCounts(
+            cohort_id=cid,
+            capacity_share=float(shares[i]),
+            n_exposed=int(on.sum()),
+            n_alone=int((on & only_one).sum()),
+            n_differs=int((on & any_unexposed).sum()),
+            # The reverse direction. A cohort nested innermost (exposed only at the
+            # deepest prices, where everyone else is exposed too) has n_differs = 0
+            # yet is still identified -- through the quarter-hours where others fire
+            # and it does not. Reporting only n_differs would call it unidentified.
+            n_others_differ=int(((~on) & any_exposed).sum()),
+            unique_column=not dup,
+        ))
+    return out
+
+
+def pairwise_differs(s: np.ndarray) -> np.ndarray:
+    """(K, K) counts: entry [i, j] is the number of quarter-hours where cohort i is
+    exposed and cohort j is not. Asymmetric on purpose."""
+    s = np.asarray(s, dtype=float)
+    on = s > 0
+    return (on.astype(int) @ (~on).astype(int).T)
+
+
+# ------------------------------------------------------------------ the report
+
+
+@dataclass(frozen=True)
+class IdentificationReport:
+    label: str
+    n_qh: int
+    exposure: RankResult
+    depth_rank: RankResult | None
+    combined_rank: RankResult | None
+    cond_s: float
+    cond_ws: float
+    groups: list[DuplicateGroup]
+    cohorts: list[CohortCounts]
+    pairwise: np.ndarray = field(repr=False)
+
+    @property
+    def full_rank(self) -> bool:
+        return self.exposure.full_rank
+
+    @property
+    def unique_columns(self) -> bool:
+        return all(c.unique_column for c in self.cohorts)
+
+    @property
+    def collinear_capacity_share(self) -> float:
+        return float(sum(g.capacity_share for g in self.groups if g.is_exact))
+
+    @property
+    def weak_capacity_share(self) -> float:
+        return float(sum(g.capacity_share for g in self.groups if not g.is_exact))
+
+
+def identification_diagnostics(
+    s: np.ndarray,
+    cohort_ids: Sequence[str],
+    w: Sequence[float] | None = None,
+    depth: np.ndarray | None = None,
+    label: str = "",
+    tol: float | None = None,
+) -> IdentificationReport:
+    """Everything the gate needs to judge whether K cohorts are identified."""
+    s = np.asarray(s, dtype=float)
+    cond_s, cond_ws = condition_numbers(s, w)
+    d_rank = c_rank = None
+    if depth is not None:
+        d = np.asarray(depth, dtype=float)
+        d_rank = exposure_rank(d, tol)
+        # The full feature block: row k is cohort k's (s_k, depth_k) concatenated
+        # along TIME, giving (K, 2T). Cohort k enters c only through this row, so
+        # two cohorts are separable in principle iff their rows differ. Stacking
+        # the features instead, as (2K, T), would inflate the rank with the
+        # s-versus-depth contrast and say nothing about separability.
+        c_rank = exposure_rank(np.hstack([s, d]), tol)
+    return IdentificationReport(
+        label=label,
+        n_qh=int(s.shape[1]),
+        exposure=exposure_rank(s, tol),
+        depth_rank=d_rank,
+        combined_rank=c_rank,
+        cond_s=cond_s,
+        cond_ws=cond_ws,
+        groups=duplicate_groups(s, cohort_ids, w, depth),
+        cohorts=per_cohort_counts(s, cohort_ids, w),
+        pairwise=pairwise_differs(s),
+    )
+
+
+def format_report(rep: IdentificationReport) -> str:
+    """Human-readable table. Numbers only -- no verdict; that is the gate's job."""
+    L: list[str] = []
+    a = L.append
+    a(f"--- identification: {rep.label} ---")
+    a(f"  quarter-hours {rep.n_qh:,}   cohorts K = {rep.exposure.k}")
+    a(f"  rank(s) = {rep.exposure.rank} of {rep.exposure.k}"
+      f"   (tol {rep.exposure.tol:.3e})"
+      f"   {'FULL RANK' if rep.full_rank else f'DEFICIENT by {rep.exposure.deficiency}'}")
+    a(f"  singular values of s      = "
+      f"{np.array2string(rep.exposure.singular_values, precision=2, suppress_small=True)}")
+    if rep.depth_rank is not None:
+        comb = rep.combined_rank.rank
+        a(f"  rank(depth) = {rep.depth_rank.rank} of {rep.depth_rank.k}"
+          f"   rank([s | depth]) = {comb} of {rep.exposure.k}"
+          f"   {'(depth breaks the tie)' if comb > rep.exposure.rank else '(depth does NOT break the tie)'}")
+    a(f"  cond(s) = {rep.cond_s:.3g}      cond(w * s) = {rep.cond_ws:.3g}")
+    a(f"  unique exposure columns: {rep.unique_columns}")
+    if rep.groups:
+        a(f"  duplicated exposure groups ({len(rep.groups)}):")
+        for g in rep.groups:
+            a(f"    [{g.kind.upper():<5}] {' == '.join(g.members)}"
+              f"   capacity {100 * g.capacity_share:.1f}%")
+            if not g.is_exact:
+                a(f"            depth differs: mean |d| = {g.depth_mean_abs_diff:.3f}, "
+                  f"max {g.depth_max_abs_diff:.3f} EUR/MWh -> weak, not impossible")
+        a(f"  capacity in EXACTLY collinear groups: "
+          f"{100 * rep.collinear_capacity_share:.1f}%")
+        if rep.weak_capacity_share:
+            a(f"  capacity in WEAKLY identified groups: "
+              f"{100 * rep.weak_capacity_share:.1f}%")
+    else:
+        a("  duplicated exposure groups: none")
+    a(f"  {'cohort':<32}{'share':>7}{'exposed':>9}{'alone':>8}{'differs':>9}"
+      f"{'others':>8}{'unique':>8}")
+    for c in rep.cohorts:
+        a(f"  {c.cohort_id:<32}{c.capacity_share:>7.3f}{c.n_exposed:>9,}"
+          f"{c.n_alone:>8,}{c.n_differs:>9,}{c.n_others_differ:>8,}"
+          f"{str(c.unique_column):>8}")
+    return "\n".join(L)
+
+
+# ------------------------------------------------ cohorts keyed on the data, not law
+
+#: How a merge map was keyed: the token that prefixes a merged cohort's id, mapped to
+#: the phrase naming the rule in the note, the printed map and the write-up.
+#:
+#: The label is built where the grouping happens and `_merge_map` demands it, so the
+#: two cannot drift apart again. They had: `feature_merge_map` delegated to
+#: `theta_merge_map`, which prefixed every merged id with "theta_" and whose note and
+#: printed header both read "identical theta", although the key it had been handed was
+#: the realised (s, depth) block. Every production call merges on (s, depth), so the
+#: description was wrong everywhere it appeared -- including the ids stored in the 81
+#: merged gate artifacts of 8 Nov 2026 and the map quoted in docs/12.
+MERGE_RULES = {
+    "theta": "identical theta",
+    "exposure": "identical realised (s, depth)",
+}
+
+
+@dataclass(frozen=True)
+class MergeGroup:
+    """One group of legal cohorts the data cannot tell apart under `rule`."""
+
+    merged_id: str
+    members: tuple[str, ...]
+    member_shares: tuple[float, ...]
+    capacity_share: float
+    dominant: str
+    rule: str
+
+    @property
+    def is_merge(self) -> bool:
+        return len(self.members) > 1
+
+    @property
+    def rule_phrase(self) -> str:
+        return MERGE_RULES[self.rule]
+
+
+def _merge_map(
+    key: np.ndarray,
+    cohort_ids: Sequence[str],
+    w: Sequence[float],
+    rule: str,
+) -> list[MergeGroup]:
+    """Group cohorts by identical rows of `key`, largest group first.
+
+    `rule` names the criterion `key` encodes, must be a key of `MERGE_RULES`, and is
+    what every merged id and note is labelled with. Callers go through
+    `feature_merge_map` or `theta_merge_map`, not here.
+    """
+    if rule not in MERGE_RULES:
+        raise ValueError(f"unknown merge rule {rule!r}; expected one of "
+                         f"{sorted(MERGE_RULES)}")
+    k = np.asarray(key, dtype=float)
+    ids, shares = list(cohort_ids), np.asarray(w, dtype=float)
+    if k.shape[0] != len(ids) or shares.size != len(ids):
+        raise ValueError("key, cohort_ids and w disagree on K")
+
+    by_row: dict[bytes, list[int]] = {}
+    for i in range(k.shape[0]):
+        by_row.setdefault(_row_key(k[i]), []).append(i)
+
+    groups: list[MergeGroup] = []
+    for idx in by_row.values():
+        dom = int(idx[int(np.argmax(shares[idx]))])
+        merged = (ids[dom] if len(idx) == 1
+                  else f"{rule}_" + "+".join(sorted(ids[i] for i in idx)))
+        groups.append(MergeGroup(
+            merged_id=merged,
+            members=tuple(ids[i] for i in idx),
+            member_shares=tuple(float(shares[i]) for i in idx),
+            capacity_share=float(shares[list(idx)].sum()),
+            dominant=ids[dom],
+            rule=rule,
+        ))
+    return sorted(groups, key=lambda g: -g.capacity_share)
+
+
+def theta_merge_map(
+    theta: np.ndarray,
+    cohort_ids: Sequence[str],
+    w: Sequence[float],
+) -> list[MergeGroup]:
+    """Group cohorts by identical theta trajectory. SUFFICIENT, not necessary.
+
+    Keying on theta is slightly stronger than keying on exposure: theta determines
+    both `s` and `depth`, so identical theta means two cohorts are indistinguishable
+    in every feature a model can see. It is still not the right test -- see
+    `feature_merge_map`, which is what production uses. This map is kept because
+    reporting it beside the feature map is what shows the gap between the two.
+
+    The map is data-dependent: theta depends on the award-value setting and on the
+    price series, so a merge valid under one arm may not hold under another. Compute
+    and report it per arm; never hard-code a pair.
+    """
+    return _merge_map(theta, cohort_ids, w, rule="theta")
+
+
+def feature_merge_map(
+    s: np.ndarray,
+    depth: np.ndarray,
+    cohort_ids: Sequence[str],
+    w: Sequence[float],
+) -> list[MergeGroup]:
+    """Group cohorts by identical REALISED (s, depth) block -- the correct key.
+
+    Why not theta. Cohort k enters `c = sum_k w_k s_k r*(depth_k)` only through
+    (s_k, depth_k), so two cohorts are indistinguishable **iff** that pair agrees at
+    every quarter-hour. theta equality is *sufficient* but **not necessary**: theta
+    may differ freely in quarter-hours where neither cohort is exposed, and that
+    difference is invisible in the data. Both cases occur in the Phase-3 set on the
+    real panel -- at the 'low', 'main' and 'stress' award settings the collinear pair
+    has identical theta, while at 'high' its theta differs (only off the exposed
+    set) and a theta-keyed merge misses it entirely.
+
+    Formally, i and j are indistinguishable iff for all t
+        1[p<theta_i] == 1[p<theta_j]   and   (theta_i - p) s = (theta_j - p) s,
+    i.e. theta need only agree ON the exposed set.
+
+    Identical `s` with differing depth is the weak case and is NOT merged here: it
+    stays separate and is reported as weakly identified, because the depth contrast
+    is real information and merging would throw it away.
+    """
+    return _merge_map(np.hstack([np.asarray(s, dtype=float),
+                                np.asarray(depth, dtype=float)]),
+                      cohort_ids, w, rule="exposure")
+
+
+def merge_cohorts(cohorts, key: np.ndarray, theta: np.ndarray, *, rule: str):
+    """(merged CohortSet, merged theta, merge map), grouping on `key` rows.
+
+    `key` is the matrix whose identical rows mean "indistinguishable": pass
+    `np.hstack([s, depth])` with rule="exposure" for the correct criterion, or
+    `theta` with rule="theta" for the weaker sufficient one. `rule` is required
+    and keyword-only because nothing here can infer what `key` encodes, and a
+    merge map that misdescribes its own criterion is how the labels went wrong. `theta` is carried through so the merged set keeps a threshold
+    trajectory for downstream use.
+
+    Legal provenance is preserved: every merged cohort's `note` lists the legal
+    cohorts and shares it absorbed, and the map is returned for the write-up. A
+    group whose theta is identically zero is represented as out of support with no
+    award value, which is what theta = 0 throughout actually means -- there is no
+    premium left to lose, whether because support ended or because section 51
+    zeroed it.
+    """
+    from src.method.exposure import Cohort, CohortSet  # local: avoids a cycle
+
+    cs = list(cohorts)
+    ids = [c.cohort_id for c in cs]
+    shares = [c.capacity_share for c in cs]
+    by_id = {c.cohort_id: c for c in cs}
+    groups = _merge_map(key, ids, shares, rule=rule)
+
+    new_cohorts, rows = [], []
+    for g in groups:
+        dom = by_id[g.dominant]
+        if not g.is_merge:
+            new_cohorts.append(dom)
+            rows.append(g)
+            continue
+        members = [by_id[m] for m in g.members]
+        th_row = np.asarray(theta, dtype=float)[ids.index(g.dominant)] + 0.0
+        zero_throughout = bool(np.all(th_row == 0.0))
+        if zero_throughout:
+            in_support, aw, s51 = False, None, False
+        else:
+            in_support = dom.in_support
+            have = [(m.aw_eur_mwh, m.capacity_share) for m in members
+                    if m.aw_eur_mwh is not None]
+            aw = (sum(a * s for a, s in have) / sum(s for _, s in have)
+                  if have else dom.aw_eur_mwh)
+            s51 = dom.subject_to_s51
+        note = (f"merged on {MERGE_RULES[rule]} from: "
+                + ", ".join(f"{m}({100 * s:.1f}% of fleet)"
+                            for m, s in zip(g.members, g.member_shares))
+                + f"; dominant {g.dominant}")
+        new_cohorts.append(Cohort(
+            cohort_id=g.merged_id,
+            rule_id=dom.rule_id,
+            clock=dom.clock,
+            run_length_h=dom.run_length_h if s51 else None,
+            subject_to_s51=s51,
+            in_support=in_support,
+            aw_eur_mwh=aw,
+            capacity_share=g.capacity_share,
+            macro=dom.macro,
+            note=note,
+        ))
+        rows.append(g)
+
+    keep = [ids.index(g.dominant) for g in groups]
+    return CohortSet(new_cohorts), np.asarray(theta, dtype=float)[keep], rows
+
+
+def format_merge_map(groups: Sequence[MergeGroup]) -> str:
+    rules = sorted({g.rule for g in groups})
+    phrase = (" + ".join(MERGE_RULES[r] for r in rules) if rules
+              else "no cohorts")
+    L = [f"  merge map (keyed on {phrase}):"]
+    for g in groups:
+        if g.is_merge:
+            L.append(f"    MERGE -> {g.merged_id}   capacity {100*g.capacity_share:.1f}%")
+            for m, s in zip(g.members, g.member_shares):
+                L.append(f"              {m:<32} {100*s:>5.1f}%"
+                         f"{'   (dominant)' if m == g.dominant else ''}")
+        else:
+            L.append(f"    keep  -> {g.merged_id:<34} {100*g.capacity_share:>5.1f}%")
+    return "\n".join(L)
+
+
+def merge_cohorts_by_theta(cohorts, theta: np.ndarray):
+    """Merge on theta equality alone. SUFFICIENT but not necessary -- prefer
+    `merge_cohorts(cohorts, np.hstack([s, depth]), theta, rule="exposure")`.
+    Kept because the
+    theta map is worth reporting beside the feature map to show the gap."""
+    return merge_cohorts(cohorts, np.asarray(theta, dtype=float), theta,
+                         rule="theta")
+
+
+# ------------------------------------------------------- the proposed gate criterion
+
+#: Minimum number of quarter-hours on which every cohort PAIR must differ. Inherited
+#: deliberately from the pre-registered I4 figure of 10, moved from "event-days on
+#: which SOME pair differs" to "quarter-hours on which EVERY pair differs" -- the same
+#: number, applied where it bites.
+MIN_PAIR_DIFFER_QH = 10
+
+#: Backstop on cond(s). Justified empirically, not chosen to pass: perturbing the
+#: largest-capacity pair of the merged Phase-3 design to differ on exactly n
+#: quarter-hours gives cond(s) = inf (n=0), 138 (n=1), 98 (n=2), 62 (n=5), 44 (n=10),
+#: 23 (n>=50), while the four real merged AW settings sit at 16.5-39.4. So 100 rejects
+#: a design whose worst pair differs on 0 or 1 quarter-hours and accepts everything
+#: from 2 upwards -- strictly weaker than MIN_PAIR_DIFFER_QH, which is why the pair
+#: floor is the binding test and this is only a backstop against a collective
+#: degeneracy that no single pair reveals.
+MAX_COND_S = 100.0
+
+#: cond(w * s) is REPORTED, never gated. The same perturbation leaves it essentially
+#: flat (543.6 at n=1 against 602.2 for the untouched design, and it *falls* as
+#: duplication worsens), so it does not detect near-collinearity at all. It is kept
+#: because it is the quantity that scales recovery error for a small-capacity cohort,
+#: which is a precision warning rather than an identification failure.
+
+
+@dataclass(frozen=True)
+class GateVerdict:
+    passed: bool
+    rank_ok: bool
+    unique_ok: bool
+    cond_ok: bool
+    rank: int
+    feature_rank: int
+    k: int
+    min_pair_differ: int
+    worst_pair: tuple[str, str] | None
+    cond_s: float
+    cond_ws: float
+    exposure_differs_days: int | None
+    collinear_capacity_share: float
+    reasons: tuple[str, ...]
+
+
+def min_pair_differ(s: np.ndarray, cohort_ids: Sequence[str]
+                    ) -> tuple[int, tuple[str, str] | None]:
+    """Smallest number of quarter-hours on which any cohort pair differs, and the pair.
+
+    This is the direct, sensitive measure of near-collinearity, and the one the old
+    day-count criterion could not express: `exposure_differs_by_day` counts days on
+    which *some* pair differs, which a single well-separated pair satisfies while
+    every other pair is identical.
+    """
+    s = np.asarray(s, dtype=float)
+    ids = list(cohort_ids)
+    k = s.shape[0]
+    if k < 2:
+        return 0, None
+    best, pair = None, None
+    for i in range(k):
+        for j in range(i + 1, k):
+            n = int((s[i] != s[j]).sum())
+            if best is None or n < best:
+                best, pair = n, (ids[i], ids[j])
+    return int(best), pair
+
+
+def gate_identification_verdict(
+    s: np.ndarray,
+    cohort_ids: Sequence[str],
+    w: Sequence[float],
+    depth: np.ndarray | None = None,
+    exposure_differs_days: int | None = None,
+    min_pair_qh: int = MIN_PAIR_DIFFER_QH,
+    max_cond_s: float = MAX_COND_S,
+) -> GateVerdict:
+    """The composite identification criterion proposed to replace the I4 day count.
+
+    Three conditions, all required:
+      1. full rank on the FEATURE BLOCK `[s | depth]` -- no two cohorts
+         indistinguishable. `rank(s)` alone is too strict: a pair with identical `s`
+         but differing `depth` is weakly identified, not unidentified, and would be
+         failed by a rank test on `s`. Both ranks are reported; the verdict uses the
+         feature block when depth is available and falls back to `s` when it is not.
+      2. every cohort pair differs on at least `min_pair_qh` quarter-hours;
+      3. `cond(s) <= max_cond_s`           -- backstop (see MAX_COND_S).
+
+    `exposure_differs_by_day` is accepted and carried through as a REPORTED
+    diagnostic so the old number stays visible beside the new verdict. It never
+    affects `passed`.
+
+    PROPOSED, not pre-registered. Spec v1.8 section 7 fixes the gate's criteria and
+    `gate_verdict.py` sets none of its own; this must be pre-registered as a spec
+    amendment before the week-6 gate is scored.
+    """
+    rep = identification_diagnostics(s, cohort_ids, w, depth, label="gate")
+    n_pair, pair = min_pair_differ(s, cohort_ids)
+    # The feature block is the matrix that decides separability; `s` alone fails a
+    # weakly-identified pair that depth does distinguish.
+    eff = rep.combined_rank if rep.combined_rank is not None else rep.exposure
+    rank_ok = eff.rank == rep.exposure.k
+    unique_ok = n_pair >= min_pair_qh
+    cond_ok = rep.cond_s <= max_cond_s
+    reasons: list[str] = []
+    if not rank_ok:
+        dup = "; ".join(" == ".join(g.members) for g in rep.groups if g.is_exact)
+        reasons.append(
+            f"rank([s | depth]) = {eff.rank} of {rep.exposure.k} "
+            f"(rank(s) = {rep.exposure.rank}); exactly collinear: "
+            f"{dup or 'unnamed'} carrying "
+            f"{100 * rep.collinear_capacity_share:.1f}% of capacity")
+    if not unique_ok:
+        reasons.append(
+            f"closest pair {pair[0]} / {pair[1]} differs on only {n_pair} "
+            f"quarter-hours (floor {min_pair_qh})" if pair else
+            f"min pair difference {n_pair} < {min_pair_qh}")
+    if not cond_ok:
+        reasons.append(f"cond(s) = {rep.cond_s:.1f} exceeds {max_cond_s:.0f}")
+    return GateVerdict(
+        passed=rank_ok and unique_ok and cond_ok,
+        rank_ok=rank_ok, unique_ok=unique_ok, cond_ok=cond_ok,
+        rank=rep.exposure.rank, feature_rank=eff.rank, k=rep.exposure.k,
+        min_pair_differ=n_pair, worst_pair=pair,
+        cond_s=rep.cond_s, cond_ws=rep.cond_ws,
+        exposure_differs_days=exposure_differs_days,
+        collinear_capacity_share=rep.collinear_capacity_share,
+        reasons=tuple(reasons),
+    )
+
+
+# ------------------------------------------------- the fallback partition (PROPOSED)
+
+#: Available fallback partitions. "clock" is the pre-registered one (spec section 3
+#: I4): macro-cohorts by price clock, quarter-hour against hourly. The two theta
+#: modes are PROPOSED in docs/12 section I and are not pre-registered.
+FALLBACK_MODES = ("clock", "theta_zero", "theta_regime")
+
+#: The re-spec proposed in docs/12 section I: partition on the theta REGIME --
+#: always 0 / switching / never 0. This is the dimension identification actually
+#: comes from (`s` depends on the cohort only through theta), whereas the clock
+#: merely decides *when* theta flips and stops partitioning anything once
+#: indistinguishable cohorts are merged.
+#:
+#: Not "theta_zero" (ever 0 vs never 0), which looked better on the E1 benchmark and
+#: is DEGENERATE on real data. The benchmark uses a flat placeholder market value, so
+#: an in-support cohort keeps MP > 0 throughout; the real monthly market value runs
+#: 57.18 - 115.45 EUR/MWh over the covered window and every cohort's award value
+#: (74 - 89) falls below it in some months, giving MP = max(0, AW - MV) = 0 and
+#: theta = 0 with no section 51 trigger involved. So on real data EVERY cohort
+#: reaches theta = 0 and "ever 0" partitions nothing. "theta_regime" is identified on
+#: both: M = 3 at cond 6.2 on the benchmark, M = 2 at cond 6.7 on the real panel
+#: (the "never 0" group is simply empty there), before and after merging.
+DEFAULT_FALLBACK_MODE = "theta_regime"
+
+
+@dataclass(frozen=True)
+class FallbackPartition:
+    mode: str
+    index: tuple[int, ...]                  # group of each cohort, in cohort order
+    labels: tuple[str, ...]
+    members: tuple[tuple[str, ...], ...]
+    capacity: tuple[float, ...]
+
+    @property
+    def m(self) -> int:
+        return len(self.labels)
+
+
+def fallback_partition(
+    cohorts,
+    theta: np.ndarray | None = None,
+    mode: str = DEFAULT_FALLBACK_MODE,
+) -> FallbackPartition:
+    """Group cohorts into macro-cohorts for the tied-response fallback.
+
+    mode
+      "clock"        the pre-registered partition: `cohorts.macro_index()`.
+      "theta_zero"   two groups: theta reaches 0 somewhere, or never does.
+      "theta_regime" three groups: theta always 0 / switching / never 0.
+
+    `theta` is required by both theta modes and ignored by "clock".
+
+    Why this exists. The pre-registered fallback partitions on the price clock, which
+    was the identifying dimension while a quarter-hour-clock cohort had exposure of
+    its own. Merging indistinguishable cohorts absorbs that cohort into a group whose
+    theta is 0 at every quarter-hour -- so no clock is ever consulted, every surviving
+    cohort carries the hour label, and the "two-cohort" fallback has ONE group.
+    Measured on the merged Phase-3 design: M = 1 under "clock", against M = 2 and
+    cond 4.0 under "theta_zero" (docs/12 section I).
+    """
+    if mode not in FALLBACK_MODES:
+        raise ValueError(f"mode {mode!r} not in {FALLBACK_MODES}")
+    cs = list(cohorts)
+    ids = [c.cohort_id for c in cs]
+    shares = np.array([c.capacity_share for c in cs], dtype=float)
+
+    if mode == "clock":
+        idx = [int(i) for i in cohorts.macro_index()]
+        label_of = {0: "macro_qh_clock", 1: "macro_hour_clock"}
+    else:
+        if theta is None:
+            raise ValueError(f"mode {mode!r} needs theta")
+        th = np.asarray(theta, dtype=float) + 0.0      # normalise signed zero
+        if th.shape[0] != len(cs):
+            raise ValueError(f"theta has {th.shape[0]} rows for {len(cs)} cohorts")
+        ever = [bool((th[i] == 0.0).any()) for i in range(len(cs))]
+        if mode == "theta_zero":
+            idx = [0 if e else 1 for e in ever]
+            label_of = {0: "premium_removable", 1: "premium_intact"}
+        else:
+            always = [bool((th[i] == 0.0).all()) for i in range(len(cs))]
+            idx = [0 if a else (1 if e else 2)
+                   for a, e in zip(always, ever)]
+            label_of = {0: "premium_gone", 1: "premium_switching",
+                        2: "premium_intact"}
+
+    groups = sorted(set(idx))
+    return FallbackPartition(
+        mode=mode,
+        index=tuple(idx),
+        labels=tuple(label_of.get(g, f"group_{g}") for g in groups),
+        members=tuple(tuple(ids[i] for i, x in enumerate(idx) if x == g)
+                      for g in groups),
+        capacity=tuple(float(shares[[i for i, x in enumerate(idx) if x == g]].sum())
+                       for g in groups),
+    )
+
+
+@dataclass(frozen=True)
+class FallbackDiagnostics:
+    partition: FallbackPartition
+    rank: int
+    cond: float
+    contrast_qh: int
+    mean_abs_contrast: float
+
+    @property
+    def m(self) -> int:
+        return self.partition.m
+
+    @property
+    def identified(self) -> bool:
+        """A one-group "fallback" is not a fallback, however well conditioned."""
+        return self.m >= 2 and self.rank == self.m
+
+
+def macro_exposure(s: np.ndarray, w: Sequence[float],
+                   partition: FallbackPartition) -> np.ndarray:
+    """(M, T) capacity-weighted exposure per macro group.
+
+    This, not the per-cohort `s`, is what a macro-tied fit has to invert: with the
+    response tied inside a group, `c = sum_m r_m * (sum_{k in m} w_k s_k)`.
+    """
+    s = np.asarray(s, dtype=float)
+    wv = np.asarray(w, dtype=float)
+    idx = np.asarray(partition.index)
+    rows = []
+    for g in range(idx.max() + 1):
+        sel = np.flatnonzero(idx == g)
+        if sel.size:
+            rows.append((wv[sel, None] * s[sel]).sum(axis=0))
+    return np.vstack(rows)
+
+
+def fallback_identifiability(
+    s: np.ndarray,
+    w: Sequence[float],
+    partition: FallbackPartition,
+    tol: float | None = None,
+) -> FallbackDiagnostics:
+    """Is the tied-response fallback identified under this partition?"""
+    A = macro_exposure(s, w, partition)
+    r = exposure_rank(A, tol)
+    cond, _ = condition_numbers(A)
+    if A.shape[0] < 2:
+        return FallbackDiagnostics(partition, r.rank, cond, 0, 0.0)
+    diffs = [np.abs(A[a] - A[b]) for a in range(A.shape[0])
+             for b in range(a + 1, A.shape[0])]
+    # The weakest pair is the one with the smallest contrast MAGNITUDE, not the
+    # fewest differing quarter-hours: two profiles can differ everywhere by a
+    # trivial amount, which a count would report as the strongest pair.
+    worst = min(diffs, key=lambda d: float(d.mean()))
+    return FallbackDiagnostics(partition, r.rank, cond,
+                               int((worst > 1e-12).sum()), float(worst.mean()))
+
+
+def format_fallback(diag: FallbackDiagnostics) -> str:
+    p = diag.partition
+    L = [f"  fallback partition '{p.mode}': M = {p.m}"
+         f"   rank {diag.rank}/{p.m}   cond {diag.cond:.1f}"
+         f"   -> {'IDENTIFIED' if diag.identified else 'DEGENERATE'}"]
+    if p.m < 2:
+        L.append("    only one group: this is not a two-cohort fallback at all")
+    else:
+        L.append(f"    weakest pair differs on {diag.contrast_qh:,} QH, "
+                 f"mean |contrast| {diag.mean_abs_contrast:.4f}")
+    for lab, mem, cap in zip(p.labels, p.members, p.capacity):
+        L.append(f"    {lab:<20} {100 * cap:>5.1f}%  {list(mem)}")
+    return "\n".join(L)

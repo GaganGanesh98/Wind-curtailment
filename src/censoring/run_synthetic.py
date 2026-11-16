@@ -18,15 +18,15 @@ from pathlib import Path
 
 import numpy as np
 
-from src.censoring import baselines as bl
+from src.method.stage_a import baselines as bl
 from src.censoring.metrics import (
     integrated_response_error,
     paired_abs_bias,
     paired_difference,
     score_method,
 )
-from src.censoring.model import TAUS, TrainConfig, fit_m1, m1_response_curve
-from src.censoring.synthetic import (
+from src.method.stage_a.latent_model import TAUS, TrainConfig, fit_m1, m1_response_curve
+from src.method.synthetic import (
     SyntheticConfig,
     generate,
     true_response_curve,

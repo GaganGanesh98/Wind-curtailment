@@ -11,8 +11,8 @@ from __future__ import annotations
 import polars as pl
 import pytest
 
-from src.censoring.window import E1_E2_WINDOW_START
-from src.ingest_market_values import (
+from src.method.window import E1_E2_WINDOW_START
+from src.method.ingest_market_values import (
     MV_PUBLICATION_LAG_MONTHS,
     PUBLISHED,
     PUBLISHED_DIR,
@@ -86,7 +86,7 @@ def test_all_year_files_on_disk_are_read():
 def test_a_month_appearing_twice_with_different_values_raises():
     """A silent overwrite would be worse than the gap this fix closed."""
     import re
-    from src.ingest_market_values import _read_one_published
+    from src.method.ingest_market_values import _read_one_published
     # every real file parses; the guard itself is exercised by construction
     for q in sorted(PUBLISHED_DIR.glob(PUBLISHED_GLOB)):
         df = _read_one_published(q)

@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 from src.censoring.metrics import curtailment_recovery, recovery_skill
-from src.censoring.model import (
+from src.method.stage_a.latent_model import (
     ABLATION_FULL,
     Ablation,
     apply_cohort_ablation,
@@ -20,7 +20,7 @@ from src.censoring.model import (
     cohort_runlength_hours,
 )
 from src.censoring.run_ablations import LADDER
-from src.censoring.synthetic import SyntheticConfig, generate
+from src.method.synthetic import SyntheticConfig, generate
 
 
 def _data():

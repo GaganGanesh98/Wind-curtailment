@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 import torch
 
-from src.censoring.model import (
+from src.method.stage_a.latent_model import (
     RESPONSE_HEADS,
     RESPONSE_KNOTS,
     PiecewiseLinearResponseHead,
@@ -110,7 +110,7 @@ def test_two_cohort_mode_ties_response_parameters_only():
 
 
 def test_unknown_response_head_name_raises():
-    from src.censoring.model import MechanismAwareM1
+    from src.method.stage_a.latent_model import MechanismAwareM1
 
     with pytest.raises(ValueError, match="response_head"):
         MechanismAwareM1(2, np.array([0]), response_head="gaussian")

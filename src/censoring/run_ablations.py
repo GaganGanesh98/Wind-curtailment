@@ -53,7 +53,7 @@ from pathlib import Path
 
 import numpy as np
 
-from src.censoring import baselines as bl
+from src.method.stage_a import baselines as bl
 from src.censoring.metrics import (
     curtailment_recovery,
     integrated_response_error,
@@ -61,7 +61,7 @@ from src.censoring.metrics import (
     recovery_skill,
     score_method,
 )
-from src.censoring.model import (
+from src.method.stage_a.latent_model import (
     ABLATION_FULL,
     TAUS,
     Ablation,
@@ -70,7 +70,7 @@ from src.censoring.model import (
     m1_response_curve,
 )
 from src.censoring.run_synthetic import DEPTH_GRID, write_rows
-from src.censoring.synthetic import SyntheticConfig, generate, true_response_curve
+from src.method.synthetic import SyntheticConfig, generate, true_response_curve
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RESULTS_DIR = REPO_ROOT / "results"
@@ -194,7 +194,7 @@ def plot_ladder(result: dict, path: Path) -> None:
               "A3": ("#2ca02c", "--", 1.6), "A4": ("#9467bd", ":", 1.6),
               "A5": ("#8c564b", ":", 1.6), "A6": ("#e377c2", "-.", 1.6),
               "A7": ("#ff7f0e", "-", 2.2)}
-    from src.censoring.model import m1_response_curve as curve
+    from src.method.stage_a.latent_model import m1_response_curve as curve
     for label, (colour, ls, lw) in styles.items():
         if label not in result["fits"]:
             continue

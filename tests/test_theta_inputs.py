@@ -7,18 +7,18 @@ from datetime import date
 import polars as pl
 import pytest
 
-from src.compute_theta_inputs import (
+from src.method.theta_inputs import (
     HIRTH_A1_AW_EUR_MWH, HIRTH_A1_FIT_SHARE, PROVENANCES, PROV_HIRTH_FIT,
     assert_provenance_complete, vintage,
 )
-from src.ingest_award_values import reference_period, s36h_correction
+from src.method.ingest_award_values import reference_period, s36h_correction
 
 
 def _fleet():
     """The real snapshot, built once. Skips if the MaStR ingest has not been run."""
     from pathlib import Path
 
-    from src.compute_theta_inputs import PROCESSED_DIR, assign_fit, build
+    from src.method.theta_inputs import PROCESSED_DIR, assign_fit, build
 
     if not sorted(Path(PROCESSED_DIR).glob("mastr_wind_*.parquet")):
         pytest.skip("no MaStR snapshot; run src/ingest_mastr.py")

@@ -38,11 +38,11 @@ from pathlib import Path
 
 import numpy as np
 
-from src.censoring.cohorts import mastr_cohort_set
-from src.censoring.m2 import assert_stage_a_beats_forecast, fit_shared_stage_a
-from src.censoring.model import TrainConfig
-from src.censoring.synthetic import SyntheticConfig, generate
-from src.stats_boot import eventday_bootstrap_mean, eventday_bootstrap_ratio
+from src.method.exposure import mastr_cohort_set
+from src.method.stage_a.reservation_depth_model import assert_stage_a_beats_forecast, fit_shared_stage_a
+from src.method.stage_a.latent_model import TrainConfig
+from src.method.synthetic import SyntheticConfig, generate
+from src.method.event_day_bootstrap import eventday_bootstrap_mean, eventday_bootstrap_ratio
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 OUT_CSV = REPO_ROOT / "results" / "20_stage_a_diagnostics.csv"
@@ -92,7 +92,7 @@ def main() -> None:
             sigma = float(r_unc.std(ddof=1)) / (1.0 + b_lvl)
             approx = b_lvl - sigma ** 2
 
-            from src.censoring.baselines import fit_b2
+            from src.method.stage_a.baselines import fit_b2
             b2 = fit_b2(d, cfg)["a_hat"]
             mae = lambda a, msk=None: float(np.abs(a - a_true)[
                 msk if msk is not None else slice(None)].mean())

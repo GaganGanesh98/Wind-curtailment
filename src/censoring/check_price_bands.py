@@ -19,9 +19,9 @@ negative_qh_covered against negative_qh_total = 2059.
 import sys
 sys.path.insert(0, ".")
 import numpy as np, polars as pl
-from src.censoring.cohorts import build_clock_features, mastr_cohort_set, trigger_active
-from src.censoring.window import E1_E2_WINDOW_START
-from src.ingest_market_values import read_published
+from src.method.exposure import build_clock_features, mastr_cohort_set, trigger_active
+from src.method.window import E1_E2_WINDOW_START
+from src.method.ingest_market_values import read_published
 
 panel = (pl.scan_parquet("data/processed/panel_qh.parquet")
          .filter(pl.col("area") == "DE")

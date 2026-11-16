@@ -95,7 +95,7 @@ def test_setting_hirths_edges_does_not_change_b3s_default_binning():
     existing B3 fit and invalidated the very comparison Amendment 4 sets up. This
     test is what keeps the two apart.
     """
-    from src.censoring.baselines import (
+    from src.method.stage_a.baselines import (
         B3_DEFAULT_EDGES,
         HIRTH_FIG12_MARGIN_EDGES_EUR_MWH,
     )
@@ -111,7 +111,7 @@ def test_b3_quantile_bins_and_hirth_bands_give_different_responses():
     """If they agreed, B3-H would not be a distinct comparator and T-B would be moot."""
     import numpy as np
 
-    from src.censoring.baselines import (
+    from src.method.stage_a.baselines import (
         HIRTH_FIG12_MARGIN_EDGES_EUR_MWH,
         _binned_response,
     )

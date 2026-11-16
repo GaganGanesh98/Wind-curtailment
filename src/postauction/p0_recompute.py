@@ -52,7 +52,7 @@ from datetime import date
 import numpy as np
 import polars as pl
 
-from src.postauction.common import (
+from src.method.day_bootstrap import (
     AREAS, ARTIFACTS, BANDS, DEEP_THRESHOLD, N_BOOT, SEED, SERIES, WINDOW_START,
     bootstrap_day_sums, ci95, day_index, load_window,
 )

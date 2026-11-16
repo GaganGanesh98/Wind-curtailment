@@ -22,7 +22,7 @@ from pathlib import Path
 import numpy as np
 import polars as pl
 
-from src.potential.q0b_validate_h import AGG_NAME, git_head, load_frames
+from src.method.available_power import AGG_NAME, git_head, load_frames
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 OUT_DIR = REPO_ROOT / "artifacts" / "Q0c"

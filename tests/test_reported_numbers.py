@@ -33,7 +33,7 @@ import polars as pl
 
 import pytest
 
-from src.identification.summarise_p3 import load
+from src.method.read_results import load
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 P3 = REPO_ROOT / "artifacts" / "P3"
@@ -798,7 +798,7 @@ def _c1_checks():
     cell of the committed note must equal the rebuilt cell (one check per cell), and every
     other line must match too. A hand edit to any figure in the note fails here.
     """
-    from src import build_conclusions_table as bct
+    from src.experiments import exp3_results_table as bct
     note = REPO_ROOT / "docs" / "C1_conclusions_table.md"
     if not note.exists() or not (Q5D / "q5_real.csv").exists():
         return []

@@ -15,9 +15,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from src.censoring.m2 import knot_grid, response_curve
+from src.method.stage_a.reservation_depth_model import knot_grid, response_curve
 from src.censoring.run_synthetic import DEPTH_GRID
-from src.censoring.synthetic import (
+from src.method.synthetic import (
     SyntheticConfig,
     true_response,
     true_response_curve,

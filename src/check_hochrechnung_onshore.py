@@ -51,7 +51,7 @@ TSO_COLUMNS = {"50Hertz": "50Hertz", "Amprion": "Amprion",
                "TenneT TSO": "TenneT", "TransnetBW": "TransnetBW"}
 OFFSET_HOURS = {"CET": 1, "CEST": 2}
 
-from src.smard_config import PRICE_BANDS  # noqa: E402
+from src.method.smard_config import PRICE_BANDS  # noqa: E402
 
 
 DST_HOUR = re.compile(r"(\d{4}-\d{2}-\d{2} )(\d{2})[AB](:\d{2})")
@@ -121,7 +121,7 @@ def fetch_smard_week(ts_ms: int, areas: list[str]) -> pl.DataFrame:
     """
     import requests
 
-    from src.smard_config import FILTERS, MWH_PER_QH_TO_MW
+    from src.method.smard_config import FILTERS, MWH_PER_QH_TO_MW
 
     base = "https://www.smard.de/app/chart_data"
     sess = requests.Session()
@@ -214,7 +214,7 @@ def main() -> None:
         print("  give is the curtailment-free baseline ratio, which is what the")
         print("  negative-price ratio has to be read against.")
     else:
-        from src.stats_boot import eventday_bootstrap_ratio
+        from src.method.event_day_bootstrap import eventday_bootstrap_ratio
         print(f"\n{'area':<12}{'ratio neg':>11}{'95% CI':>22}{'ratio pos':>11}"
               f"{'excess':>9}")
         for area in ("50Hertz", "Amprion", "TenneT", "TransnetBW"):

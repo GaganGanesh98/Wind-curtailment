@@ -46,8 +46,8 @@ from pathlib import Path
 import numpy as np
 
 from src.censoring.gate_verdict import load_cells, pool
-from src.censoring.model import TrainConfig, eventday_split
-from src.stats_boot import eventday_bootstrap_mean
+from src.method.stage_a.latent_model import TrainConfig, eventday_split
+from src.method.event_day_bootstrap import eventday_bootstrap_mean
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 OUT_CSV = REPO_ROOT / "results" / "14_bias_by_forecast_decile.csv"

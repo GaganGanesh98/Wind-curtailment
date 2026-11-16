@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 import numpy as np
 import pytest
 
-from src.censoring.cohorts import (
+from src.method.exposure import (
     HOUR_CLOCK,
     MACRO_HOUR,
     MACRO_QH,

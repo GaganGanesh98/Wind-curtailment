@@ -56,7 +56,7 @@ import numpy as np
 from src.censoring.metrics import integrated_response_error
 from src.censoring.run_reduced_grid import Writer
 from src.censoring.run_synthetic import DEPTH_GRID
-from src.censoring.synthetic import SyntheticConfig, generate, true_response_curve
+from src.method.synthetic import SyntheticConfig, generate, true_response_curve
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RESULTS_DIR = REPO_ROOT / "results"
@@ -394,7 +394,7 @@ def run(levels, out_name: str, cells=None, verbose: bool = True,
     SyntheticConfig seed and every fit re-seeds its own RNG, so a cell's result
     does not depend on how many cells preceded it.
     """
-    from src.censoring.cohorts import mastr_cohort_set
+    from src.method.exposure import mastr_cohort_set
     from src.censoring.tb_methods import build_specs, make_shared_stage_a
 
     cohorts = mastr_cohort_set("DE")

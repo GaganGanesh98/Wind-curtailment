@@ -27,8 +27,8 @@ SETTING = "main"
 
 
 def load_k_frame() -> pl.DataFrame:
-    from src.identification.run_p3_real import AREA, PANEL, THREE_AREA, load_panel
-    from src.potential.q0b_validate_h import load_frames
+    from src.method.real_panel import AREA, PANEL, THREE_AREA, load_panel
+    from src.method.available_power import load_frames
 
     with contextlib.redirect_stdout(io.StringIO()):
         panel = load_panel(THREE_AREA, "H")

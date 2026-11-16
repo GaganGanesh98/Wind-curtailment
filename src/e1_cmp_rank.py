@@ -2,8 +2,8 @@
 import sys
 sys.path.insert(0, ".")
 import numpy as np
-from src.censoring.synthetic import SyntheticConfig, generate
-from src.censoring.cohorts import placeholder_cohort_set, mastr_cohort_set
+from src.method.synthetic import SyntheticConfig, generate
+from src.method.exposure import placeholder_cohort_set, mastr_cohort_set
 
 print("placeholder_cohort_set, DE, logistic -- rank of s across the grid")
 print(f"{'rate':>5} {'gamma':>6} {'seed':>5} {'rank':>5} {'s0==s4':>7} "

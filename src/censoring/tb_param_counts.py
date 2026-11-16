@@ -35,9 +35,9 @@ from pathlib import Path
 
 import numpy as np
 
-from src.censoring.cohorts import mastr_cohort_set
-from src.censoring.m2 import knot_grid, pool_blocks
-from src.censoring.model import TrainConfig
+from src.method.exposure import mastr_cohort_set
+from src.method.stage_a.reservation_depth_model import knot_grid, pool_blocks
+from src.method.stage_a.latent_model import TrainConfig
 from src.censoring.run_tb import (
     GAMMAS,
     N_PRIMARY,
@@ -49,7 +49,7 @@ from src.censoring.run_tb import (
     fit_mask,
     nested_day_subsets,
 )
-from src.censoring.synthetic import SyntheticConfig, generate
+from src.method.synthetic import SyntheticConfig, generate
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RESULTS_DIR = REPO_ROOT / "results"
@@ -74,7 +74,7 @@ def _verify_against_run(data, mask, sa, cfg, ablation, lam, stored, label):
 
     A mismatch means the columns must NOT be joined into the verdict.
     """
-    from src.censoring.m2 import fit_m2
+    from src.method.stage_a.reservation_depth_model import fit_m2
     from src.censoring.metrics import integrated_response_error
     from src.censoring.run_synthetic import DEPTH_GRID
     from src.censoring.tb_methods import m2_curve
@@ -91,7 +91,7 @@ def _verify_against_run(data, mask, sa, cfg, ablation, lam, stored, label):
 
 def _lambda_for(data, mask, sa, atom: bool) -> float:
     """Re-run M2's inner lambda CV only, without the final solve."""
-    from src.censoring.m2 import (
+    from src.method.stage_a.reservation_depth_model import (
         build_design, choose_lambda, knot_grid, pool_blocks,
     )
 
@@ -116,7 +116,7 @@ def main() -> None:
     out = RESULTS_DIR / (f"21_tb_primary_params.csv" if args.which == "primary"
                          else "22_tb_secondary_params.csv")
 
-    from src.censoring.m2 import fit_shared_stage_a
+    from src.method.stage_a.reservation_depth_model import fit_shared_stage_a
     from src.censoring.tb_methods import fit_b3_cv, fit_b6, free_params
 
     cohorts = mastr_cohort_set("DE")

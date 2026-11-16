@@ -11,9 +11,9 @@ import numpy as np
 import polars as pl
 import pytest
 
-from src.identification import lambda5_truth as l5
-from src.identification.run_p3_synthetic import prepare_cell, score_cell
-from src.identification.summarise_p3 import load
+from src.method import lambda5_truth as l5
+from src.method.synthetic_scoring import prepare_cell, score_cell
+from src.method.read_results import load
 
 
 @pytest.fixture(scope="module")

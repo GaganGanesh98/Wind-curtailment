@@ -17,14 +17,14 @@ from __future__ import annotations
 
 import numpy as np
 
-from src.censoring.baselines import _binned_response, b3_response_curve, fit_b3
-from src.censoring.m2 import (
+from src.method.stage_a.baselines import _binned_response, b3_response_curve, fit_b3
+from src.method.stage_a.reservation_depth_model import (
     ABLATIONS,
     fit_shared_stage_a,
     hour_fourier_features,
     response_curve,
 )
-from src.censoring.model import TrainConfig
+from src.method.stage_a.latent_model import TrainConfig
 
 B3_BIN_GRID = (4, 8, 16, 32, 64)
 HIRTH_EDGES = (0.0, 5.0, 10.0, 20.0, 50.0, 100.0, float("inf"))
@@ -228,7 +228,7 @@ def b6_curve(fit, data, depth_grid):
 
 def make_m2(ablation):
     def _fit(data, fit_mask, shared_a):
-        from src.censoring.m2 import fit_m2
+        from src.method.stage_a.reservation_depth_model import fit_m2
         return fit_m2(data, np.array([0.0]), ablation=ablation,
                       stage_a=shared_a, train_mask=np.asarray(fit_mask, dtype=bool))
     return _fit

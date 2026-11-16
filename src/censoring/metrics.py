@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from src.stats_boot import (
+from src.method.event_day_bootstrap import (
     ci_excludes_zero,
     eventday_bootstrap_mean,
     eventday_bootstrap_ratio,

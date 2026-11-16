@@ -34,10 +34,10 @@ from pathlib import Path
 
 import numpy as np
 
-from src.censoring.cohorts import mastr_cohort_set
+from src.method.exposure import mastr_cohort_set
 from src.censoring.gate_verdict import load_cells
-from src.censoring.synthetic import SyntheticConfig, generate
-from src.stats_boot import eventday_bootstrap_mean
+from src.method.synthetic import SyntheticConfig, generate
+from src.method.event_day_bootstrap import eventday_bootstrap_mean
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 OUT_CSV = REPO_ROOT / "results" / "17_bias_by_hour.csv"

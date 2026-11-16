@@ -2,8 +2,8 @@
 import sys
 sys.path.insert(0, ".")
 import numpy as np
-from src.censoring.synthetic import SyntheticConfig, generate
-from src.censoring.cohorts import (build_clock_features, exposure_differs_by_day,
+from src.method.synthetic import SyntheticConfig, generate
+from src.method.exposure import (build_clock_features, exposure_differs_by_day,
                                    placeholder_cohort_set, QH_CLOCK, HOUR_CLOCK)
 
 cfg = SyntheticConfig(area="DE", censoring_rate=0.20, gamma=0.5,

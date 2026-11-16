@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from src.censoring.cohorts import build_clock_features, curtailed_share
-from src.censoring.synthetic import SyntheticConfig, generate, true_response
+from src.method.exposure import build_clock_features, curtailed_share
+from src.method.synthetic import SyntheticConfig, generate, true_response
 
 
 

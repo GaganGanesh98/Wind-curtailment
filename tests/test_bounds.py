@@ -12,11 +12,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from src.identification.bounds import (
+from src.method.bounds import (
     DEPTH_EDGES, _bin_of, build_design, epsilon_from_bootstrap, identified_set,
     in_row_space, point_fit, pooled_fit,
 )
-from src.identification import functionals as fx
+from src.method import functionals as fx
 
 
 def _arm(collinear: bool, seed: int = 0, T: int = 600):
@@ -250,7 +250,7 @@ def test_band_mean_is_the_mean_of_c_over_the_band():
 
 def test_row_compression_is_exact_not_an_approximation():
     """The compressed programme must give the same answers as the raw one."""
-    from src.identification.bounds import compress_rows
+    from src.method.bounds import compress_rows
 
     d, s, depth, runlen, w, price, days = _design(T=300)
     rng = np.random.default_rng(3)
@@ -273,7 +273,7 @@ def test_row_compression_is_exact_not_an_approximation():
 
 
 def test_an_epsilon_below_the_within_row_floor_is_named_as_such():
-    from src.identification.bounds import compress_rows
+    from src.method.bounds import compress_rows
 
     d, s, depth, runlen, w, price, days = _design(T=300)
     rng = np.random.default_rng(4)

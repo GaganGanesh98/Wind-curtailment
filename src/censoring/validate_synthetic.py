@@ -39,14 +39,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from src.censoring.cohorts import (  # noqa: E402
+from src.method.exposure import (  # noqa: E402
     HOUR_CLOCK, build_clock_features, exposure_differs_by_day, mastr_cohort_set,
     placeholder_cohort_set, theta_and_exposure, trigger_active,
 )
-from src.censoring.identification import (  # noqa: E402
+from src.method.collinearity import (  # noqa: E402
     identification_diagnostics, merge_cohorts,
 )
-from src.censoring.synthetic import (  # noqa: E402
+from src.method.synthetic import (  # noqa: E402
     R_SHAPES, SyntheticConfig, generate,
 )
 

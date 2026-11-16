@@ -60,12 +60,12 @@ step3() {
 
 step4() {
   header 4 "one synthetic cell end to end: true response, identified set, coverage"
-  $PY -m src.identification.run_p3_synthetic --smoke --out "$OUT/p3_smoke_cell.csv"
+  $PY -m src.method.synthetic_scoring --smoke --out "$OUT/p3_smoke_cell.csv"
 }
 
 step5() {
   header 5 "regenerate the findings figures from the committed artifacts"
-  $PY -m src.make_findings_figures --out "$OUT/findings"
+  $PY -m src.figures --out "$OUT/findings"
 }
 
 step6() {
@@ -75,7 +75,7 @@ step6() {
 
 step7() {
   header 7 "print the conclusions table: what public data can and cannot tell us"
-  $PY -m src.build_conclusions_table --print
+  $PY -m src.experiments.exp3_results_table --print
 }
 
 for s in "${STEPS[@]}"; do

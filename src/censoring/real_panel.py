@@ -64,7 +64,7 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import polars as pl
 
-from src.censoring.cohorts import (
+from src.method.exposure import (
     build_clock_features,
     mastr_cohort_set,
     theta_and_exposure,

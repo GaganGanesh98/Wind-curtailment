@@ -65,7 +65,7 @@ def monthly_series(area: str = "DE") -> pl.DataFrame:
         )
         .sort("ym")
     )
-    from src.ingest_market_values import read_published
+    from src.method.ingest_market_values import read_published
 
     pub = read_published().with_columns(
         (pl.col("year").cast(pl.String) + "-"
@@ -150,10 +150,10 @@ def _real_theta(area: str = "DE"):
     theta construction mirrors `src/check_rule18_real.py` build_theta exactly, so the
     numbers here are comparable with results/38_rule18_*.csv.
     """
-    from src.censoring.cohorts import build_clock_features, mastr_cohort_set, trigger_active
-    from src.check_rule18_real import cohort_parameters
-    from src.compute_theta_inputs import JW_2025_EUR_MWH, jw_2026_ytd
-    from src.ingest_market_values import read_published
+    from src.method.exposure import build_clock_features, mastr_cohort_set, trigger_active
+    from src.method.cohort_parameters import cohort_parameters
+    from src.method.theta_inputs import JW_2025_EUR_MWH, jw_2026_ytd
+    from src.method.ingest_market_values import read_published
 
     params = cohort_parameters()
     cohorts = mastr_cohort_set(area)
@@ -202,7 +202,7 @@ def _distinct_counts(theta: np.ndarray) -> np.ndarray:
 
 
 def report_theta(area: str = "DE") -> None:
-    from src.censoring.window import E1_E2_WINDOW_START
+    from src.method.window import E1_E2_WINDOW_START
 
     cohorts, price, ym, dates, theta_for, covered = _real_theta(area)
     in_window = dates >= E1_E2_WINDOW_START

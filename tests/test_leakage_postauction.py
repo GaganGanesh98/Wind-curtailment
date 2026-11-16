@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.censoring.model import FORBIDDEN_FEATURES as LATENT_FORBIDDEN
+from src.method.stage_a.latent_model import FORBIDDEN_FEATURES as LATENT_FORBIDDEN
 from src.postauction.leakage import (
     FORBIDDEN,
     POSTAUCTION_ALLOWED,

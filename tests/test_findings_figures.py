@@ -13,7 +13,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from src import make_findings_figures as mf
+from src import figures as mf
 
 FIG = mf.OUT_DIR
 

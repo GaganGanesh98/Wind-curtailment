@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from src.censoring.m2 import (
+from src.method.stage_a.reservation_depth_model import (
     ABLATIONS,
     XCHECK_RTOL,
     build_design,
@@ -262,7 +262,7 @@ def test_structural_recovery_is_undefined_where_the_denominator_is_too_small():
     recovery -- it replaces a divergence with a value up to a million times G, which
     would then dominate any MAE it entered. Undefined is the honest answer.
     """
-    from src.censoring.m2 import RECOVERY_MIN_DENOM
+    from src.method.stage_a.reservation_depth_model import RECOVERY_MIN_DENOM
 
     assert RECOVERY_MIN_DENOM == 0.2
     g = np.array([1000.0, 1000.0, 1000.0, 1000.0])
@@ -284,7 +284,7 @@ def test_the_boundary_is_tested_on_c_hat_not_on_one_minus_c_hat():
     Pinned because the rule in Amendment 2 A2.3 is written as '1 - c_hat >= 0.2' and
     coding it that way literally gets the boundary wrong by one quarter-hour class.
     """
-    from src.censoring.m2 import RECOVERY_MIN_DENOM
+    from src.method.stage_a.reservation_depth_model import RECOVERY_MIN_DENOM
 
     assert (1.0 - 0.8) >= RECOVERY_MIN_DENOM is False or (1.0 - 0.8) < RECOVERY_MIN_DENOM
     assert 0.8 <= (1.0 - RECOVERY_MIN_DENOM)      # the form actually used
@@ -303,7 +303,7 @@ def test_unstable_quarter_hours_give_an_exactly_zero_paired_difference():
     If unstable quarter-hours did not tie exactly, a method could gain from falling
     back, and the paired event-day bootstrap would be comparing different samples.
     """
-    from src.censoring.m2 import scored_recovery, shared_stability_mask
+    from src.method.stage_a.reservation_depth_model import scored_recovery, shared_stability_mask
 
     g = np.array([1000.0, 1000.0, 1000.0, 1000.0, 1000.0])
     a_stage = np.array([1100.0, 1200.0, 1300.0, 1400.0, 1500.0])
@@ -328,7 +328,7 @@ def test_unstable_quarter_hours_give_an_exactly_zero_paired_difference():
 
 def test_c_hat_exactly_at_the_boundary_is_stable():
     """ĉ = 0.8 is included; the IEEE754 trap would have excluded it."""
-    from src.censoring.m2 import shared_stability_mask
+    from src.method.stage_a.reservation_depth_model import shared_stability_mask
 
     assert shared_stability_mask({"m": _c(0.8)}).tolist() == [False]
     assert shared_stability_mask({"m": _c(0.8000001)}).tolist() == [True]
@@ -336,7 +336,7 @@ def test_c_hat_exactly_at_the_boundary_is_stable():
 
 def test_a_method_cannot_gain_by_being_unstable():
     """Falling back can never beat the rival: both land on the same stage-A value."""
-    from src.censoring.m2 import scored_recovery, shared_stability_mask
+    from src.method.stage_a.reservation_depth_model import scored_recovery, shared_stability_mask
 
     rng = np.random.default_rng(3)
     n = 500
@@ -356,7 +356,7 @@ def test_a_method_cannot_gain_by_being_unstable():
 
 
 def test_recovery_report_shows_whether_the_shared_mask_binds_harder():
-    from src.censoring.m2 import recovery_report
+    from src.method.stage_a.reservation_depth_model import recovery_report
 
     rep = recovery_report({"M2": _c(0.1, 0.9, 0.1, 0.1),
                            "B3": _c(0.1, 0.1, 0.95, 0.1)})
@@ -377,7 +377,7 @@ def test_duan_smearing_recovers_the_mean_of_a_lognormal():
     With s = 0.8 the naive estimator is low by a factor exp(0.32) ~ 1.38, which is the
     size of the bias that made fit_stage_a lose to the raw forecast.
     """
-    from src.censoring.m2 import duan_smearing_factor
+    from src.method.stage_a.reservation_depth_model import duan_smearing_factor
 
     rng = np.random.default_rng(0)
     mu, sigma, n = 2.0, 0.8, 400_000
@@ -393,7 +393,7 @@ def test_duan_smearing_recovers_the_mean_of_a_lognormal():
 
 
 def test_smearing_factor_is_one_when_residuals_vanish():
-    from src.censoring.m2 import duan_smearing_factor
+    from src.method.stage_a.reservation_depth_model import duan_smearing_factor
 
     assert duan_smearing_factor(np.zeros(100)) == pytest.approx(1.0)
     assert duan_smearing_factor(np.array([])) == 1.0
@@ -401,7 +401,7 @@ def test_smearing_factor_is_one_when_residuals_vanish():
 
 def test_stage_a_hard_check_raises_when_worse_than_the_forecast():
     """A6.3: must fail loudly. A warning in a 135-cell run is a line nobody reads."""
-    from src.censoring.m2 import assert_stage_a_beats_forecast
+    from src.method.stage_a.reservation_depth_model import assert_stage_a_beats_forecast
 
     n = 200
     a_true = np.full(n, 1000.0)
@@ -418,7 +418,7 @@ def test_stage_a_hard_check_raises_when_worse_than_the_forecast():
 
 
 def test_hour_fourier_features_are_named_and_finite():
-    from src.censoring.m2 import hour_fourier_features
+    from src.method.stage_a.reservation_depth_model import hour_fourier_features
 
     hour = np.arange(960) % 24
     dates = np.repeat([f"2026-{m:02d}-15" for m in range(1, 13)], 80)
@@ -437,6 +437,6 @@ def test_smearing_is_off_by_default_because_it_worsens_mae():
     """
     import inspect
 
-    from src.censoring.m2 import fit_stage_a
+    from src.method.stage_a.reservation_depth_model import fit_stage_a
 
     assert inspect.signature(fit_stage_a).parameters["smear"].default is False

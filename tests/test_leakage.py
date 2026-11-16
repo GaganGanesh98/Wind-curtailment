@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 import torch
 
-from src.censoring.model import (
+from src.method.stage_a.latent_model import (
     FORBIDDEN_FEATURES,
     LATENT_ALLOWED_FEATURES,
     TrainConfig,
@@ -26,7 +26,7 @@ from src.censoring.model import (
     check_latent_features,
     fit_m1,
 )
-from src.censoring.synthetic import SyntheticConfig, generate
+from src.method.synthetic import SyntheticConfig, generate
 
 
 def _data():
@@ -156,7 +156,7 @@ def test_theta_provenance_is_recorded_so_it_can_be_checked_per_task():
     data = _data()
     assert data.config.mv_eur_mwh == pytest.approx(45.0)
     saved = {c.cohort_id: c.aw_eur_mwh for c in data.cohorts}
-    from src.censoring.cohorts import PLACEHOLDER_AW_EUR_MWH
+    from src.method.exposure import PLACEHOLDER_AW_EUR_MWH
 
     assert saved == PLACEHOLDER_AW_EUR_MWH, (
         "theta was built from award values that are not the declared Phase 2 "
@@ -171,7 +171,7 @@ def test_baseline_extra_features_still_reject_leakage():
     the latent head. That escape hatch must not become a hole: anything on the
     forbidden list is still refused.
     """
-    from src.censoring.baselines import _fit_plain
+    from src.method.stage_a.baselines import _fit_plain
 
     data = _data()
     with pytest.raises(ValueError, match="are leakage, not a baseline choice"):

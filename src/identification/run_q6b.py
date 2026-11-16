@@ -31,10 +31,10 @@ from pathlib import Path
 import numpy as np
 import polars as pl
 
-from src.censoring.cohorts import curtailed_share
-from src.identification.run_p3_synthetic import GAMMAS, HETERO, RATES, SHAPES, prepare_cell
-from src.identification.run_q_dial import SEED_GEN, git_head, score_under_potential
-from src.identification.summarise_p3 import load
+from src.method.exposure import curtailed_share
+from src.method.synthetic_scoring import GAMMAS, HETERO, RATES, SHAPES, prepare_cell
+from src.method.potential_error import SEED_GEN, git_head, score_under_potential
+from src.method.read_results import load
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 OUT = REPO_ROOT / "artifacts" / "Q6" / "q6b_day_effect.csv"

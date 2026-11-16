@@ -32,14 +32,14 @@ from pathlib import Path
 
 import numpy as np
 
-from src.censoring import baselines as bl
-from src.censoring.cohorts import mastr_cohort_set
+from src.method.stage_a import baselines as bl
+from src.method.exposure import mastr_cohort_set
 from src.censoring.metrics import paired_abs_bias, paired_difference, recovery_skill
-from src.censoring.model import TAUS, Ablation, TrainConfig, fit_m1, m1_response_curve
+from src.method.stage_a.latent_model import TAUS, Ablation, TrainConfig, fit_m1, m1_response_curve
 from src.censoring.metrics import score_method
 from src.censoring.run_ablations import LADDER
 from src.censoring.run_synthetic import DEPTH_GRID
-from src.censoring.synthetic import SyntheticConfig, generate, true_response_curve
+from src.method.synthetic import SyntheticConfig, generate, true_response_curve
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RESULTS_DIR = REPO_ROOT / "results"
@@ -362,10 +362,10 @@ def main() -> None:
     cohorts = mastr_cohort_set("DE")
     suffix = ""
     if args.merge_cohorts:
-        from src.censoring.identification import (
+        from src.method.collinearity import (
             format_merge_map, identification_diagnostics, merge_cohorts,
         )
-        from src.censoring.synthetic import generate as _gen
+        from src.method.synthetic import generate as _gen
 
         # The merge key is the realised (s, depth) block, which is cell-dependent in
         # principle. Verify the map is the SAME on several cells rather than trusting
