@@ -44,6 +44,8 @@ QUANTITY_ROWS = (
 QTY_EVIDENCE = ("P3 + Q1 (artifacts/Q1/q1_summary_by_level.csv); "
                 "Q5 (artifacts/Q5/q5_real.csv)")
 
+READ_FRACTION = 0.25          # Q0 section 5's quarter, reused for the one-sided reading
+
 SUPPORTED = "SUPPORTED RANGE"
 NOT_ID = "NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE"
 NEEDS = "WOULD NEED A MORE ACCURATE ESTIMATE"
@@ -104,10 +106,38 @@ def _window(q5: pl.DataFrame, lam: str) -> dict:
                   & pl.col("informative").is_in(["True", "False"]))
     if w.height == 0:
         return {"window_lo": None, "window_hi": None, "window_width": None,
-                "window_informative": None}
+                "window_informative": None, "window_logical_max": None, "window_reading": ""}
     r = w.row(0, named=True)
-    return {"window_lo": float(r["lo"]), "window_hi": float(r["hi"]),
-            "window_width": float(r["width"]), "window_informative": r["informative"] == "True"}
+    out = {"window_lo": float(r["lo"]), "window_hi": float(r["hi"]),
+           "window_width": float(r["width"]), "window_informative": r["informative"] == "True",
+           "window_logical_max": float(r["logical_max_width"])}
+    return {**out, "window_reading": _window_reading(lam, out)}
+
+
+def _window_reading(lam: str, w: dict) -> str:
+    """Descriptive one-sided reading of a full-window interval (not part of the C0 verdict).
+
+    A response share lives in [0, 1] (λ₆, a difference, in [−1, 1]; λ₅ in [0, its
+    logical maximum, GWh]). A bound is read one-sided when it excludes at least a quarter of
+    that range at its own end -- the same quarter the informativeness rule uses.
+    """
+    mx = w["window_logical_max"]
+    bottom = -1.0 if lam == "L6" else 0.0
+    top = bottom + mx
+    lo, hi = w["window_lo"], w["window_hi"]
+    unit = " GWh" if lam == "L5" else ""
+    if w["window_informative"]:
+        return f"informative: between {_fmt(lo, lam)} and {_fmt(hi, lam)}{unit}"
+    low_cut = lo - bottom >= READ_FRACTION * mx
+    high_cut = top - hi >= READ_FRACTION * mx
+    if low_cut and high_cut:
+        return (f"not informative, but excludes both ends: between {_fmt(lo, lam)} and "
+                f"{_fmt(hi, lam)}{unit}")
+    if low_cut:
+        return f"one-sided: at least {_fmt(lo, lam)}{unit}"
+    if high_cut:
+        return f"one-sided: at most {_fmt(hi, lam)}{unit}"
+    return "no reading: neither bound excludes a quarter of the range"
 
 
 def quantity_rows() -> list[dict]:
@@ -330,6 +360,30 @@ def markdown(df: pl.DataFrame) -> str:
                  f"{', '.join(lit)} would also carry the sub-label. They are informative in "
                  f"synthetic cells at Anchor H's σ, so the table does not say they need a more "
                  f"accurate estimate.\n")
+    L.append("---\n")
+    L.append("## Full-window reading (descriptive, not part of the C0 verdict)\n")
+    L.append("Added 16 November 2026 at the student's instruction, after C0. It changes no "
+             "verdict above. Each row is the single interval for the whole window "
+             "(2025-10 to 2026-10, main setting, projection H), not the monthly arms the verdict "
+             "counts. **Reading rule, fixed here and applied to every row:** a response share "
+             "lies in [0, 1] (λ₆ in [−1, 1]; λ₅ in [0, its logical maximum] GWh); a bound is read "
+             "one-sided when it excludes at least a quarter of that range at its own end, the "
+             "same quarter the informativeness rule uses.\n")
+    L.append("| row | full-window interval, H | width | logical maximum width | reading |")
+    L.append("|---|---|---|---|---|")
+    for r in q:
+        if r["window_lo"] is None:
+            L.append(f"| {r['row']} | undefined | — | — | — |")
+            continue
+        L.append(f"| {r['row']} | {_interval(r['window_lo'], r['window_hi'], r['lam'])} "
+                 f"| {_fmt(r['window_width'], r['lam'])} "
+                 f"| {_fmt(r['window_logical_max'], r['lam'])} | {r['window_reading']} |")
+    L.append("\n**Every reading assumes the projection H is unbiased during negative prices.** "
+             "Q2 shows that a biased potential gives intervals that stay narrow and miss the "
+             "truth, and H's bias at negative prices has not been measured "
+             "(`docs/Q2_results.md` §5). These are readings of the bounds as computed, not "
+             "supported ranges.\n")
+    L.append("---\n")
     L.append("## Limitations\n")
     L.append("> - **Synthetic vs real.** Q1 and P3 cells have a known truth and an i.i.d. or AR(1) "
              "noise model; real data has neither. A synthetic count says what the method can "

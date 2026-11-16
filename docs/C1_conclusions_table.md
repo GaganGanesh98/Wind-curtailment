@@ -42,6 +42,26 @@ For the pooled row the synthetic columns count split cells that reject a single 
 
 Under the literal reading of C0 §4 rule 3 (without "and not at Anchor H"), λ₁, λ₂, λ₃, λ₆ would also carry the sub-label. They are informative in synthetic cells at Anchor H's σ, so the table does not say they need a more accurate estimate.
 
+---
+
+## Full-window reading (descriptive, not part of the C0 verdict)
+
+Added 16 November 2026 at the student's instruction, after C0. It changes no verdict above. Each row is the single interval for the whole window (2025-10 to 2026-10, main setting, projection H), not the monthly arms the verdict counts. **Reading rule, fixed here and applied to every row:** a response share lies in [0, 1] (λ₆ in [−1, 1]; λ₅ in [0, its logical maximum] GWh); a bound is read one-sided when it excludes at least a quarter of that range at its own end, the same quarter the informativeness rule uses.
+
+| row | full-window interval, H | width | logical maximum width | reading |
+|---|---|---|---|---|
+| λ₁ | [0.300, 0.508] | 0.208 | 1.000 | informative: between 0.300 and 0.508 |
+| λ₂ | [0.525, 0.860] | 0.335 | 1.000 | one-sided: at least 0.525 |
+| λ₃ | [0.000, 0.579] | 0.579 | 1.000 | one-sided: at most 0.579 |
+| λ₄ | [0.002, 0.996] | 0.995 | 1.000 | no reading: neither bound excludes a quarter of the range |
+| λ₅ | [0.0, 533.2] | 533.2 | 533.2 | no reading: neither bound excludes a quarter of the range |
+| λ₆ | [-0.967, 0.398] | 1.365 | 2.000 | one-sided: at most 0.398 |
+| λ₇ | [0.000, 1.000] | 1.000 | 1.000 | no reading: neither bound excludes a quarter of the range |
+
+**Every reading assumes the projection H is unbiased during negative prices.** Q2 shows that a biased potential gives intervals that stay narrow and miss the truth, and H's bias at negative prices has not been measured (`docs/Q2_results.md` §5). These are readings of the bounds as computed, not supported ranges.
+
+---
+
 ## Limitations
 
 > - **Synthetic vs real.** Q1 and P3 cells have a known truth and an i.i.d. or AR(1) noise model; real data has neither. A synthetic count says what the method can do under those conditions, not what real data will give.
