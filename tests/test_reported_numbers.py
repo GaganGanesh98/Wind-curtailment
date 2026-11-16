@@ -898,6 +898,66 @@ def _q2_checks():
     return out
 
 
+def _v1_checks():
+    """`docs/V_results.md` V1: both tables parsed from the note, plus the prose figures."""
+    vd = REPO_ROOT / "artifacts" / "V"
+    note = REPO_ROOT / "docs" / "V_results.md"
+    if not (vd / "v1_coverage.csv").exists() or not note.exists():
+        return []
+    cov = pl.read_csv(vd / "v1_coverage.csv", infer_schema_length=None)
+    fun = pl.read_csv(vd / "v1_by_functional.csv", infer_schema_length=None)
+    lam_of = {"λ₁": "L1", "λ₂": "L2", "λ₃": "L3", "λ₄": "L4", "λ₆": "L6", "λ₇": "L7"}
+    out, section = [], None
+    for line in note.read_text(encoding="utf-8").splitlines():
+        if line.startswith("## "):
+            section = line
+        if not line.startswith("| ") or line.startswith("| B |") or line.startswith("| functional |"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if section and section.startswith("## V1") and cells[0][0].isdigit():
+            B, b = float(cells[0]), float(cells[1])
+            r = cov.filter(((pl.col("B") - B).abs() < 1e-9)
+                           & ((pl.col("b_true") - b).abs() < 1e-9)).row(0, named=True)
+            k, n = (int(x) for x in cells[2].split("/"))
+            tag = f"V1 B{B:.2f} b{b:+.3f}"
+            applies = str(r["criterion_applies"]) == "True"
+            out += [(f"{tag} covered", r["n_covered"], k, 0), (f"{tag} scored", r["n_scored"], n, 0),
+                    (f"{tag} coverage", r["coverage"], float(cells[3]), 5e-4),
+                    (f"{tag} applies", float(applies), float(cells[4] == "yes"), 0),
+                    (f"{tag} result", float(applies and str(r["passes"]) == "True"),
+                     float(cells[5] == "PASS"), 0)]
+        elif section and section.startswith("## V1") and cells[0] in lam_of:
+            B = float(cells[1])
+            r = fun.filter((pl.col("lam") == lam_of[cells[0]]) & (pl.col("b_true") == 0)
+                           & ((pl.col("B") - B).abs() < 1e-9)).row(0, named=True)
+            mw = float(cells[2])
+            tol = 0.5 * 10 ** (-3) if "e" not in cells[2] else abs(mw) * 0.01
+            tag = f"V1 b*0 {lam_of[cells[0]]} B{B:.2f}"
+            ki, ni = (int(x) for x in cells[3].split("/"))
+            kc, nc = (int(x) for x in cells[4].split("/"))
+            out += [(f"{tag} median width", r["median_width"], mw, tol),
+                    (f"{tag} informative", r["n_informative"], ki, 0), (f"{tag} cells", r["n_cells"], ni, 0),
+                    (f"{tag} covered", r["n_covered"], kc, 0), (f"{tag} scored", r["n_scored"], nc, 0)]
+    raw = pl.concat([pl.read_csv(f, infer_schema_length=0, columns=["hetero", "rate", "gamma", "r_shape",
+                                                                     "seed", "s", "v0_commit"])
+                     for f in sorted(vd.glob("v1_raw_shard*of4.csv"))])
+    per_cell = raw.group_by(["hetero", "rate", "gamma", "r_shape", "seed"]).agg(pl.col("s").n_unique())
+    applies = cov.filter(pl.col("criterion_applies").cast(pl.String) == "True")
+    q2 = pl.read_csv(REPO_ROOT / "artifacts" / "Q2" / "q2_coverage_by_level.csv").filter(
+        (pl.col("dial") == "q2a") & ((pl.col("b") + 0.047).abs() < 1e-9))
+    q2l5 = pl.read_csv(REPO_ROOT / "artifacts" / "Q2" / "q2_summary_by_level.csv").filter(
+        (pl.col("dial") == "q2a") & ((pl.col("b") + 0.047).abs() < 1e-9) & (pl.col("lam") == "L5"))
+    out += [("V1 54 cells", per_cell.height, 54, 0),
+            ("V1 70 potentials in every cell", float((per_cell["s"] == 70).all()), 1.0, 0),
+            ("V1 V0 commit on every raw row", float(set(raw["v0_commit"]) == {"3277ea6"}), 1.0, 0),
+            ("V1 PASS: every applicable level 324/324",
+             float((applies["n_covered"] == 324).all() and (applies["n_scored"] == 324).all()), 1.0, 0),
+            ("V1 Q2 126 of 378 at b*-0.047", q2["n_covered"][0], 126, 0),
+            ("V1 Q2 lambda5 covered rows 18", q2l5["lam_n_covered"][0], 18, 0),
+            ("V1 126 - 18 = 108", q2["n_covered"][0] - q2l5["lam_n_covered"][0], 108, 0)]
+    return out
+
+
 def _collect():
     """All checks whose artifacts are on disk, as (id, got, want, tol)."""
     out, skipped = [], []
@@ -955,6 +1015,7 @@ def _collect():
     out += _guide_checks()
     out += _c1_checks()
     out += _q2_checks()
+    out += _v1_checks()
     return out, skipped
 
 
