@@ -8,7 +8,7 @@ Q1,Q1 iid σ = 0.12,,,1.0,"artifacts/Q1/q1_summary_by_level.csv, column level_co
 Q1,Q1 iid σ = 0.18,,,1.0,"artifacts/Q1/q1_summary_by_level.csv, column level_coverage"
 Q1,Q1 iid σ = 0.25,,,1.0,"artifacts/Q1/q1_summary_by_level.csv, column level_coverage"
 Q1,Q1 iid σ = 0.35,,,1.0,"artifacts/Q1/q1_summary_by_level.csv, column level_coverage"
-Q1,Q1 ar1 σ = 0.18,,,1.0,"artifacts/Q1/q1_summary_by_level.csv, column level_coverage"
+Q1,Q1 ar1 σ = 0.18,,,0.9841269841269841,"artifacts/Q1/q1_summary_by_level.csv, column level_coverage"
 Q6b,"Q6b σ = 0.066, σ_r = 0",,,1.0,"artifacts/Q6/q6b_summary.csv, column coverage"
 Q6b,"Q6b σ = 0.066, σ_r = 0.05",,,1.0,"artifacts/Q6/q6b_summary.csv, column coverage"
 Q6b,"Q6b σ = 0.066, σ_r = 0.1",,,1.0,"artifacts/Q6/q6b_summary.csv, column coverage"

@@ -27,6 +27,7 @@ import numpy as np
 import polars as pl
 
 from src.identification.run_p3_synthetic import TOL_COVER
+from src.identification.lambda5_truth import true_l5
 from src.identification.run_q_dial import BIAS_GRID
 from src.identification.run_v_bias_robust import V2_BMAX, grid, v1_sums
 
@@ -70,9 +71,14 @@ def v1_hulls() -> pl.DataFrame:
     if done.height != N_CELLS or not (done["k"] == len(v1_sums())).all():
         raise RuntimeError(f"V1 incomplete: {done.height} of {N_CELLS} cells started; "
                            "never summarise a partial run")
-    truths = raw.filter(pl.col("lam").is_in(V1_SCORED) & pl.col("defined")).group_by(
-        CELL + ["lam"]).agg(pl.col("truth").n_unique().alias("k"))
-    assert (truths["k"] == 1).all(), "a scored functional's truth moved with the potential"
+    # Erratum (docs/ERRATUM_lambda5.md): lambda-5's stored truth came from the scored
+    # potential; use the true-potential truth (Arm O's, same cell) instead.
+    raw = raw.join(true_l5(), on=CELL, how="left").with_columns(
+        pl.when(pl.col("lam") == "L5").then(pl.col("_l5_true")).otherwise(pl.col("truth"))
+          .alias("truth")).drop("_l5_true")
+    truths = raw.filter(pl.col("defined")).group_by(CELL + ["lam"]).agg(
+        pl.col("truth").n_unique().alias("k"))
+    assert (truths["k"] == 1).all(), "a functional's truth moved with the potential"
     out = []
     for bstar in BIAS_GRID:
         for B in V1_B:

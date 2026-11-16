@@ -448,7 +448,8 @@ def _q1_checks():
             out.append((f"Q1 {lam} informative cells at {sig}", L(sig, lam, "n_informative"), n, 0))
     for sig in grid:
         out.append((f"Q1 coverage at {sig}", L(sig, "L1", "level_coverage"), 1.0, 0))
-    out.append(("Q1 AR(1) coverage", L(0.18, "L1", "level_coverage", "ar1"), 1.0, 0))
+    # erratum (docs/ERRATUM_lambda5.md): 372 of 378 with lambda-5 re-scored; was 1.0
+    out.append(("Q1 AR(1) coverage", L(0.18, "L1", "level_coverage", "ar1"), 0.984, 5e-4))
     iqr = {  # section 3, median [q25, q75]
         (0.033, "L1"): (0.008, 0.006, 0.014), (0.033, "L3"): (0.056, 0.022, 0.077),
         (0.033, "L4"): (0.142, 0.066, 0.184), (0.033, "L6"): (0.158, 0.074, 0.204),
@@ -829,13 +830,13 @@ def _q2_prose(cov: pl.DataFrame, s: pl.DataFrame) -> list:
                   & (pl.col("lam") == "L1")).row(0, named=True)
     return [("Q2 prose Anchor H bias covered 126", h["n_covered"], 126, 0),
             ("Q2 prose Anchor H bias coverage 0.333", h["level_coverage"], 0.333, 5e-4),
-            ("Q2 prose Anchor T bias covered 162", t["n_covered"], 162, 0),
-            ("Q2 prose Anchor T bias coverage 0.429", t["level_coverage"], 0.429, 5e-4),
+            ("Q2 prose Anchor T bias covered 171", t["n_covered"], 171, 0),
+            ("Q2 prose Anchor T bias coverage 0.452", t["level_coverage"], 0.452, 5e-4),
             ("Q2 prose lambda1 at b-0.047 informative 54", l1["n_informative"], 54, 0),
             ("Q2 prose lambda1 at b-0.047 missed 54", l1["n_informative_and_missed"], 54, 0),
             ("Q2 prose b-0.10 coverage s0 0.310", lvl("q2b", 0.0, -0.1)["level_coverage"], 0.310, 5e-4),
-            ("Q2 prose b-0.10 coverage s0.066 0.511", lvl("q2b", 0.066, -0.1)["level_coverage"], 0.511, 5e-4),
-            ("Q2 prose b-0.10 coverage s0.18 0.860", lvl("q2b", 0.18, -0.1)["level_coverage"], 0.860, 5e-4),
+            ("Q2 prose b-0.10 coverage s0.066 0.460", lvl("q2b", 0.066, -0.1)["level_coverage"], 0.460, 5e-4),
+            ("Q2 prose b-0.10 coverage s0.18 0.812", lvl("q2b", 0.18, -0.1)["level_coverage"], 0.812, 5e-4),
             ("Q2 prose no crossed level reaches 95% with bias",
              float((cov.filter((pl.col("dial") == "q2b") & (pl.col("b") != 0))["level_coverage"]
                     < 0.95).all()), 1.0, 0)]
@@ -1014,6 +1015,44 @@ def _v2_checks():
     return out
 
 
+def _erratum_checks():
+    """`docs/ERRATUM_lambda5.md`: each changed level, as stored and as corrected, plus the
+    V1 lambda-5 statement."""
+    note = REPO_ROOT / "docs" / "ERRATUM_lambda5.md"
+    if not note.exists():
+        return []
+    files = {"Q1": Q1D / "q1_variance_dial.csv", "Q2a": REPO_ROOT / "artifacts" / "Q2" / "q2a_bias_dial.csv",
+             "Q2b": REPO_ROOT / "artifacts" / "Q2" / "q2b_crossed.csv"}
+    if not all(f.exists() for f in files.values()):
+        return []
+    out = []
+    for line in note.read_text(encoding="utf-8").splitlines():
+        c = [x.strip() for x in line.strip().strip("|").split("|")]
+        if not line.startswith("| Q") or c[0] not in files:
+            continue
+        lvl = c[1].replace("−", "-").replace("σ = ", "").replace("b = ", "")
+        noise = "ar1" if lvl.startswith("AR(1)") else "iid"
+        nums = [float(x) for x in re.findall(r"[-+]?[0-9.]+", lvl.replace("AR(1)", ""))]
+        sigma, b = (nums[0], 0.0) if noise == "ar1" else (nums[0], nums[1])
+        raw = pl.read_csv(files[c[0]], infer_schema_length=0).with_columns(
+            pl.col("sigma").cast(pl.Float64), pl.col("mu").cast(pl.Float64))
+        new = load(files[c[0]]).with_columns(pl.col("sigma").cast(pl.Float64), pl.col("mu").cast(pl.Float64))
+        sel = ((pl.col("noise") == noise) & ((pl.col("sigma") - sigma).abs() < 1e-9)
+               & ((pl.col("mu") - b).abs() < 1e-9))
+        r = raw.filter(sel & pl.col("covered").is_in(["True", "False"]))
+        n = new.filter(sel & pl.col("cov").is_not_null())
+        tag = f"Erratum {c[0]} {c[1]}"
+        out += [(f"{tag} stored", int((r["covered"] == "True").sum()), int(c[2]), 0),
+                (f"{tag} corrected", int(n["cov"].sum()), int(c[3]), 0),
+                (f"{tag} scored", n.height, int(c[4]), 0), (f"{tag} rows", r.height, int(c[4]), 0)]
+    v = pl.read_csv(REPO_ROOT / "artifacts" / "V" / "v1_by_functional.csv", infer_schema_length=None)
+    ap = v.filter((pl.col("lam") == "L5") & (pl.col("B") + 1e-9 >= pl.col("b_true").abs()))
+    out += [("Erratum V1 lambda-5 applicable levels", ap.height, 9, 0),
+            ("Erratum V1 lambda-5 54/54 at every applicable level",
+             float((ap["n_covered"] == 54).all()), 1.0, 0)]
+    return out
+
+
 def _collect():
     """All checks whose artifacts are on disk, as (id, got, want, tol)."""
     out, skipped = [], []
@@ -1073,6 +1112,7 @@ def _collect():
     out += _q2_checks()
     out += _v1_checks()
     out += _v2_checks()
+    out += _erratum_checks()
     return out, skipped
 
 

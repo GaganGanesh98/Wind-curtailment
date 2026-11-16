@@ -261,7 +261,10 @@ def score_cell(prep: dict, c_hat_full: np.ndarray, potential: np.ndarray, *,
         "L7": fx.cohort_mean(design, s, depth, level, L7_COHORT),
     }
     specs["L6"] = fx.difference(specs["L3"], specs["L4"])
-    truths = _truths(data, design, shares, level, price, potential)
+    # The TRUE potential, never the estimate: until 16 Nov 2026 this passed `potential`, so
+    # lambda-5's truth moved with the estimated potential (docs/ERRATUM_lambda5.md).
+    truths = _truths(data, design, shares, level, price,
+                     np.asarray(data.a_true_mw, dtype=float))
 
     common = {
         "arm": arm, "hetero": hetero, "rate": rate, "gamma": gamma, "r_shape": shape,

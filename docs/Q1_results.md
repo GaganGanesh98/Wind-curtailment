@@ -29,9 +29,11 @@ quantities behave completely differently (§3).
 
 ## 2. The guard rail holds everywhere
 
-**Coverage of the known truth is 100% at all seven i.i.d. levels and in the AR(1) arm**
-(`q1_summary_by_level.csv`, `level_coverage`). No level's widths are withheld under hard
-rule 4. No solve is infeasible at any level; `optimal_inaccurate` occurs 20 times at
+**Coverage of the known truth is 100% at all seven i.i.d. levels, and 0.984 (372 of 378) in
+the AR(1) arm** (`q1_summary_by_level.csv`, `level_coverage`). *Erratum, 16 Nov 2026: this read
+100% in the AR(1) arm before λ₅ was re-scored against its true-potential truth (`docs/ERRATUM_lambda5.md`); 6 of
+the AR(1) arm's 54 λ₅ intervals miss it.* No level's widths are withheld under hard rule 4;
+0.984 is above the 95% floor. No solve is infeasible at any level; `optimal_inaccurate` occurs 20 times at
 σ = 0 (13 lower-bound and 7 upper-bound solves, all λ₅) and once at 0.25, never
 elsewhere.
 

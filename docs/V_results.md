@@ -66,8 +66,10 @@ ratio enormous and uninformative):
 
 Protection costs width in the same order Q1's noise did: the fleet functionals λ₁ and λ₂
 stay informative in every cell at B = 0.10, the collinear group λ₄ drops to 18 of 54 from
-B = 0.05, and λ₆ from B = 0.10. λ₅'s rows are in the artifact but are not interpretable for
-the reason given in V0 §2 (its synthetic truth is computed from the potential passed in).
+B = 0.05, and λ₆ from B = 0.10. λ₅ stays outside the criterion as V0 §2 fixed. *Erratum,
+16 Nov 2026 (`docs/ERRATUM_lambda5.md`): with λ₅'s truth corrected to the true potential, λ₅
+is also covered in 54 of 54 cells at every level where B ≥ |b*|
+(`artifacts/V/v1_by_functional.csv`).*
 
 **A process slip, disclosed.** While the V1 shards were running, `summarise_v.py` was run
 once for V2 and also read the V1 shard files when only 8 of 54 cells existed, printing two

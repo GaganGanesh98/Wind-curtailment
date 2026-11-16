@@ -12,11 +12,18 @@ Artifacts: `artifacts/Q2/q2a_bias_dial.csv` (1,890 rows), `artifacts/Q2/q2b_cros
 (3,402 rows), `artifacts/Q2/q2_coverage_by_level.csv`, `artifacts/Q2/q2_summary_by_level.csv`.
 Every figure below is re-derived by `tests/test_reported_numbers.py`.
 
+> **Erratum, 16 November 2026 (`docs/ERRATUM_lambda5.md`).** λ₅'s truth was computed from the scored
+> potential instead of the true one. Re-scored from the stored intervals, without refits:
+> coverage at b = +0.033 is 171 of 378 (was 162, 0.429); in the crossed grid 174, 188, 307 and
+> 284 of 378 (were 193, 206, 325 and 302); λ₅'s missed-while-informative counts change
+> accordingly. The tables and prose below carry the corrected values. **No verdict changes:**
+> every biased level is still below 95%.
+
 ## 1. Headline
 
 > **Coverage of the known truth falls below 95% at every non-zero bias level tested,**
 > at every noise level. At Anchor H's measured bias (b = −0.047, σ = 0) it is 126 of 378,
-> 0.333; at Anchor T's (b = +0.033) it is 162 of 378, 0.429. Every unbiased level keeps
+> 0.333; at Anchor T's (b = +0.033) it is 171 of 378, 0.452. Every unbiased level keeps
 > 378 of 378. **Under hard rule 4 the bounds are broken at every biased level, and no width
 > from those levels is reported.**
 
@@ -36,14 +43,14 @@ functionals). The two σ = 0, b = ±0.10 levels are identical in Q2a and Q2b.
 | q2a | 0 | -0.100 | 117/378 | 0.310 | 250 | withheld |
 | q2a | 0 | -0.047 | 126/378 | 0.333 | 252 | withheld |
 | q2a | 0 | +0.000 | 378/378 | 1.000 | 0 | reported |
-| q2a | 0 | +0.033 | 162/378 | 0.429 | 216 | withheld |
+| q2a | 0 | +0.033 | 171/378 | 0.452 | 207 | withheld |
 | q2a | 0 | +0.100 | 144/378 | 0.381 | 225 | withheld |
-| q2b | 0.066 | -0.100 | 193/378 | 0.511 | 158 | withheld |
+| q2b | 0.066 | -0.100 | 174/378 | 0.460 | 177 | withheld |
 | q2b | 0.066 | +0.000 | 378/378 | 1.000 | 0 | reported |
-| q2b | 0.066 | +0.100 | 206/378 | 0.545 | 146 | withheld |
-| q2b | 0.18 | -0.100 | 325/378 | 0.860 | 41 | withheld |
+| q2b | 0.066 | +0.100 | 188/378 | 0.497 | 164 | withheld |
+| q2b | 0.18 | -0.100 | 307/378 | 0.812 | 59 | withheld |
 | q2b | 0.18 | +0.000 | 378/378 | 1.000 | 0 | reported |
-| q2b | 0.18 | +0.100 | 302/378 | 0.799 | 72 | withheld |
+| q2b | 0.18 | +0.100 | 284/378 | 0.751 | 90 | withheld |
 
 `q2_coverage_by_level.csv`, columns `n_covered`, `n_scored`, `level_coverage`,
 `n_informative_and_missed`. The q2b rows at σ = 0 equal the q2a rows and are not repeated.
@@ -64,7 +71,7 @@ because they are what shows how the bounds broke.
 | λ₂ | 54 / 18 | 54 / 18 | 54 / 0 | 54 / 27 | 54 / 27 |
 | λ₃ | 54 / 18 | 54 / 18 | 54 / 0 | 54 / 27 | 54 / 45 |
 | λ₄ | 54 / 54 | 54 / 54 | 54 / 0 | 54 / 45 | 54 / 45 |
-| λ₅ | 54 / 36 | 54 / 36 | 54 / 0 | 54 / 27 | 54 / 18 |
+| λ₅ | 54 / 36 | 54 / 36 | 54 / 0 | 54 / 18 | 54 / 18 |
 | λ₆ | 54 / 50 | 54 / 54 | 54 / 0 | 54 / 45 | 54 / 45 |
 | λ₇ | 34 / 20 | 27 / 18 | 18 / 0 | 18 / 0 | 18 / 0 |
 
@@ -76,7 +83,7 @@ because they are what shows how the bounds broke.
 | λ₂ | 54 / 18 | 54 / 0 | 54 / 18 |
 | λ₃ | 54 / 0 | 54 / 0 | 54 / 19 |
 | λ₄ | 42 / 36 | 24 / 0 | 28 / 19 |
-| λ₅ | 36 / 17 | 24 / 0 | 26 / 0 |
+| λ₅ | 36 / 36 | 24 / 0 | 26 / 18 |
 | λ₆ | 54 / 33 | 54 / 0 | 54 / 45 |
 | λ₇ | 9 / 0 | 9 / 0 | 18 / 0 |
 
@@ -88,7 +95,7 @@ because they are what shows how the bounds broke.
 | λ₂ | 54 / 3 | 54 / 0 | 54 / 18 |
 | λ₃ | 18 / 0 | 18 / 0 | 18 / 0 |
 | λ₄ | 24 / 1 | 18 / 0 | 18 / 9 |
-| λ₅ | 25 / 0 | 18 / 0 | 18 / 0 |
+| λ₅ | 25 / 18 | 18 / 0 | 18 / 18 |
 | λ₆ | 24 / 1 | 18 / 0 | 18 / 9 |
 | λ₇ | 0 / 0 | 9 / 0 | 18 / 0 |
 
@@ -101,8 +108,8 @@ things, so they are not competing explanations of the same effect:**
 - **Variance widens the intervals and keeps coverage** (Q1; every unbiased row above).
 - **Bias keeps the intervals narrow and moves them off the truth.** It does not produce
   wide intervals, so it does not explain the wide real-data intervals of P3 and Q5.
-- **Adding variance to a bias raises coverage** (b = −0.10: 0.310 at σ = 0, 0.511 at
-  σ = 0.066, 0.860 at σ = 0.18) because the intervals widen, not because the bias is
+- **Adding variance to a bias raises coverage** (b = −0.10: 0.310 at σ = 0, 0.460 at
+  σ = 0.066, 0.812 at σ = 0.18) because the intervals widen, not because the bias is
   corrected. No crossed level reaches 95%.
 
 **Which dominates the width floor:** variance, on this evidence; bias contributes no

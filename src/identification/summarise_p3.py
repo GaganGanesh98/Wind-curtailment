@@ -36,6 +36,10 @@ def load(path: str | Path) -> pl.DataFrame:
                          "n_rows_compressed", "run_levels", "n_cohorts"):
         if c in d.columns:
             d = d.with_columns(pl.col(c).cast(pl.Float64, strict=False).alias(c))
+    # Erratum (docs/ERRATUM_lambda5.md): stored lambda-5 truths came from the estimated
+    # potential; replace them by the true-potential truth before anything is scored.
+    from src.identification.lambda5_truth import correct_l5
+    d = correct_l5(d)
     # L5 is a one-sided claim wherever the counterfactual was clamped (section 0.10).
     if "covered_one_sided" in d.columns:
         d = d.with_columns(
