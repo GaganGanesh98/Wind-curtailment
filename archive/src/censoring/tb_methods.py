@@ -275,11 +275,15 @@ def free_params(fit: dict) -> dict:
         out["param_detail"] = f"{n_b} blocks x {n_j} knots"
         out["chosen_lambda"] = lam
         # Boundary flags, so a reader never has to parse param_detail to see that a
-        # grid bound the choice. LAMBDA_GRID is (0.0,) + logspace(-4, 2, 13), so its
-        # ends are 0.0 and 100.0.
+        # grid bound the choice. The ends are read from LAMBDA_GRID itself: until
+        # 10 Nov 2026 they were hardcoded as 0.0 and 100.0, which the docs/22 grid
+        # widening would have silently falsified (100.0 is interior on the widened
+        # grid). Same flag, same semantics, no literal copy of the grid to go stale.
         if isinstance(lam, float):
-            out["at_grid_boundary"] = ("lambda_max" if lam >= 100.0 - 1e-9 else
-                                       "lambda_min" if lam <= 0.0 else "")
+            from src.method.stage_a.reservation_depth_model import LAMBDA_GRID
+            out["at_grid_boundary"] = ("lambda_max" if lam >= max(LAMBDA_GRID) - 1e-9
+                                       else "lambda_min" if lam <= min(LAMBDA_GRID)
+                                       else "")
     elif "implied_response" in fit:                        # B3 family
         used = int(fit["implied_response"]["bin_centre"].size)
         out["n_free_params"] = used

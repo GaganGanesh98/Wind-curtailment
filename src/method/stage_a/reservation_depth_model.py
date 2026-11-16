@@ -83,7 +83,14 @@ import numpy as np
 
 SEED = 42
 N_FOLDS = 5
-LAMBDA_GRID = (0.0,) + tuple(np.logspace(-4, 2, 13))
+#: Widened 10 Nov 2026 (docs/22). The 9 Nov T-B run selected the old upper edge
+#: (100.0) in 104 of 135 M2 fits (results/40_m2_lambda_boundary.csv), so the CV
+#: search was clipped, not converged. Two decades added beyond each old positive
+#: edge on the same half-decade lattice, so the old 13 positive points are an
+#: exact float subset of the new 21 and selections are comparable; the 0.0 point
+#: (no smoothing) stays, and log-space cannot extend below it.
+#: Old grid, verbatim: (0.0,) + tuple(np.logspace(-4, 2, 13)).
+LAMBDA_GRID = (0.0,) + tuple(np.logspace(-6, 4, 21))
 KNOT_STEP = 2.0            # EUR/MWh
 DEPTH_PCTILE = 99.0        # knot grid runs to this percentile of positive depth
 MIN_BIN = 30               # observations needed before a hour x level variance bin is used
