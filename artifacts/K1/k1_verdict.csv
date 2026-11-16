@@ -1,0 +1,2 @@
+verdict,coverage,median_half_width,reasons,k0_commit,smoke,git_head
+FAIL,0.7401451264953912,0.18934951515487622,error model wrong (coverage < 0.85); no gain over the measured global bias (median half-width >= 0.047),299e3f9,False,299e3f9

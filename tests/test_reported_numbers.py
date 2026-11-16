@@ -1075,6 +1075,54 @@ def _k0_checks():
     return out
 
 
+def _k1_checks():
+    """`docs/K_results.md` K1: both tables parsed from the note, the verdict, the diagnostics."""
+    k1 = REPO_ROOT / "artifacts" / "K1"
+    note = REPO_ROOT / "docs" / "K_results.md"
+    if not (k1 / "k1_summary.csv").exists() or not note.exists():
+        return []
+    s = pl.read_csv(k1 / "k1_summary.csv")
+    out = []
+    for line in note.read_text(encoding="utf-8").splitlines():
+        if not (line.startswith("| H ") or line.startswith("| F ")):
+            continue
+        c = [x.strip() for x in line.strip().strip("|").split("|")]
+        pot, unit = c[0].split(" ", 1)
+        r = s.filter((pl.col("potential") == pot) & (pl.col("unit") == unit)
+                     & (pl.col("bin") == c[2])).row(0, named=True)
+        lo, hi = (float(x) for x in c[5].strip("[]").split(","))
+        mlo, mhi = (float(x) for x in c[7].strip("[]").split(","))
+        tag = f"K1 {pot} {unit} {c[2]}"
+        out += [(f"{tag} windows", r["n_windows"], int(c[1]), 0), (f"{tag} qh", r["n_qh"], int(c[3]), 0),
+                (f"{tag} coverage", r["coverage"], float(c[4]), 5e-4),
+                (f"{tag} coverage lo", r["coverage_lo"], lo, 5e-4), (f"{tag} coverage hi", r["coverage_hi"], hi, 5e-4),
+                (f"{tag} median hw", r["median_half_width"], float(c[6]), 5e-4),
+                (f"{tag} median hw lo", r["median_hw_lo"], mlo, 5e-4), (f"{tag} median hw hi", r["median_hw_hi"], mhi, 5e-4),
+                (f"{tag} p90 hw", r["p90_half_width"], float(c[8]), 5e-4)]
+    v = pl.read_csv(k1 / "k1_verdict.csv").row(0, named=True)
+    dg = pl.read_csv(k1 / "k1_diagnostics.csv")
+    agg = "50Hertz+Amprion+TransnetBW"
+
+    def acf(k, col):
+        return float(dg.filter((pl.col("unit") == agg) & (pl.col("kind") == "acf") & (pl.col("key") == k))[col][0])
+
+    def terc(k):
+        return float(dg.filter((pl.col("unit") == agg) & (pl.col("kind") == "tercile") & (pl.col("key") == k))["empirical"][0])
+    cov = pl.read_csv(k1 / "k1_covariance.csv")
+    out += [("K1 verdict FAIL", float(v["verdict"] == "FAIL"), 1.0, 0), ("K1 not smoke", float(not v["smoke"]), 1.0, 0),
+            ("K1 gate coverage 0.740", v["coverage"], 0.740, 5e-4), ("K1 gate median hw 0.189", v["median_half_width"], 0.189, 5e-4),
+            ("K1 k0 commit everywhere", float(set(s["k0_commit"]) | set(cov["k0_commit"]) | set(dg["k0_commit"]) == {"299e3f9"}), 1.0, 0),
+            ("K1 acf lag1 0.987", acf(1, "empirical"), 0.987, 5e-4), ("K1 acf lag16 0.263", acf(16, "empirical"), 0.263, 5e-4),
+            ("K1 acf lag32 0.028", acf(32, "empirical"), 0.028, 5e-4), ("K1 fitted acf lag1 0.915", acf(1, "fitted"), 0.915, 5e-4),
+            ("K1 tercile0 var 0.0207", terc(0), 0.0207, 5e-5), ("K1 tercile1 var 0.0020", terc(1), 0.0020, 5e-5),
+            ("K1 tercile2 var 0.0008", terc(2), 0.0008, 5e-5),
+            ("K1 pooled check fails in every unit", float((cov["check_passes"].cast(pl.String).str.to_lowercase() == "false").all()), 1.0, 0),
+            ("K1 tercile checks fail in the aggregate",
+             float(_count(dg, (pl.col("unit") == agg) & (pl.col("kind") == "tercile")
+                          & (pl.col("check_passes").cast(pl.String).str.to_lowercase() == "false")) == 3), 1.0, 0)]
+    return out
+
+
 # --------------------------------------------------------------------- zero-row guard
 # A check must never pass on nothing (16 Nov 2026: a V1 check passed because a string
 # filter on a boolean column matched no row, and `.all()` of nothing is True). While the
@@ -1190,6 +1238,7 @@ def _collect():
     out += _v2_checks()
     out += _erratum_checks()
     out += _k0_checks()
+    out += _k1_checks()
     return out, skipped
 
 
