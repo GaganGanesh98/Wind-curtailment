@@ -100,3 +100,18 @@ def test_frame_check_ignores_index_columns_and_catches_a_leak():
         check_frame_columns(["ts_utc", "berlin_date", "forecast_mw", "act_onshore_mw"])
     with pytest.raises(ValueError, match="must not reach stage A"):
         check_frame_columns(["ts_utc", "forecast_mw", "price_eur_mwh"], stage_a=True)
+
+
+def test_phase_k_bridge_columns_are_never_forecast_inputs():
+    """Phase K (docs/K0_preregistration.md rule 7): the bias bridge reads H, which is ex
+    post. Its columns must stay off the forecast-time allow-list, and no forecasting module
+    may import the bridge."""
+    import pathlib
+    from src.potential.k_bridge_data import UNITS
+    for u in UNITS:
+        for col in (f"H_{u}", f"RD_{u}", f"G_{u}", "y_bias_log_ratio", "hr_mw"):
+            with pytest.raises(ValueError):
+                check_postauction_inputs([col])
+    root = pathlib.Path(__file__).resolve().parents[1] / "src" / "postauction"
+    for f in root.glob("*.py"):
+        assert "k_bridge" not in f.read_text(encoding="utf-8"), f.name

@@ -1053,11 +1053,34 @@ def _erratum_checks():
     return out
 
 
+def _k0_checks():
+    """`docs/K0_preregistration.md` section 1: the data-check facts (prices, exposure, dates)."""
+    note = REPO_ROOT / "docs" / "K0_preregistration.md"
+    if not note.exists() or not QS_FILE.exists():
+        return []
+    from src.potential.k_bridge_data import k0_facts
+    f = k0_facts()
+    want = {"window_qh": 34937, "missing_50Hertz+Amprion+TransnetBW": 0, "missing_50Hertz": 0,
+            "missing_Amprion": 0, "missing_TransnetBW": 0, "event_days": 97, "both": 95,
+            "one_side": 1, "none": 1, "neg_qh": 2052, "runs": 134, "run_len_median": 13.5,
+            "run_len_p10": 1.0, "run_len_p90": 29.0, "run_len_max": 70, "runs_short": 43,
+            "runs_medium": 32, "runs_long": 59, "nonevent_days": 267, "fit_days": 160,
+            "heldout_days": 107, "e_neg_min": 0.3135, "e_neg_median": 1.0, "e_neg_le_005_qh": 0}
+    out = [(f"K0 {k}", float(f[k]), float(v), 5e-5 if isinstance(v, float) else 0) for k, v in want.items()]
+    for k, v in (("window_first", "2025-10-01"), ("window_last", "2026-09-30"),
+                 ("fit_first", "2025-10-01"), ("fit_last", "2026-03-28"),
+                 ("heldout_first", "2026-03-30"), ("heldout_last", "2026-09-30")):
+        out.append((f"K0 {k} {v}", float(f[k] == v), 1.0, 0))
+    out.append(("K0 no-anchor day 2025-10-04", float(f["none_days"] == ["2025-10-04"]), 1.0, 0))
+    return out
+
+
 # --------------------------------------------------------------------- zero-row guard
 # A check must never pass on nothing (16 Nov 2026: a V1 check passed because a string
 # filter on a boolean column matched no row, and `.all()` of nothing is True). While the
 # checks are collected, every DataFrame.filter that selects zero rows, and every
-# Series.all()/.any() over an empty series, raises EmptySelection naming the line. A check
+# Series.all()/.any() over an empty series, called from this file, raises EmptySelection
+# naming the line. A check
 # whose honest answer is "zero rows" counts them with `_count`, which never selects.
 
 
@@ -1082,15 +1105,20 @@ def _guarded(fn):
     """Run `fn` with the zero-row guard on, and always restore polars afterwards."""
     orig_filter, orig_all, orig_any = pl.DataFrame.filter, pl.Series.all, pl.Series.any
 
+    def from_checker() -> bool:
+        # Only selections written in this file are checks; filters inside the loaders and
+        # summarisers a check calls into may legitimately be empty and are not guarded.
+        return sys._getframe(2).f_code.co_filename == __file__
+
     def filt(self, *a, **k):
         r = orig_filter(self, *a, **k)
-        if r.height == 0 and self.height > 0:
+        if r.height == 0 and self.height > 0 and from_checker():
             raise EmptySelection(f"filter selected 0 of {self.height} rows at {_where()}")
         return r
 
     def red(orig):
         def g(self, *a, **k):
-            if self.len() == 0:
+            if self.len() == 0 and from_checker():
                 raise EmptySelection(f"{orig.__name__}() of an empty series at {_where()}")
             return orig(self, *a, **k)
         return g
@@ -1161,6 +1189,7 @@ def _collect():
     out += _v1_checks()
     out += _v2_checks()
     out += _erratum_checks()
+    out += _k0_checks()
     return out, skipped
 
 
