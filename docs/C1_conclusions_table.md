@@ -62,6 +62,21 @@ Added 16 November 2026 at the student's instruction, after C0. It changes no ver
 
 ---
 
+## Bias breakdown points (Phase V, descriptive, not part of the C0 verdict)
+
+Added 16 November 2026 at the student's instruction, after C0; it changes no verdict. Each full-window reading above is recomputed with a bias-robust interval: the hull of the identified sets over every constant multiplicative bias |b| ≤ B in the projection, on a 0.01 grid (`docs/V0_preregistration.md`). The **breakdown point** is the smallest B at which the reading no longer holds. On synthetic cells this construction covers the truth whenever B ≥ |true bias| (324 of 324 at every such level, `docs/V_results.md` V1).
+
+| row | reading | breaks when | breakdown B | interval at B = 0 | interval at B = 0.15 |
+|---|---|---|---|---|---|
+| λ₁ | informative | width ≥ 0.25 | 0.04 | [0.300, 0.508] | [0.187, 0.574] |
+| λ₂ | lower bound at least 0.5 | lower bound < 0.5 | 0.06 | [0.525, 0.860] | [0.449, 0.876] |
+| λ₃ | upper bound at most 0.75 | upper bound > 0.75 | > 0.15 | [0.000, 0.579] | [0.000, 0.658] |
+| λ₆ | upper bound at most 0.5 | upper bound > 0.5 | 0.04 | [-0.967, 0.398] | [-1.000, 0.654] |
+
+For scale only: the projection's measured bias on price ≥ 0 quarter-hours is −0.0472 (`docs/Q0_preregistration.md` §1), larger than the budget at which λ₁ and λ₆ break. Its bias during negative prices is not measured. Figure: `figures/findings/F10_bias_breakdown.png`.
+
+---
+
 ## Limitations
 
 > - **Synthetic vs real.** Q1 and P3 cells have a known truth and an i.i.d. or AR(1) noise model; real data has neither. A synthetic count says what the method can do under those conditions, not what real data will give.

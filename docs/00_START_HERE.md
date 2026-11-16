@@ -46,7 +46,7 @@ to git before its numbers existed.
 | `tests/` | pytest suite; `tests/test_reported_numbers.py` re-derives every figure quoted in a results note |
 | `results/` | committed result tables from the early phases (kill test, E1, T-B) |
 | `artifacts/` | committed result tables from Phases P and Q, one subfolder per step |
-| `figures/` | committed figures; `figures/findings/` are the summary figures F1–F9 |
+| `figures/` | committed figures; `figures/findings/` are the summary figures F1–F10 |
 | `data/` | raw downloads and processed panels; only `data/reference/` is in git |
 | `demo/` | `run_demo.sh` (live walk-through) and `run_full_suite.sh` |
 | `tools/` | `export_share.sh`, which builds the folder shared with the supervisor |
@@ -77,6 +77,7 @@ Verdicts are quoted or closely paraphrased from the results file in the same row
 | Q5 | empirical evaluation | 15 Nov | With the projection as the potential, which real-data quantities become informative? | `docs/Q5_preregistration.md` | `docs/Q5_results.md`, `artifacts/Q5/` | **2 of 59 main-setting functional-months, 3.4%, become informative** when `H` replaces `F`; 5 go the other way. |
 | Q6a | exploratory diagnostic | 15 Nov | Is the real-data floor day-to-day behavioural heterogeneity? | `docs/Q6_preregistration.md` | `docs/Q6_results.md`, `artifacts/Q6/q6a_cells.csv` | **PRESENT.** In all 8 testable cells the between-day variance exceeds what Anchor H's σ = 0.066 produces alone. |
 | Q6b | exploratory diagnostic | 15 Nov | Can a synthetic day effect reproduce the real-data signatures? | `docs/Q6_preregistration.md` | `docs/Q6_results.md`, `artifacts/Q6/q6b_summary.csv` | **NOT SUPPORTED.** No σ_r meets either signature. |
+| V0–V2 | method validation | 16 Nov | Do the bounds survive a biased potential, and how much bias do the real-data readings tolerate? | `docs/V0_preregistration.md` | `docs/V_results.md`, `artifacts/V/` | **V1 PASS**: coverage 324 of 324 at every level where B ≥ |true bias|. V2 breakdown points with H: λ₁ informative breaks at 0.04, λ₂ lower bound at 0.06, λ₆ one-sided bound at 0.04; λ₃ holds past 0.15. |
 | C0, C1 | synthesis (no new experiment) | 16 Nov | Which quantities can public data identify, and what does that depend on? | `docs/C0_preregistration.md` | `docs/C1_conclusions_table.md`, `results/C1_conclusions_table.csv` | 0 of 7 quantities SUPPORTED RANGE; 7 of 7 NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE, 2 of them WOULD NEED A MORE ACCURATE ESTIMATE. |
 
 TenneT is excluded from every DE-wide projection aggregate (Q0b, Q0c, Q5, Q6), following
@@ -136,6 +137,8 @@ tables).
 | `Q_STOP_R1.md` | results note | λ-grid change against a frozen pre-registration; closed by student decision |
 | `R1_reconciliation.md` | results note | reconciling the two working copies |
 | `S3_literature_map.md` | reference | old → new literature paths |
+| `V0_preregistration.md` | pre-registration | bias-robust bounds (hull over a bias grid) and breakdown points |
+| `V_results.md` | results note | V1 PASS on synthetic cells; V2 real-data breakdown points |
 | `TB_lambda_sensitivity.md` | results note | T-B on the widened λ grid: FAILS (sensitivity) |
 
 ## 5. How to run things
@@ -171,7 +174,7 @@ single step with `bash demo/run_demo.sh 4`.
 | 2 | kill test re-run on the committed window (from 2025-10-01); prints the DE table and confirms the five output files are byte-identical to `results/` | 1 s |
 | 3 | `pytest tests/test_reported_numbers.py -q`: every quoted figure in the results notes, guides and conclusions table re-derived | 1 s |
 | 4 | one synthetic cell (Arm O, rate 0.2, γ 0.5, logistic, seed 45): true value, identified set and coverage per functional | 6 s |
-| 5 | findings figures F1–F9 regenerated into `demo/output/findings/` | 3 s |
+| 5 | findings figures F1–F10 regenerated into `demo/output/findings/` | 3 s |
 | 6 | the experiment timeline (§3 of this file) | < 1 s |
 | 7 | the conclusions table (`docs/C1_conclusions_table.md`), rebuilt from artifacts and printed | < 1 s |
 | full suite | `bash demo/run_full_suite.sh` | about 255 s |

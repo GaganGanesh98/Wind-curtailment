@@ -291,6 +291,37 @@ def _interval(lo, hi, lam, extra="") -> str:
     return f"[{_fmt(lo, lam)}, {_fmt(hi, lam)}]{extra}"
 
 
+def _breakdown_section() -> list[str]:
+    """Phase V (`docs/V0_preregistration.md`, `docs/V_results.md`): how much constant bias in
+    H each full-window reading survives. Read from `artifacts/V/`; descriptive, no verdict."""
+    bd = pl.read_csv(ART / "V" / "v2_breakdown.csv", infer_schema_length=0)
+    v1 = pl.read_csv(ART / "V" / "v1_coverage.csv", infer_schema_length=None).filter(
+        pl.col("criterion_applies").cast(pl.String).str.to_lowercase() == "true")
+    sym = {"L1": "λ₁", "L2": "λ₂", "L3": "λ₃", "L6": "λ₆"}
+    rule = {"L1": "width ≥ 0.25", "L2": "lower bound < 0.5", "L3": "upper bound > 0.75",
+            "L6": "upper bound > 0.5"}
+    L = ["## Bias breakdown points (Phase V, descriptive, not part of the C0 verdict)\n",
+         "Added 16 November 2026 at the student's instruction, after C0; it changes no verdict. "
+         "Each full-window reading above is recomputed with a bias-robust interval: the hull of "
+         "the identified sets over every constant multiplicative bias |b| ≤ B in the projection, "
+         "on a 0.01 grid (`docs/V0_preregistration.md`). The **breakdown point** is the smallest "
+         "B at which the reading no longer holds. On synthetic cells this construction covers the "
+         f"truth whenever B ≥ |true bias| ({int(v1['n_covered'].min())} of "
+         f"{int(v1['n_scored'].max())} at every such level, `docs/V_results.md` V1).\n",
+         "| row | reading | breaks when | breakdown B | interval at B = 0 | interval at B = 0.15 |",
+         "|---|---|---|---|---|---|"]
+    for r in bd.iter_rows(named=True):
+        lam = r["lam"]
+        b0 = f"[{_fmt(float(r['lo_B0']), lam)}, {_fmt(float(r['hi_B0']), lam)}]"
+        b15 = f"[{_fmt(float(r['lo_B015']), lam)}, {_fmt(float(r['hi_B015']), lam)}]"
+        L.append(f"| {sym[lam]} | {r['reading']} | {rule[lam]} | {r['breakdown_B']} | {b0} | {b15} |")
+    L.append("\nFor scale only: the projection's measured bias on price ≥ 0 quarter-hours is "
+             "−0.0472 (`docs/Q0_preregistration.md` §1), larger than the budget at which λ₁ and "
+             "λ₆ break. Its bias during negative prices is not measured. "
+             "Figure: `figures/findings/F10_bias_breakdown.png`.\n")
+    return L
+
+
 def markdown(df: pl.DataFrame) -> str:
     q = [r for r in df.iter_rows(named=True) if r["kind"] == "quantity"]
     e = [r for r in df.iter_rows(named=True) if r["kind"] == "evidence"]
@@ -383,6 +414,8 @@ def markdown(df: pl.DataFrame) -> str:
              "truth, and H's bias at negative prices has not been measured "
              "(`docs/Q2_results.md` §5). These are readings of the bounds as computed, not "
              "supported ranges.\n")
+    L.append("---\n")
+    L.extend(_breakdown_section())
     L.append("---\n")
     L.append("## Limitations\n")
     L.append("> - **Synthetic vs real.** Q1 and P3 cells have a known truth and an i.i.d. or AR(1) "

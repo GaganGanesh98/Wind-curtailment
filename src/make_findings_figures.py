@@ -267,8 +267,11 @@ CAPTIONS = {
         "gap_share, ci_lo, ci_hi."),
     "F4_coverage_never_fails": (
         "Coverage of the known truth by the identified sets in every synthetic setting that "
-        "has a truth: P3 Arms O and D, every Q1 noise level, every Q6b setting. Dashed line: "
-        "the pre-registered 95% target (binding for P3 Arm O).",
+        "has a truth and an unbiased potential: P3 Arms O and D, every Q1 noise level, every "
+        "Q6b setting. Dashed line: the pre-registered 95% target (binding for P3 Arm O). This "
+        "holds for unbiased potentials only: with a biased potential coverage falls below 95% "
+        "at every tested bias (Q2, docs/Q2_results.md); Phase V's bias-robust bounds address "
+        "that (docs/V_results.md).",
         "artifacts/P3/p3_synthetic_arm_o.csv and p3_synthetic_arm_d.csv, column cov (via "
         "src/identification/summarise_p3.load); artifacts/Q1/q1_summary_by_level.csv, column "
         "level_coverage; artifacts/Q6/q6b_summary.csv, rows table = levels, column coverage."),
@@ -448,7 +451,7 @@ def make_all(out: Path) -> list[Path]:
     ax.set_yticks(y, d["setting"].to_list())
     ax.set_xlim(0.9, 1.01)
     ax.set_xlabel("coverage of the known truth")
-    ax.set_title("Coverage never falls below target")
+    ax.set_title("With unbiased potentials, coverage never falls below target")
     ax.legend(frameon=False, loc="lower left")
     save(fig, "F4_coverage_never_fails", d)
 

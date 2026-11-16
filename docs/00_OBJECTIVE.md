@@ -33,7 +33,7 @@ Q6a and Q6b are an exploratory diagnostic, not a fourth proposition.
 | role | experiments |
 |---|---|
 | motivation | kill test |
-| method validation | P3 |
+| method validation | P3, V (bias-robust bounds) |
 | controlled uncertainty | Arm D, Q1, Q2 |
 | empirical evaluation | Q0, Q0b, Q5 |
 | exploratory diagnostic | Q6a, Q6b |

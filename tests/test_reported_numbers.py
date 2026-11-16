@@ -942,7 +942,7 @@ def _v1_checks():
                                                                      "seed", "s", "v0_commit"])
                      for f in sorted(vd.glob("v1_raw_shard*of4.csv"))])
     per_cell = raw.group_by(["hetero", "rate", "gamma", "r_shape", "seed"]).agg(pl.col("s").n_unique())
-    applies = cov.filter(pl.col("criterion_applies").cast(pl.String) == "True")
+    applies = cov.filter(pl.col("criterion_applies").cast(pl.String).str.to_lowercase() == "true")
     q2 = pl.read_csv(REPO_ROOT / "artifacts" / "Q2" / "q2_coverage_by_level.csv").filter(
         (pl.col("dial") == "q2a") & ((pl.col("b") + 0.047).abs() < 1e-9))
     q2l5 = pl.read_csv(REPO_ROOT / "artifacts" / "Q2" / "q2_summary_by_level.csv").filter(
@@ -950,8 +950,10 @@ def _v1_checks():
     out += [("V1 54 cells", per_cell.height, 54, 0),
             ("V1 70 potentials in every cell", float((per_cell["s"] == 70).all()), 1.0, 0),
             ("V1 V0 commit on every raw row", float(set(raw["v0_commit"]) == {"3277ea6"}), 1.0, 0),
+            ("V1 applicable levels", applies.height, 9, 0),
             ("V1 PASS: every applicable level 324/324",
-             float((applies["n_covered"] == 324).all() and (applies["n_scored"] == 324).all()), 1.0, 0),
+             float(applies.height == 9 and (applies["n_covered"] == 324).all()
+                   and (applies["n_scored"] == 324).all()), 1.0, 0),
             ("V1 Q2 126 of 378 at b*-0.047", q2["n_covered"][0], 126, 0),
             ("V1 Q2 lambda5 covered rows 18", q2l5["lam_n_covered"][0], 18, 0),
             ("V1 126 - 18 = 108", q2["n_covered"][0] - q2l5["lam_n_covered"][0], 108, 0)]
