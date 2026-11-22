@@ -2,7 +2,8 @@
 
 A repo path is a backticked token that contains "/" and starts with a top-level directory of
 this repo. Bare file names are shorthand relative to their table and are not checked. Paths
-under data/ (not committed, except data/reference/) are not checked. In docs/archive_mapping.md
+under data/ (not committed, except data/reference/) and under demo/output/ (git-ignored, written
+by the demo) are not checked. In docs/archive_mapping.md
 only the new-path column is checked: the old paths are, by design, gone.
 """
 
@@ -15,6 +16,8 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TOP = {"src", "docs", "artifacts", "archive", "data", "figures", "tests", "demo", "tools", "notebooks"}
+#: git-ignored output the demo creates when it runs; absent on a fresh clone by design
+GENERATED = ("demo/output",)
 DOCS = [REPO_ROOT / "README.md", *sorted((REPO_ROOT / "docs").glob("*.md"))]
 
 
@@ -31,6 +34,8 @@ def _paths(doc: Path) -> list[str]:
         if c.split("/")[0] not in TOP:
             continue
         if c.startswith("data/") and not c.startswith("data/reference"):
+            continue
+        if c.startswith(GENERATED):
             continue
         out.append(c)
     return sorted(set(out))

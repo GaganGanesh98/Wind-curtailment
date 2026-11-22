@@ -86,8 +86,8 @@ downloads into `data/raw/netztransparenz/` (`docs/sources/data_sources.md`); MaS
 | 6 | figures 01–09 and 13 regenerated into `demo/output/figures/` | 3 s |
 | full suite | `bash demo/run_full_suite.sh` | about 57 s |
 
-Test counts on 22 Nov 2026: with `data/` present, 2,845 passed and 2 skipped; on a clean clone
-without `data/`, 2,778 passed and 36 skipped, none failed. The demo's number checker runs 2,164
+Test counts on 22 Nov 2026: with `data/` present, 2,843 passed and 2 skipped; on a clean clone
+without `data/`, 2,776 passed and 36 skipped, none failed. The demo's number checker runs 2,164
 checks with `data/` and 2,131 without.
 
 <!-- /numbers-check -->
