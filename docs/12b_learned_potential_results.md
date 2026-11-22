@@ -189,3 +189,16 @@ N1's look-alike scores are in the tables of step 2.
 - **S3 (FAIL).** L2 σ 0.2421 [0.2004, 0.2854]; N1 σ 0.2358 [0.1962, 0.2762], against L1's 0.2354 [0.1944, 0.2773]. Reported as pre-registered; the weighting is not dropped.
 - **S2 (FAIL).** All three learned models are fitted. The rule (lowest aggregate look-alike |bias|, ties by σ) selects L2, bias -0.0147 [-0.0505, 0.0191]; the interval must lie within ±0.02. As pre-registered, B̂ is reported as not estimable with public inputs, and the readings are not compared against it.
 <!-- /generated -->
+
+## Interpretation fixed before step 4 (23 November 2026)
+
+Written after S2 failed and before any step 4 computation.
+
+- **The Experiment 3 arm** re-runs the full-window identified sets with L2's Â as the potential.
+  L2 failed S2, so Â is not a validated potential. If a reading agrees with the headline under
+  Â, that shows only that the reading is robust to this choice of potential, and is weak support.
+  If it disagrees, the question is not resolved by public data; disagreement is not evidence that
+  H is wrong.
+- **b̂_H** is computed as pre-registered and amended (trimmed primary, untrimmed sensitivity, per
+  area and pooled, corrected by L2's look-alike bias, day-block bootstrap with 5,000 draws). It is
+  descriptive only. No reading is classified against it, and no B̂ is defined.
