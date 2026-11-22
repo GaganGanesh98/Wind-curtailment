@@ -121,3 +121,66 @@ def sunny_note() -> str:
             "quarter-hours have a median solar forecast above the clean set's 75th percentile. Days: "
             + have + ("; none in " + ", ".join(absent) if absent else "")
             + ". So the look-alike check reaches sunny conditions only on a handful of days.")
+
+
+# ------------------------------------------------- expectation before N1 (doc 44)
+
+EXPECTATION = ART / "expectation_before_n1.csv"
+
+
+def expectation_rows() -> list[dict]:
+    """Descriptive, before N1 is fitted. Assumption: at fixed look-alike days the bias interval's
+    half-width scales in proportion to σ of log(G / Â). For each scored model at the aggregate,
+    σ* = σ × S2_HALF_WIDTH / half-width is the σ at which an unbiased model's interval would just
+    lie within ±S2_HALF_WIDTH."""
+    out = []
+    for m in ("F", "L1", "L2"):
+        b, s = _agg(m, "bias"), _agg(m, "sigma")
+        half = (b["hi"] - b["lo"]) / 2.0
+        out.append({"kind": "sigma_needed", "model": m, "sigma": s["value"], "bias_half_width": half,
+                    "sigma_needed": s["value"] * cfg.S2_HALF_WIDTH / half, "fold": None, "kish_ess": None,
+                    "n_train": None})
+    return out
+
+
+def kish_rows() -> list[dict]:
+    """Kish effective sample size of L2's training weights per fold: (Σw)² / Σw²."""
+    from src.method.learned_potential.data import eval_months, train_mask
+    from src.method.learned_potential.models_gbm import rows
+    d = rows()
+    out = []
+    for month in eval_months():
+        w = d.filter(train_mask(d, month))["w"].to_numpy()
+        out.append({"kind": "kish_ess_L2", "model": "L2", "sigma": None, "bias_half_width": None,
+                    "sigma_needed": None, "fold": month, "kish_ess": float(w.sum() ** 2 / (w ** 2).sum()),
+                    "n_train": int(w.size)})
+    return out
+
+
+def expectation_note() -> str:
+    e = pl.read_csv(EXPECTATION)
+    s = e.filter(pl.col("kind") == "sigma_needed")
+    k = e.filter(pl.col("kind") == "kish_ess_L2").with_columns((pl.col("kish_ess") / pl.col("n_train")).alias("r"))
+    first, last = k.row(0, named=True), k.row(-1, named=True)
+    rows_ = "; ".join(f"{r['model']}: σ {r['sigma']:.4f}, half-width {r['bias_half_width']:.4f}, "
+                      f"σ needed {r['sigma_needed']:.3f}" for r in s.iter_rows(named=True))
+    return "\n".join([
+        f"- **σ an unbiased model would need** for its aggregate look-alike bias interval to lie within "
+        f"±{cfg.S2_HALF_WIDTH:g}: {rows_}. Assumption: on the same look-alike days the interval's "
+        f"half-width scales in proportion to σ, so the needed σ is σ × {cfg.S2_HALF_WIDTH:g} / half-width. "
+        f"It ignores any change in how errors cluster within days.",
+        f"- **Kish effective sample size of L2's weights**, (Σw)² / Σw², per fold: from "
+        f"{first['kish_ess']:,.0f} of {first['n_train']:,} training rows ({first['r']:.1%}) in the "
+        f"{first['fold']} fold to {last['kish_ess']:,.0f} of {last['n_train']:,} ({last['r']:.1%}) in the "
+        f"{last['fold']} fold (`artifacts/exp4_learned_potential/expectation_before_n1.csv`).",
+        "- Descriptive only; no criterion changes.",
+    ])
+
+
+def write_expectation() -> None:
+    pl.DataFrame(expectation_rows() + kish_rows(), infer_schema_length=None).write_csv(EXPECTATION)
+    print(f"wrote {EXPECTATION}")
+
+
+if __name__ == "__main__":
+    write_expectation()

@@ -111,3 +111,13 @@ intervals; F and H on the same quarter-hours):
 - L2's folds took several times longer to train than L1's with the same hyperparameters and rows.
   A likely cause is LightGBM's quantile objective recomputing leaf values as weighted quantiles
   when sample weights are given; this was not measured further.
+
+## Expectation before N1 (22 November 2026)
+
+Written before any N1 fit, from the L1, L2 and F scores of step 2.
+
+<!-- generated:exp4_expectation -->
+- **σ an unbiased model would need** for its aggregate look-alike bias interval to lie within ±0.02: F: σ 0.2370, half-width 0.0346, σ needed 0.137; L1: σ 0.2354, half-width 0.0338, σ needed 0.139; L2: σ 0.2421, half-width 0.0348, σ needed 0.139. Assumption: on the same look-alike days the interval's half-width scales in proportion to σ, so the needed σ is σ × 0.02 / half-width. It ignores any change in how errors cluster within days.
+- **Kish effective sample size of L2's weights**, (Σw)² / Σw², per fold: from 5,658 of 151,990 training rows (3.7%) in the 2025-10 fold to 9,731 of 232,276 (4.2%) in the 2026-09 fold (`artifacts/exp4_learned_potential/expectation_before_n1.csv`).
+- Descriptive only; no criterion changes.
+<!-- /generated -->

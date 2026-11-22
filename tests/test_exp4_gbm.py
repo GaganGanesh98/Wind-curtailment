@@ -101,3 +101,21 @@ def test_fold_table_agrees_and_no_scored_month_is_trained_on():
 @pytest.mark.needs_data("data/processed/panel_qh.parquet")
 def test_fold_table_recomputes():
     assert gbm.fold_training_table().equals(pl.read_csv(ART / "gbm_fold_training.csv"))
+
+
+def test_expectation_numbers_follow_from_the_scores():
+    from src.method.learned_potential import report
+    e = pl.read_csv(report.EXPECTATION).filter(pl.col("kind") == "sigma_needed")
+    fresh = {r["model"]: r for r in report.expectation_rows()}
+    for r in e.iter_rows(named=True):
+        assert abs(r["sigma_needed"] - fresh[r["model"]]["sigma_needed"]) < 1e-12
+        assert abs(r["sigma_needed"] - r["sigma"] * 0.02 / r["bias_half_width"]) < 1e-12
+
+
+@need_oof
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
+def test_kish_ess_recomputes():
+    from src.method.learned_potential import report
+    k = pl.read_csv(report.EXPECTATION).filter(pl.col("kind") == "kish_ess_L2")
+    fresh = report.kish_rows()
+    assert [round(r["kish_ess"], 6) for r in fresh] == [round(x, 6) for x in k["kish_ess"].to_list()]
