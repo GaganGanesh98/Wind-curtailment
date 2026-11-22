@@ -63,3 +63,21 @@ def test_run_v2_unmasked_path_reproduces_the_headline_rows(tmp_path):
     ref = pl.read_csv(CELLS, infer_schema_length=0).filter(pl.col("b") == "0.0").drop("git_head")
     assert got.columns == ref.columns
     assert got.equals(ref)
+
+
+def test_learned_potential_run_never_targets_the_v2_file():
+    with pytest.raises(ValueError):
+        br.run_v2(potential="learned")
+
+
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
+def test_learned_potential_is_the_sum_of_l2_over_the_three_areas():
+    import numpy as np
+    from src.method.real_panel import THREE_AREA, load_panel
+    panel = load_panel(THREE_AREA, "H")
+    a = br.learned_potential(panel)
+    o = pl.read_parquet(br.LEARNED_OOF)
+    ts = int(panel["ts_utc"][panel["keep"]][1000])
+    want = float(o.filter(pl.col("ts_utc") == ts)["a_hat_mw"].sum())
+    assert abs(a[list(panel["ts_utc"]).index(ts)] - want) < 1e-6
+    assert np.isfinite(a[panel["keep"]]).all()

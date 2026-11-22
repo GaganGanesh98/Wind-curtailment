@@ -285,3 +285,58 @@ def cnn_selection_note() -> str:
 def selected_model() -> str:
     have = [m for m in cfg.CANDIDATES if _agg(m, "bias")]
     return min(have, key=lambda m: (round(abs(_agg(m, "bias")["value"]), cfg.TIE_DECIMALS), _agg(m, "sigma")["value"]))
+
+
+# ------------------------------------------------------------------ step 4 (reduced)
+
+def _m(x: float, p: int = 4) -> str:
+    return f"{x:+.{p}f}".replace("-", "−")
+
+
+def bias_table() -> str:
+    b = pl.read_csv(ART / "bias_budget.csv")
+    out = ["| unit | arm | target quarter-hours (share kept) | b̂_H, mean log(H / Â) | L2 look-alike bias, mean log(G / Â) | corrected, mean log(H / A) | status |",
+           "|---|---|---|---|---|---|---|"]
+    for r in b.iter_rows(named=True):
+        out.append(f"| {r['unit']} | {r['arm']} | {r['n_target_qh']:,} ({r['share_of_target_kept']:.1%}) "
+                   f"| {_m(r['b_hat_H'])} [{_m(r['b_hat_H_lo'])}, {_m(r['b_hat_H_hi'])}] "
+                   f"| {_m(r['beta_A_lookalike'])} [{_m(r['beta_lo'])}, {_m(r['beta_hi'])}] "
+                   f"| {_m(r['corrected'])} [{_m(r['corrected_lo'])}, {_m(r['corrected_hi'])}] | {r['status']} |")
+    return "\n".join(out)
+
+
+def arm_table() -> str:
+    a = pl.read_csv(ART / "exp3_arm_readings.csv", infer_schema_length=0)
+    sym = {"L1": "λ₁", "L2": "λ₂", "L3": "λ₃", "L6": "λ₆"}
+    out = ["| reading | under H: interval at B = 0, holds, breakdown | under Â (L2): interval at B = 0, holds, breakdown | agrees |",
+           "|---|---|---|---|"]
+    for r in a.iter_rows(named=True):
+        f = lambda lo, hi: f"[{float(lo):.3f}, {float(hi):.3f}]".replace("-", "−")   # noqa: E731
+        yn = lambda v: "yes" if v == "true" else "no"                                  # noqa: E731
+        hb = r["H_breakdown"] if r["H_breakdown"].startswith(">") else f"{float(r['H_breakdown']):.2f}"
+        ab = r["A_breakdown"] if r["A_breakdown"].startswith(">") else f"{float(r['A_breakdown']):.2f}"
+        out.append(f"| {sym[r['lam']]} {r['reading']} | {f(r['H_lo_B0'], r['H_hi_B0'])}, {yn(r['H_holds_B0'])}, {hb} "
+                   f"| {f(r['A_lo_B0'], r['A_hi_B0'])}, {yn(r['A_holds_B0'])}, {ab} | {yn(r['agree'])} |")
+    return "\n".join(out)
+
+
+def arm_note() -> str:
+    a = pl.read_csv(ART / "exp3_arm_readings.csv", infer_schema_length=0)
+    c = pl.read_csv(ART / "exp3_with_learned_potential.csv", infer_schema_length=0).filter(pl.col("b") == "0.0").row(0, named=True)
+    h = pl.read_csv(ART.parent / "exp3_german_application" / "bias_robust_full_window_cells.csv",
+                    infer_schema_length=0).filter(pl.col("b") == "0.0").row(0, named=True)
+    n_agree = int((a["agree"] == "true").sum())
+    agg = pl.read_csv(ART / "bias_budget.csv").filter(pl.col("unit") == "three-area aggregate")
+    prim = agg.filter(pl.col("arm").str.starts_with("trimmed")).row(0, named=True)
+    return "\n".join([
+        f"- **Agreement:** {n_agree} of {a.height} readings agree with the headline. Under Â the data-fit "
+        f"tolerance ε at B = 0 is {float(c['eps']):.3f}, against {float(h['eps']):.3f} under H, on the same "
+        f"{int(c['n_qh_period']):,} quarter-hours: Â follows output much less closely than H, so every "
+        f"identified set widens. As fixed before step 4, this disagreement is not resolved by public "
+        f"data and is not evidence that H is wrong.",
+        f"- **b̂_H** at the aggregate, trimmed (primary): corrected mean log(H / A) "
+        f"{_m(prim['corrected'])} [{_m(prim['corrected_lo'])}, {_m(prim['corrected_hi'])}]. Descriptive "
+        f"only: L2 failed S2, no B̂ is defined and no reading is classified against it. It cannot tell "
+        f"H adding back more than was curtailed apart from Â, which never saw negative-price hours, "
+        f"falling short there.",
+    ])

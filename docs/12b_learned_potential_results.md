@@ -202,3 +202,40 @@ Written after S2 failed and before any step 4 computation.
 - **b̂_H** is computed as pre-registered and amended (trimmed primary, untrimmed sensitivity, per
   area and pooled, corrected by L2's look-alike bias, day-block bootstrap with 5,000 draws). It is
   descriptive only. No reading is classified against it, and no B̂ is defined.
+
+## Step 4 (reduced): descriptive bias estimate and Experiment 3 arm
+
+**b̂_H** (`bias_budget.csv`; L2's Â; day-block bootstrap; trimmed = target quarter-hours with
+overlap, as Amendment 1 C2):
+
+<!-- generated:exp4_bias_table -->
+| unit | arm | target quarter-hours (share kept) | b̂_H, mean log(H / Â) | L2 look-alike bias, mean log(G / Â) | corrected, mean log(H / A) | status |
+|---|---|---|---|---|---|---|
+| 50Hertz | trimmed (primary) | 1,525 (74.3%) | +0.2518 [+0.1847, +0.3182] | −0.1011 [−0.1610, −0.0473] | +0.3529 [+0.2641, +0.4408] | descriptive, S2 failed |
+| 50Hertz | untrimmed (sensitivity, extrapolation) | 2,052 (100.0%) | +0.2769 [+0.2169, +0.3353] | −0.1011 [−0.1610, −0.0473] | +0.3779 [+0.2991, +0.4625] | descriptive, S2 failed |
+| Amprion | trimmed (primary) | 1,916 (93.4%) | +0.2061 [+0.1558, +0.2617] | +0.0451 [+0.0008, +0.0880] | +0.1610 [+0.0953, +0.2308] | descriptive, S2 failed |
+| Amprion | untrimmed (sensitivity, extrapolation) | 2,052 (100.0%) | +0.2180 [+0.1672, +0.2728] | +0.0451 [+0.0008, +0.0880] | +0.1728 [+0.1068, +0.2417] | descriptive, S2 failed |
+| TransnetBW | trimmed (primary) | 2,008 (97.9%) | +0.3991 [+0.3001, +0.5209] | +0.0311 [−0.0235, +0.0849] | +0.3680 [+0.2555, +0.5000] | descriptive, S2 failed |
+| TransnetBW | untrimmed (sensitivity, extrapolation) | 2,052 (100.0%) | +0.3996 [+0.3012, +0.5182] | +0.0311 [−0.0235, +0.0849] | +0.3686 [+0.2563, +0.4990] | descriptive, S2 failed |
+| pooled area rows | trimmed (primary) | 5,449 (88.5%) | +0.2900 [+0.2335, +0.3504] | +0.0143 [−0.0228, +0.0492] | +0.2758 [+0.2096, +0.3467] | descriptive, S2 failed |
+| pooled area rows | untrimmed (sensitivity, extrapolation) | 6,156 (100.0%) | +0.2981 [+0.2463, +0.3519] | +0.0143 [−0.0228, +0.0492] | +0.2839 [+0.2219, +0.3481] | descriptive, S2 failed |
+| three-area aggregate | trimmed (primary) | 1,997 (97.3%) | +0.2518 [+0.2073, +0.2960] | −0.0147 [−0.0516, +0.0190] | +0.2665 [+0.2100, +0.3236] | descriptive, S2 failed |
+| three-area aggregate | untrimmed (sensitivity, extrapolation) | 2,052 (100.0%) | +0.2580 [+0.2124, +0.3026] | −0.0147 [−0.0516, +0.0190] | +0.2728 [+0.2152, +0.3298] | descriptive, S2 failed |
+<!-- /generated -->
+
+**Experiment 3 with L2's Â as the potential** (`exp3_with_learned_potential.csv`, full window,
+pre-registered 0.01 B grid; `exp3_arm_readings.csv`):
+
+<!-- generated:exp4_arm_table -->
+| reading | under H: interval at B = 0, holds, breakdown | under Â (L2): interval at B = 0, holds, breakdown | agrees |
+|---|---|---|---|
+| λ₁ informative | [0.300, 0.508], yes, 0.04 | [0.000, 0.479], no, 0.00 | no |
+| λ₂ lower bound at least 0.5 | [0.525, 0.860], yes, 0.06 | [0.172, 0.990], no, 0.00 | no |
+| λ₃ upper bound at most 0.75 | [0.000, 0.579], yes, > 0.15 | [0.000, 0.814], no, 0.00 | no |
+| λ₆ upper bound at most 0.5 | [−0.967, 0.398], yes, 0.04 | [−0.795, 0.814], no, 0.00 | no |
+<!-- /generated -->
+
+<!-- generated:exp4_arm_note -->
+- **Agreement:** 0 of 4 readings agree with the headline. Under Â the data-fit tolerance ε at B = 0 is 0.241, against 0.113 under H, on the same 34,937 quarter-hours: Â follows output much less closely than H, so every identified set widens. As fixed before step 4, this disagreement is not resolved by public data and is not evidence that H is wrong.
+- **b̂_H** at the aggregate, trimmed (primary): corrected mean log(H / A) +0.2665 [+0.2100, +0.3236]. Descriptive only: L2 failed S2, no B̂ is defined and no reading is classified against it. It cannot tell H adding back more than was curtailed apart from Â, which never saw negative-price hours, falling short there.
+<!-- /generated -->

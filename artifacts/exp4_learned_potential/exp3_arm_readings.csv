@@ -1,0 +1,5 @@
+lam,reading,H_lo_B0,H_hi_B0,H_holds_B0,H_breakdown,A_lo_B0,A_hi_B0,A_holds_B0,A_breakdown,agree,status
+L1,informative,0.3001069396084586,0.5078782761307553,true,0.04,7.357190786068183e-10,0.4794825542597847,false,0.00,false,"descriptive, S2 failed"
+L2,lower bound at least 0.5,0.5253937017219534,0.85995675822087,true,0.06,0.17203399891066473,0.990130973680797,false,0.00,false,"descriptive, S2 failed"
+L3,upper bound at most 0.75,4.287006119966069e-10,0.5792339953420202,true,> 0.15,4.26245868913929e-14,0.8140011375284686,false,0.00,false,"descriptive, S2 failed"
+L6,upper bound at most 0.5,-0.9667315877906296,0.39834801334581443,true,0.04,-0.7945937909007592,0.8135284546098047,false,0.00,false,"descriptive, S2 failed"

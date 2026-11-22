@@ -109,16 +109,37 @@ def redispatch_keep(panel: dict, mask: str) -> np.ndarray:
     return ~drop
 
 
+LEARNED_OOF = REPO_ROOT / "artifacts" / "exp4_learned_potential" / "oof_L2.parquet"
+
+
+def learned_potential(panel: dict, oof: Path = LEARNED_OOF) -> np.ndarray:
+    """Experiment 4's Â for the three-area aggregate, aligned to the panel: the sum over the three
+    areas of L2's out-of-fold median (docs/12b). NaN where any area lacks a prediction."""
+    a = pl.read_parquet(oof).select(["area", "ts_utc", "a_hat_mw"])
+    agg = (a.group_by("ts_utc").agg(pl.col("a_hat_mw").sum(), pl.len().alias("n"))
+             .filter(pl.col("n") == len(MASK_AREAS)))
+    j = pl.DataFrame({"ts_utc": panel["ts_utc"]}).join(agg, on="ts_utc", how="left")
+    if (j["ts_utc"].to_numpy() != panel["ts_utc"]).any():
+        raise ValueError("learned potential does not align with the panel")
+    return j["a_hat_mw"].fill_null(np.nan).to_numpy().astype(float)
+
+
 def run_v2(step: float = STEP, bmax: float = V2_BMAX, out: Path | None = None,
-           masks: tuple[str, ...] = ()) -> Path:
+           masks: tuple[str, ...] = (), potential: str = "H") -> Path:
     """V2 on the real full window. Defaults are the pre-registered grid and file; `step`,
     `bmax` and `out` exist for the post-hoc fine grid (docs/10), and `masks` for the redispatch
     sensitivity (docs/11); both write elsewhere and leave the default run unchanged."""
     from src.method.real_panel import THREE_AREA, load_panel, run_arm
     out = Path(out) if out is not None else OUT_DIR_REAL / "bias_robust_full_window_cells.csv"
-    if ((step, bmax) != (STEP, V2_BMAX) or masks) and out == OUT_DIR_REAL / "bias_robust_full_window_cells.csv":
+    if potential not in ("H", "learned"):
+        raise ValueError(f"unknown potential {potential!r}")
+    if ((step, bmax) != (STEP, V2_BMAX) or masks or potential != "H") and out == OUT_DIR_REAL / "bias_robust_full_window_cells.csv":
         raise ValueError("a non-default run must not overwrite the pre-registered V2 artifact")
     panel = load_panel(THREE_AREA, "H")
+    if potential == "learned":                       # Experiment 4 robustness arm (docs/12b)
+        a_hat = learned_potential(panel)
+        panel = {**panel, "f": a_hat,
+                 "keep": panel["keep"] & np.isfinite(a_hat) & (np.nan_to_num(a_hat) > 0)}
     OUT_DIR_REAL.mkdir(parents=True, exist_ok=True)
     arms = [(None, panel["keep"])] if not masks else [
         (m, panel["keep"] & redispatch_keep(panel, m)) for m in masks]
@@ -130,7 +151,8 @@ def run_v2(step: float = STEP, bmax: float = V2_BMAX, out: Path | None = None,
                 scaled = {**panel, "f": np.asarray(panel["f"], dtype=float) * np.exp(b)}
                 rows = run_arm(scaled, "main", keep, "window", False)
                 for r in rows:
-                    r.update({"b": b, "potential": "H", "v0_commit": V0_COMMIT, "git_head": head})
+                    r.update({"b": b, "potential": "H" if potential == "H" else "learned (L2)",
+                              "v0_commit": V0_COMMIT, "git_head": head})
                     if mask is not None:
                         r["mask"] = mask
                 if writer is None:
@@ -191,6 +213,8 @@ def main() -> None:
     ap.add_argument("--bmax", type=float, default=V2_BMAX, help="V2 b-grid half-width (0.15)")
     ap.add_argument("--out", default=None, help="V2 output file (default: the pre-registered one)")
     ap.add_argument("--masks", default="", help="comma-separated redispatch masks, e.g. M0,M1 (docs/11)")
+    ap.add_argument("--potential", default="H", choices=("H", "learned"),
+                    help="H (default) or Experiment 4's learned potential, L2's A-hat (docs/12b)")
     args = ap.parse_args()
     if args.part == "demo":
         demo(REPO_ROOT / "demo" / "output" / "bias_robust_cell.txt")
@@ -200,7 +224,7 @@ def main() -> None:
         print(f"wrote {run_v1(i, n)}")
     else:
         masks = tuple(m for m in args.masks.split(",") if m)
-        print(f"wrote {run_v2(args.step, args.bmax, args.out, masks)}")
+        print(f"wrote {run_v2(args.step, args.bmax, args.out, masks, args.potential)}")
 
 
 if __name__ == "__main__":
