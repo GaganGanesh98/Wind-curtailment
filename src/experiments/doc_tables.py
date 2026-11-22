@@ -127,11 +127,49 @@ def exp3_results() -> str:
                 "breakdown bias B", "informative months, H", "monthly verdict (C0 rule)"], rows)
 
 
+def _ex(s: str) -> str:
+    return s.replace("|", "/")
+
+
+def exp3_data_requirement() -> str:
+    t = pl.read_parquet(ART / "exp3_data_requirement.parquet")
+    rows = [[r["quantity"], r["sigma_label"], f"{r['sigma_H']:.3f}",
+             r["largest_informative_B_label"],
+             r["breakdown_B"] + (f" ({r['reading']})" if r["reading"] else ""), r["needs"]]
+            for r in t.iter_rows(named=True)]
+    return _md(["quantity", "highest informative σ (synthetic, best case)", "H's measured σ",
+                "largest informative B on real data", "breakdown B (V0 reading)",
+                "accuracy needed"], rows)
+
+
+def exp3_policy_use() -> str:
+    t = pl.read_parquet(ART / "exp3_policy_use.parquet")
+    rows = [[r["row"], r["question"], f"{r['cohorts']} ({', '.join(r['rule_ids'].split('|'))})",
+             r["range"], r["verdict"] + (f" (breakdown {r['breakdown_B']})"
+                                         if r["breakdown_B"] not in ("", "no reading") else ""),
+             r["data_requirement"]] for r in t.iter_rows(named=True)]
+    return _md(["quantity", "policy question", "EEG cohort(s) (rule rows)",
+                "current range, full window, B = 0", "verdict", "data requirement"], rows)
+
+
+def exp3_policy_rules() -> str:
+    import csv
+    t = pl.read_parquet(ART / "exp3_policy_use.parquet")
+    ids = sorted({i for r in t["rule_ids"].to_list() for i in r.split("|")})
+    with open(REPO_ROOT / "data" / "reference" / "eeg_negative_price_rules.csv", newline="",
+              encoding="utf-8") as fh:
+        rr = {r["rule_id"]: r for r in csv.DictReader(fh)}
+    rows = [[i, f"{rr[i]['commissioning_from'] or '…'} to {rr[i]['commissioning_to'] or '…'}",
+             _ex(rr[i]["trigger"]), _ex(rr[i]["legal_basis"])] for i in ids]
+    return _md(["rule", "commissioned", "trigger", "legal source (legal_basis column)"], rows)
+
+
 TABLES = {"available_power_anchors": available_power_anchors,
           "available_power_adds_back": available_power_adds_back,
           "exp1_coverage": exp1_coverage, "exp1_informative": exp1_informative,
           "exp2_bias_dial": exp2_bias_dial, "exp2_bias_robust": exp2_bias_robust,
-          "exp3_results": exp3_results}
+          "exp3_results": exp3_results, "exp3_data_requirement": exp3_data_requirement,
+          "exp3_policy_use": exp3_policy_use, "exp3_policy_rules": exp3_policy_rules}
 BLOCK = re.compile(r"(<!-- generated:([a-z0-9_]+) -->\n)(.*?)(<!-- /generated -->)", re.S)
 
 

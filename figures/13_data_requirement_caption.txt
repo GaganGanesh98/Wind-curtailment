@@ -1,0 +1,5 @@
+13_data_requirement
+
+Experiment 3, the accuracy each quantity needs. Left: the highest noise level σ at which the quantity is informative in at least half the synthetic cells (Experiment 1, i.i.d. noise; synthetic, best case, not a guarantee: real data are far less informative than the synthetic cells at the same σ). Vertical line: H's measured σ. Right: the breakdown bias B of the quantity's pre-registered reading on real data. Vertical line: |bias| of H on price ≥ 0 quarter-hours; its bias during negative prices is not measured. Arrows mark values at or beyond the top of the tested grid.
+
+Source: artifacts/exp3_data_requirement.parquet (columns sigma_informative, sigma_H, breakdown_B, bias_H), built from artifacts/exp1_known_truth_validation/noise_dial_summary.csv, artifacts/exp3_german_application/breakdown_points.csv and artifacts/available_power_estimate/error_anchors.csv.

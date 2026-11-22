@@ -1,0 +1,8 @@
+lam,quantity,sigma_informative,sigma_top_of_grid,sigma_label,sigma_H,breakdown_B_value,breakdown_above_grid,breakdown_label,abs_bias_H
+L1,λ₁,0.35,true,≥ 0.35 (top of grid),0.06601118961680119,0.04,false,0.04,0.04724180858056385
+L2,λ₂,0.35,true,≥ 0.35 (top of grid),0.06601118961680119,0.06,false,0.06,0.04724180858056385
+L3,λ₃,0.12,false,≤ 0.12,0.06601118961680119,0.15,true,> 0.15,0.04724180858056385
+L4,λ₄,0.033,false,≤ 0.033,0.06601118961680119,,false,no reading,0.04724180858056385
+L5,λ₅,0.033,false,≤ 0.033,0.06601118961680119,,false,no reading,0.04724180858056385
+L6,λ₆,0.066,false,≤ 0.066,0.06601118961680119,0.04,false,0.04,0.04724180858056385
+L7,λ₇,,false,not identifiable with perfect data,0.06601118961680119,,false,no reading,0.04724180858056385

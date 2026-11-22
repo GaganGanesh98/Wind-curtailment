@@ -1,4 +1,4 @@
-"""The figures, 01-09, in reading order (docs/00_start_here.md).
+"""The figures, 01-09 and 13, in reading order (docs/00_start_here.md).
 
     python -m src.figures                  # writes figures/
     python -m src.figures --out demo/output/figures
@@ -206,6 +206,22 @@ def bias_breakdown_data() -> pl.DataFrame:
 
 
 
+def data_requirement_data() -> pl.DataFrame:
+    """Figure 13: per quantity, the σ a narrow range needs and the bias its reading survives.
+
+    Read from artifacts/exp3_data_requirement.parquet (src/experiments/exp3_policy_use.py).
+    """
+    d = pl.read_parquet(ART / "exp3_data_requirement.parquet")
+    bd = d["breakdown_B"].to_list()
+    return d.select(
+        "lam", "quantity", "sigma_informative", "sigma_top_of_grid", "sigma_label", "sigma_H",
+        pl.Series("breakdown_B_value", [None if b in ("no reading", "") else
+                                        float(b.lstrip("> ")) for b in bd], dtype=pl.Float64),
+        pl.Series("breakdown_above_grid", [b.startswith(">") for b in bd]),
+        pl.col("breakdown_B").alias("breakdown_label"),
+        pl.col("bias_H").abs().alias("abs_bias_H"))
+
+
 CAPTIONS = {
     "01_motivation_event_day": (
         "Motivation. {day} (Easter Sunday) is the largest-error negative-price event-day of the "
@@ -292,6 +308,18 @@ CAPTIONS = {
         "lo, hi, width) and breakdown_points.csv (column breakdown_B); scale line from "
         "artifacts/available_power_estimate/error_anchors.csv, column bias (anchor H, DE excl. "
         "TenneT, price >= 0)."),
+    "13_data_requirement": (
+        "Experiment 3, the accuracy each quantity needs. Left: the highest noise level σ at "
+        "which the quantity is informative in at least half the synthetic cells (Experiment 1, "
+        "i.i.d. noise; synthetic, best case, not a guarantee: real data are far less "
+        "informative than the synthetic cells at the same σ). Vertical line: H's measured σ. "
+        "Right: the breakdown bias B of the quantity's pre-registered reading on real data. "
+        "Vertical line: |bias| of H on price ≥ 0 quarter-hours; its bias during negative prices "
+        "is not measured. Arrows mark values at or beyond the top of the tested grid.",
+        "artifacts/exp3_data_requirement.parquet (columns sigma_informative, sigma_H, "
+        "breakdown_B, bias_H), built from artifacts/exp1_known_truth_validation/"
+        "noise_dial_summary.csv, artifacts/exp3_german_application/breakdown_points.csv and "
+        "artifacts/available_power_estimate/error_anchors.csv."),
 }
 
 
@@ -550,6 +578,53 @@ def make_all(out: Path) -> list[Path]:
         fig.suptitle("Full-window readings with H: how much constant bias they survive",
                      fontsize=15)
         save(fig, "09_exp3_bias_breakdown", d.with_columns(pl.lit(hb).alias("abs_bias_h_positive_prices")))
+
+    # figure 13
+    if (ART / "exp3_data_requirement.parquet").exists():
+        d = data_requirement_data()
+        fig, (axl, axr) = plt.subplots(1, 2, figsize=(14, 6.2), sharey=True)
+        ys = np.arange(d.height)[::-1]
+        labels = [LAM_LABEL[l] for l in d["lam"]]
+        box = {"facecolor": "white", "alpha": 0.85, "lw": 0, "pad": 1.5}
+        for ax, xmax in ((axl, 0.40), (axr, 0.17)):
+            ax.set_xlim(0, xmax)
+            ax.set_ylim(-0.6, d.height + 0.1)          # a free band on top for the H label
+            ax.set_yticks(ys, labels)
+        for y, r in zip(ys, d.iter_rows(named=True)):
+            s = r["sigma_informative"]
+            if s is None:
+                axl.plot(0.004, y, marker="X", ms=12, color=VERMILION, clip_on=False)
+                axl.text(0.014, y, "not identifiable with perfect data", va="center",
+                         fontsize=11, color=VERMILION)
+            else:
+                axl.barh(y, s, height=0.6, color=BLUE)
+                axl.text(s + 0.006, y, ("≥ " if r["sigma_top_of_grid"] else "≤ ") + f"{s:g}"
+                         + (" →" if r["sigma_top_of_grid"] else ""), va="center", fontsize=11,
+                         bbox=box)
+            b = r["breakdown_B_value"]
+            if r["lam"] == "L7":
+                axr.plot(0.002, y, marker="X", ms=12, color=VERMILION, clip_on=False)
+                axr.text(0.007, y, "not identifiable with perfect data", va="center",
+                         fontsize=11, color=VERMILION)
+            elif b is None:
+                axr.plot(0.002, y, marker="o", ms=9, mfc="white", color=GREY, clip_on=False)
+                axr.text(0.007, y, "no reading", va="center", fontsize=11, color=GREY)
+            else:
+                axr.barh(y, b, height=0.6, color=ORANGE)
+                axr.text(b + 0.003, y, r["breakdown_label"] + (" →" if r["breakdown_above_grid"]
+                                                                 else ""),
+                         va="center", fontsize=11, bbox=box)
+        sh, bh = float(d["sigma_H"][0]), float(d["abs_bias_H"][0])
+        axl.axvline(sh, color="black", ls="--", lw=1.4)
+        axl.text(sh + 0.004, d.height - 0.35, f"H, σ = {sh:.3f}", fontsize=11, va="center")
+        axr.axvline(bh, color="black", ls="--", lw=1.4)
+        axr.text(bh + 0.002, d.height - 0.35, f"H, |bias| = {bh:.3f}", fontsize=11,
+                 va="center")
+        axl.set_xlabel("highest informative noise σ (synthetic, best case)")
+        axr.set_xlabel("breakdown bias B of the reading (real data)")
+        axl.set_title("noise a narrow range tolerates")
+        axr.set_title("bias the reading survives")
+        save(fig, "13_data_requirement", d)
     return written
 
 
