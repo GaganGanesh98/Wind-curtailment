@@ -38,8 +38,9 @@ def _md(header: list[str], rows: list[list[str]]) -> str:
 def available_power_anchors() -> str:
     """H on both series (h_anchor_by_series.csv) and F, at price >= 0. Labelled by series:
     until 22 Nov 2026 this table called the operational row 'quality-assured'."""
+    # The G + R row stays in the CSV but is not shown: R includes solar and offshore (docs/07).
     b = pl.read_csv(AP / "h_anchor_by_series.csv", infer_schema_length=None).filter(
-        pl.col("sample") == "price >= 0")
+        (pl.col("sample") == "price >= 0") & (pl.col("anchor") != "H, G+R"))
     a = pl.read_csv(AP / "error_anchors.csv", infer_schema_length=None).with_columns(
         *(pl.col(c).cast(pl.Float64, strict=False) for c in ("sigma", "sigma_lo", "sigma_hi", "bias")))
     t = a.filter((pl.col("anchor") == "T") & (pl.col("area") == "DE") & (pl.col("series") == "onshore")
@@ -109,6 +110,36 @@ def h_limitations() -> str:
             f"- **The bias of H at negative prices cannot be measured.** It was measured at positive "
             f"prices\n  only ({_m(q['bias'], 4)}, quality-assured; operational {_m(o['bias'], 4)}); "
             f"experiment 3 therefore reports how much bias\n  each reading survives, not whether it holds.")
+
+
+def redispatch_caveats() -> str:
+    """docs/07: what R contains, read from redispatch_checks.csv and Q0b's gap_shares.csv."""
+    c = pl.read_csv(AP / "redispatch_checks.csv")
+    u = c.filter(pl.col("check") == "unit_check").row(0, named=True)
+    comp = {r["item"]: r["share"] for r in c.filter(pl.col("check") == "composition").iter_rows(named=True)}
+    g = pl.read_csv(AP / "gap_shares.csv", infer_schema_length=None).filter(
+        (pl.col("series") == "quality-assured") & (pl.col("area") == "50Hertz+Amprion+TransnetBW")
+        & (pl.col("estimator") == "H") & (pl.col("set") == "price < 0")).row(0, named=True)
+    return (f"- **The redispatch series mixes in solar and offshore.** R is every renewable "
+            f"reduction measure in the\n  Netztransparenz export; in the three areas "
+            f"{comp['distribution-cluster aggregate (_CR_)']:.0%} of its energy is "
+            f"distribution-cluster aggregates (which\n  carry solar), "
+            f"{comp['offshore wind park (OWP)']:.0%} offshore wind parks and "
+            f"{comp['substation (UW)']:.0%} substations "
+            f"(`artifacts/available_power_estimate/redispatch_checks.csv`).\n  Q0b's and the kill "
+            f"test's redispatch controls therefore over-subtract, which makes their conclusions\n"
+            f"  conservative, and the {float(g['r_share']):.2%} redispatch share of H at negative "
+            f"prices is an upper bound that\n  includes non-wind. Open: {u['count']:,} of "
+            f"{u['of']:,} renewable reduction measures fail the check that mean MW times\n"
+            f"  duration equals the stated MWh (more than 2% apart).")
+
+
+def posthoc_06b_line() -> str:
+    from src.experiments.exp3_posthoc_breakdown import comparison_values
+    q = list(comparison_values().values())[1]
+    return (f"Post-hoc (`docs/10_posthoc_breakdown_grid.md`): on a finer bias grid λ₁ and λ₆ hold at "
+            f"H's measured bias of {q:.4f}, with almost no margin. The verdicts above are those of "
+            f"the pre-registered 0.01 grid and stay as they are.")
 
 
 def policy_verdict_rule() -> str:
@@ -247,6 +278,7 @@ TABLES = {"available_power_anchors": available_power_anchors,
           "exp3_policy_use": exp3_policy_use, "exp3_policy_rules": exp3_policy_rules,
           "h_grid_note": h_grid_note, "h_scale_line": h_scale_line,
           "h_limitations": h_limitations, "policy_verdict_rule": policy_verdict_rule,
+          "redispatch_caveats": redispatch_caveats, "posthoc_06b_line": posthoc_06b_line,
           "posthoc_grid_design": lambda: _ph().design_text(),
           "posthoc_grid_results": lambda: _ph().results_table(),
           "posthoc_l1_edge": lambda: _ph().l1_edge_table(),

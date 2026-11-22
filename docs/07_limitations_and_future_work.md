@@ -9,6 +9,15 @@
   only (−0.0326, quality-assured; operational −0.0472); experiment 3 therefore reports how much bias
   each reading survives, not whether it holds.
 <!-- /generated -->
+<!-- generated:redispatch_caveats -->
+- **The redispatch series mixes in solar and offshore.** R is every renewable reduction measure in the
+  Netztransparenz export; in the three areas 62% of its energy is distribution-cluster aggregates (which
+  carry solar), 27% offshore wind parks and 11% substations (`artifacts/available_power_estimate/redispatch_checks.csv`).
+  Q0b's and the kill test's redispatch controls therefore over-subtract, which makes their conclusions
+  conservative, and the 3.38% redispatch share of H at negative prices is an upper bound that
+  includes non-wind. Open: 1,322 of 7,067 renewable reduction measures fail the check that mean MW times
+  duration equals the stated MWh (more than 2% apart).
+<!-- /generated -->
 - **TenneT is excluded** from every projection aggregate (supervisor minute T-D(vii)); the real
   data cover three of the four control areas.
 - **Synthetic results hold on the tested grid only** (σ and b as listed in experiments 1 and 2).

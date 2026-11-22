@@ -1,0 +1,6 @@
+check,item,count,of,share,note
+unit_check,"mean MW x duration vs MWh, more than 2% apart",1322,7067,0.18706664779963209,"renewable reductions, every TSO; timestamps all in ['UTC']"
+composition,distribution-cluster aggregate (_CR_),1261,2533,0.6223404981693365,share of three-area R energy (MWh)
+composition,offshore wind park (OWP),593,2533,0.26870564691616294,share of three-area R energy (MWh)
+composition,substation (UW),634,2533,0.10518467068887122,share of three-area R energy (MWh)
+composition,other named plant,45,2533,0.0037691842256294024,share of three-area R energy (MWh)

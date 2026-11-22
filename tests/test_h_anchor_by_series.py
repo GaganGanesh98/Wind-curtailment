@@ -57,3 +57,21 @@ def test_hard_coded_quality_assured_values_match_the_artifact(path):
         if sig:
             assert sig == f"{q['sigma']:.4f}", (path, sig)
         assert bias.replace("−", "-") == f"{q['bias']:.4f}", (path, bias)
+
+
+@pytest.mark.needs_data("data/raw/netztransparenz/redispatch_2025-10-01_2026-10-28_UTC_dl2026-10-29.csv")
+def test_redispatch_checks_recompute_from_the_export():
+    from src.method.redispatch_checks import OUT, checks
+    stored = pl.read_csv(OUT)
+    fresh = pl.DataFrame(checks())
+    assert stored["count"].to_list() == fresh["count"].to_list()
+    assert stored["item"].to_list() == fresh["item"].to_list()
+    u = stored.filter(pl.col("check") == "unit_check").row(0, named=True)
+    assert (u["count"], u["of"]) == (1322, 7067)
+
+
+def test_g_plus_r_row_is_kept_in_the_csv_but_not_shown_in_docs03():
+    r = primary_h(anchor="H, G+R")
+    assert "includes solar" in r["note"] and "offshore" in r["note"]
+    doc = (REPO_ROOT / "docs" / "03_available_power_estimate.md").read_text(encoding="utf-8")
+    assert "against G + R (redispatch" not in doc

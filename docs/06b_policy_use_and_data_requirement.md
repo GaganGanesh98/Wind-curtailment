@@ -49,6 +49,10 @@ built from `artifacts/exp1_known_truth_validation/noise_dial_summary.csv`,
 Verdicts come from each reading's breakdown point against H's measured bias, not from the
 informativeness rule, so a one-sided bound can be robust while the full range is wide (λ₂).
 
+<!-- generated:posthoc_06b_line -->
+Post-hoc (`docs/10_posthoc_breakdown_grid.md`): on a finer bias grid λ₁ and λ₆ hold at H's measured bias of 0.0326, with almost no margin. The verdicts above are those of the pre-registered 0.01 grid and stay as they are.
+<!-- /generated -->
+
 <!-- generated:policy_verdict_rule -->
 A verdict is robust when the reading still holds at B = 0.04, the first tested allowance at or above H's measured bias of 0.0326 (quality-assured series), fragile when it breaks at or below that, and not identifiable when the quantity has no reading.
 <!-- /generated -->

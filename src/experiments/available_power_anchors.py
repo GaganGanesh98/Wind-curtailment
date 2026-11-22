@@ -326,9 +326,10 @@ def anchor_h_by_series() -> list[dict]:
             ("H", "log(G/H)", g, h, "the H anchor for Experiment 3"),
             ("T|H-matched", "log(G/F)", g, f, "the same quarter-hours as the H row above"),
             ("H, G+R", "log((G+R)/H)", g + r, h,
-             "R = onshore wind redispatch (projection_and_redispatch.redispatch_qh), each "
-             "measure spread evenly over its quarter-hours; separates projection error from "
-             "grid curtailment"),
+             "R = the renewable reduzieren redispatch series (projection_and_redispatch."
+             "redispatch_qh), each measure spread evenly over its quarter-hours. R includes "
+             "solar (distribution-cluster aggregates) and offshore wind parks, so G + R "
+             "over-adds; kept here as a record, not reported in docs/03 (22 Nov 2026)"),
         ):
             rows.append({"anchor": anchor, "quantity": quantity, **base, "sample": label,
                          **log_ratio_stats(num, den, days, m), "note": note})
