@@ -88,7 +88,7 @@ def main() -> None:
     for r in rows + arm:
         fields += [k for k in r if k not in fields]
     with open(out, "w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=["table"] + fields)
+        w = csv.DictWriter(fh, fieldnames=["table"] + fields, lineterminator="\n")
         w.writeheader()
         for r in rows:
             w.writerow({"table": "transitions", **r})

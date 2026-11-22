@@ -1,0 +1,2 @@
+# Committed CSVs are LF; csv writers in src/ pass lineterminator="\n" to match.
+*.csv text eol=lf

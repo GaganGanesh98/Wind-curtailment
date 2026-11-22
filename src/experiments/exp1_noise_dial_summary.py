@@ -137,7 +137,7 @@ def _write(path: Path, rows: list[dict]) -> None:
             if k not in fields:
                 fields.append(k)
     with open(path, "w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=fields)
+        w = csv.DictWriter(fh, fieldnames=fields, lineterminator="\n")
         w.writeheader()
         for r in rows:
             w.writerow({k: r.get(k, "") for k in fields})

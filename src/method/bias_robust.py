@@ -66,7 +66,7 @@ def run_v1(shard: int, n_shards: int) -> Path:
                     r.update({"s": s, "v0_commit": V0_COMMIT, "git_head": head})
                 if writer is None:
                     fh = open(out, "w", newline="", encoding="utf-8")
-                    writer = csv.DictWriter(fh, fieldnames=list(rows[0]))
+                    writer = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
                     writer.writeheader()
                 for r in rows:
                     writer.writerow({k: r.get(k) for k in writer.fieldnames})
@@ -94,7 +94,7 @@ def run_v2() -> Path:
                 r.update({"b": b, "potential": "H", "v0_commit": V0_COMMIT, "git_head": head})
             if writer is None:
                 fh = open(out, "w", newline="", encoding="utf-8")
-                writer = csv.DictWriter(fh, fieldnames=list(rows[0]))
+                writer = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
                 writer.writeheader()
             for r in rows:
                 writer.writerow({k: r.get(k) for k in writer.fieldnames})

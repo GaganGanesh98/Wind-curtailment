@@ -51,6 +51,7 @@ def test_the_rebuild_only_added_history():
     assert added["berlin_date"].max() < CUTOVER
 
 
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
 def test_pre_october_2025_prices_are_hourly_repeated_not_missing():
     """The resolution finding Stage 1 rests on, asserted on the real panel."""
     import numpy as np

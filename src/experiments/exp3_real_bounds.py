@@ -78,7 +78,7 @@ def main() -> None:
                             "git_head": head, "run_date": today})
                     if writer is None:
                         fh = open(OUT, "w", newline="", encoding="utf-8")
-                        writer = csv.DictWriter(fh, fieldnames=list(rows[0]))
+                        writer = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
                         writer.writeheader()
                     for r in rows:
                         writer.writerow({k: r.get(k) for k in writer.fieldnames})

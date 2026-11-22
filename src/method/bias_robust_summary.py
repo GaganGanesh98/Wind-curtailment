@@ -55,7 +55,7 @@ def _num(d: pl.DataFrame, cols) -> pl.DataFrame:
 
 def _write(path: Path, rows: list[dict]) -> None:
     with open(path, "w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
         w.writeheader()
         w.writerows(rows)
 

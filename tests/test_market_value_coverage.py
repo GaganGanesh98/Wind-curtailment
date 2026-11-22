@@ -65,6 +65,7 @@ def test_coverage_is_reported_and_not_silently_partial():
     assert len(covered) >= len(_panel_months()) - MV_PUBLICATION_LAG_MONTHS
 
 
+@pytest.mark.needs_data("data/raw/netztransparenz/Monatsmarktwerte_2026.csv", "data/raw/netztransparenz/Monatsmarktwerte_*.csv")
 def test_reading_one_file_alone_is_not_enough_for_the_study_window():
     """Pins the actual bug: the old default could not cover the window."""
     only_2026 = {f"{r['year']}-{r['month']:02d}"
@@ -74,6 +75,7 @@ def test_reading_one_file_alone_is_not_enough_for_the_study_window():
         "globbing all year files must recover Oct 2025")
 
 
+@pytest.mark.needs_data("data/raw/netztransparenz/Monatsmarktwerte_*.csv")
 def test_all_year_files_on_disk_are_read():
     on_disk = {p.name for p in PUBLISHED_DIR.glob(PUBLISHED_GLOB)}
     years_read = {r["year"] for r in read_published().iter_rows(named=True)}
@@ -83,6 +85,7 @@ def test_all_year_files_on_disk_are_read():
         f"{sorted(years_on_disk - years_read)}")
 
 
+@pytest.mark.needs_data("data/raw/netztransparenz/Monatsmarktwerte_*.csv")
 def test_a_month_appearing_twice_with_different_values_raises():
     """A silent overwrite would be worse than the gap this fix closed."""
     import re

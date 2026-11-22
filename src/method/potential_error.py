@@ -218,7 +218,7 @@ def main() -> None:
                 if writer is None:
                     fh = open(out_path, "w", newline="", encoding="utf-8")
                     fields = list(rows[0])
-                    writer = csv.DictWriter(fh, fieldnames=fields)
+                    writer = csv.DictWriter(fh, fieldnames=fields, lineterminator="\n")
                     writer.writeheader()
                 for r in rows:
                     writer.writerow({k: r.get(k) for k in writer.fieldnames})

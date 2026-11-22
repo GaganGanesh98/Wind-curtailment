@@ -353,7 +353,7 @@ def smoke(out_path: Path) -> None:
     rows = run_cell(rate, gamma, shape, seed, hetero, "O")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        writer = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
         writer.writeheader()
         for row in rows:
             writer.writerow({k: row.get(k) for k in writer.fieldnames})
@@ -409,7 +409,7 @@ def main() -> None:
                 row["git_head"], row["run_date"] = head, today
             if writer is None:
                 fh = open(out_path, "w", newline="", encoding="utf-8")
-                writer = csv.DictWriter(fh, fieldnames=list(rows[0]))
+                writer = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
                 writer.writeheader()
             for row in rows:
                 writer.writerow({k: row.get(k) for k in writer.fieldnames})

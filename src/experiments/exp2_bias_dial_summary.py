@@ -89,7 +89,7 @@ def by_level(d: pl.DataFrame) -> tuple[list[dict], list[dict]]:
 
 def _write(path: Path, rows: list[dict]) -> None:
     with open(path, "w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
         w.writeheader()
         w.writerows(rows)
 

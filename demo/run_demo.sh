@@ -16,6 +16,15 @@ BEFORE=$(git status --porcelain -- artifacts figures)
 
 header() { printf '\n==== Step %s: %s ====\n' "$1" "$2"; }
 
+# data/ is not committed. Steps that read the panel print one line and continue without it;
+# steps 4, 5 and 6 run from the committed artifacts.
+PANEL=data/processed/panel_qh.parquet
+have_panel() {
+  [ -f "$PANEL" ] && return 0
+  echo "skipped: needs $PANEL, see docs/00_start_here.md"
+  return 1
+}
+
 step1() {
   header 1 "environment and commit"
   $PY --version
@@ -25,11 +34,13 @@ step1() {
 
 step2() {
   header 2 "experiment 1: one synthetic cell with a known truth -- interval and coverage per functional"
+  have_panel || return 0
   $PY -m src.method.synthetic_scoring --smoke --out "$OUT/known_truth_cell.csv"
 }
 
 step3() {
   header 3 "experiment 2: one cell whose potential is biased by -0.047 -- plain set vs bias-robust set (B = 0.05)"
+  have_panel || return 0
   $PY -m src.method.bias_robust --part demo
 }
 
@@ -44,7 +55,7 @@ step5() {
 }
 
 step6() {
-  header 6 "regenerate figures 01-09 from the committed artifacts"
+  header 6 "regenerate figures 01-09 and 13 from the committed artifacts"
   $PY -m src.figures --out "$OUT/figures"
 }
 

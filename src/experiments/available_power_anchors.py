@@ -314,7 +314,7 @@ def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     path = OUT_DIR / "error_anchors.csv"
     with open(path, "w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=fields)
+        w = csv.DictWriter(fh, fieldnames=fields, lineterminator="\n")
         w.writeheader()
         for r in rows:
             w.writerow({k: r.get(k, "") for k in fields})

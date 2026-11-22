@@ -92,6 +92,7 @@ def test_allow_lists_never_contain_a_forbidden_name():
 # --------------------------------------------------- the latent head cannot see price
 
 
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
 def test_latent_features_actually_built_contain_no_price():
     data = _data()
     _, names = build_latent_features(data, task="E1")
@@ -99,6 +100,7 @@ def test_latent_features_actually_built_contain_no_price():
     assert not (set(names) & FORBIDDEN_FEATURES)
 
 
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
 def test_latent_power_is_invariant_to_the_price_series():
     """Behavioural test: change every price, leave A unchanged.
 
@@ -132,6 +134,7 @@ def test_latent_power_is_invariant_to_the_price_series():
     np.testing.assert_array_equal(a_before, a_after)
 
 
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
 def test_response_head_has_no_access_to_the_latent_features():
     """The separation runs both ways: r sees depth and run length, nothing else."""
     data = _data()
@@ -144,6 +147,7 @@ def test_response_head_has_no_access_to_the_latent_features():
     ), params
 
 
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
 def test_theta_provenance_is_recorded_so_it_can_be_checked_per_task():
     """Spec v1.4: assert theta's provenance, not only the feature set.
 
@@ -164,6 +168,7 @@ def test_theta_provenance_is_recorded_so_it_can_be_checked_per_task():
     )
 
 
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
 def test_baseline_extra_features_still_reject_leakage():
     """A baseline may use a feature M1 cannot -- but never a leaking one.
 

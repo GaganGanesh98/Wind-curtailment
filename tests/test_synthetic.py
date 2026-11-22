@@ -16,6 +16,7 @@ def _small(**kw) -> SyntheticConfig:
     return SyntheticConfig(**base)
 
 
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
 def test_generator_reproduces_c_true_exactly_when_r_star_is_known():
     """The core guarantee of the benchmark: truth is recomputable, not approximate.
 
@@ -29,6 +30,7 @@ def test_generator_reproduces_c_true_exactly_when_r_star_is_known():
     np.testing.assert_allclose(r, data.r_true, atol=1e-12, rtol=0)
 
 
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
 def test_observation_model_holds_exactly_without_noise():
     data = generate(_small(observation_noise_mw=0.0))
     np.testing.assert_allclose(
@@ -36,6 +38,7 @@ def test_observation_model_holds_exactly_without_noise():
     )
 
 
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
 def test_generation_is_deterministic_in_the_seed():
     a = generate(_small(seed=42))
     b = generate(_small(seed=42))
@@ -46,12 +49,14 @@ def test_generation_is_deterministic_in_the_seed():
 
 
 @pytest.mark.parametrize("rate", [0.05, 0.10, 0.20])
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
 def test_realised_negative_rate_is_close_to_the_target(rate):
     data = generate(_small(censoring_rate=rate))
     realised = float((data.price_eur_mwh < 0).mean())
     assert abs(realised - rate) < 0.01, f"target {rate}, realised {realised}"
 
 
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
 def test_censored_share_is_reported_not_assumed_equal_to_the_negative_rate():
     """Exposure and actual curtailment are distinct, and the diagnostics say so."""
     data = generate(_small(r_shape="half"))
@@ -60,6 +65,7 @@ def test_censored_share_is_reported_not_assumed_equal_to_the_negative_rate():
     assert 0.0 < d["mean_c_on_censored"] < 1.0
 
 
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
 def test_subhour_episodes_leave_the_hourly_mean_positive():
     """These are the quarter-hours that separate the two clocks (spec section 3, I4).
 
@@ -101,11 +107,13 @@ def test_all_three_response_shapes_are_monotone_in_depth():
         assert r.min() >= 0.0 and r.max() <= 1.0
 
 
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
 def test_response_is_zero_where_not_exposed():
     data = generate(_small())
     assert np.all(data.r_true[data.s == 0] == 0.0)
 
 
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
 def test_gamma_concentrates_censoring_on_windy_periods():
     """gamma is the weather-price confounding knob; at 0 it must do nothing."""
     f = generate(_small(gamma=0.0)).forecast_mw

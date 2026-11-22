@@ -29,6 +29,7 @@ def _truths(prep, scale: float) -> dict:
                                                       stage_a_note="lambda-5 truth test")}
 
 
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
 def test_lambda5_truth_does_not_move_with_the_scored_potential(prep):
     exact, scaled = _truths(prep, 1.0), _truths(prep, 1.5)
     assert np.isfinite(exact["L5"]) and exact["L5"] > 0
