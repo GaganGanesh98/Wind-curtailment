@@ -1,4 +1,4 @@
-# What public German wind data can and cannot tell us about price-driven curtailment, Oct 2025 – Oct 2026
+# What public German wind data can and cannot tell us about price-driven curtailment, Oct 2025 – Sep 2026
 
 Built by `src/build_conclusions_table.py` from committed artifacts under the rule in `docs/C0_preregistration.md` (commit `a67f69a`). Machine-readable copy: `results/C1_conclusions_table.csv`. Nothing here was fitted for this table.
 
@@ -46,7 +46,7 @@ Under the literal reading of C0 §4 rule 3 (without "and not at Anchor H"), λ�
 
 ## Full-window reading (descriptive, not part of the C0 verdict)
 
-Added 16 November 2026 at the student's instruction, after C0. It changes no verdict above. Each row is the single interval for the whole window (2025-10 to 2026-10, main setting, projection H), not the monthly arms the verdict counts. **Reading rule, fixed here and applied to every row:** a response share lies in [0, 1] (λ₆ in [−1, 1]; λ₅ in [0, its logical maximum] GWh); a bound is read one-sided when it excludes at least a quarter of that range at its own end, the same quarter the informativeness rule uses.
+Added 16 November 2026 at the student's instruction, after C0. It changes no verdict above. Each row is the single interval for the whole window (2025-10-01 to 2026-09-30, main setting, projection H), not the monthly arms the verdict counts. **Reading rule, fixed here and applied to every row:** a response share lies in [0, 1] (λ₆ in [−1, 1]; λ₅ in [0, its logical maximum] GWh); a bound is read one-sided when it excludes at least a quarter of that range at its own end, the same quarter the informativeness rule uses.
 
 | row | full-window interval, H | width | logical maximum width | reading |
 |---|---|---|---|---|

@@ -8,6 +8,9 @@
   market value and a negative-price quarter-hour.
   The window ends on 2026-09-30 because October 2026 has no published market value. The
   October end date in the caption of figure `02` belongs to the forecast-bias check, not here.
+<!-- generated:exp3_window -->
+- Window: 2025-10-01 to 2026-09-30 (Berlin dates; the last quarter-hour starts 23:45), 50Hertz + Amprion + TransnetBW: 34,937 quarter-hours, 2,052 with a negative price on 97 event days. Monthly rows: 2025-10, 2026-01, 2026-02, 2026-03, 2026-04, 2026-05, 2026-06, 2026-07, 2026-08, 2026-09. 2025-11 and 2025-12 have a market value but no negative-price quarter-hour, so they have no monthly arm. 2026-10 has 7 negative-price quarter-hours in the panel but no published market value, so it is outside the window.
+<!-- /generated -->
 - The bias-robust full-window sets for B from 0 to 0.15, and the breakdown point of each reading.
 - The monthly verdict per quantity by the rule pre-registered in C0.
 

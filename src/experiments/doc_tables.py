@@ -142,6 +142,27 @@ def posthoc_06b_line() -> str:
             f"the pre-registered 0.01 grid and stay as they are.")
 
 
+def exp3_window() -> str:
+    """docs/06: Experiment 3's window, areas and counts, and why some months have no row."""
+    w = pl.read_csv(E3 / "window_months.csv")
+    r0 = pl.read_csv(E3 / "bias_robust_full_window_cells.csv", infer_schema_length=0).row(0, named=True)
+    kept = w.filter(pl.col("kept_qh") > 0)
+    arms = kept.filter(pl.col("monthly_arm"))["month"].to_list()
+    no_neg = kept.filter(~pl.col("monthly_arm"))["month"].to_list()
+    no_mv = w.filter(~pl.col("market_value_published"))
+    mv_txt = "; ".join(f"{r['month']} has {r['negative_qh_panel']} negative-price quarter-hours in "
+                       f"the panel but no published market value, so it is outside the window"
+                       for r in no_mv.iter_rows(named=True))
+    import calendar
+    y, m = (int(x) for x in kept["month"][-1].split("-"))
+    last = f"{kept['month'][-1]}-{calendar.monthrange(y, m)[1]:02d}"
+    return (f"- Window: {kept['month'][0]}-01 to {last} (Berlin dates; the last quarter-hour "
+            f"starts 23:45), 50Hertz + Amprion + TransnetBW: {int(r0['n_qh_period']):,} quarter-hours, "
+            f"{int(r0['n_neg_qh']):,} with a negative price on {int(r0['n_event_days'])} event days. "
+            f"Monthly rows: {', '.join(arms)}. {' and '.join(no_neg)} have a market value but no "
+            f"negative-price quarter-hour, so they have no monthly arm. {mv_txt}.")
+
+
 def policy_verdict_rule() -> str:
     from src.experiments.exp3_policy_use import first_grid_at_or_above, h_anchor
     b = abs(h_anchor()["bias"])
@@ -279,6 +300,7 @@ TABLES = {"available_power_anchors": available_power_anchors,
           "h_grid_note": h_grid_note, "h_scale_line": h_scale_line,
           "h_limitations": h_limitations, "policy_verdict_rule": policy_verdict_rule,
           "redispatch_caveats": redispatch_caveats, "posthoc_06b_line": posthoc_06b_line,
+          "exp3_window": exp3_window,
           "rd_samples": lambda: _rs().table_samples(), "rd_rule": lambda: _rs().table_rule(),
           "rd_l1_widths": lambda: _rs().table_l1_widths(),
           "rd_l2_diagnosis": lambda: _rs().table_l2_diagnosis(), "rd_note": lambda: _rs().note(),

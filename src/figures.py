@@ -91,6 +91,11 @@ def forecast_bias_sample() -> pl.DataFrame:
         pl.col("metric").is_in(["negative QHs (price < 0)", "event-days (>=1 negative QH)"]))
 
 
+def _kill_test_counts() -> dict:
+    s = {r["metric"]: int(r["value"]) for r in forecast_bias_sample().iter_rows(named=True)}
+    return {"nq": s["negative QHs (price < 0)"], "nd": s["event-days (>=1 negative QH)"]}
+
+
 def gap_by_band_data() -> pl.DataFrame:
     """Gap share (P - G - R) / P per negative band, P = projection H or forecast F."""
     sets = (*Q0B_BANDS, Q0B_POSITIVE)
@@ -233,7 +238,10 @@ CAPTIONS = {
     "01_motivation_event_day": (
         "Motivation. {day} (Easter Sunday) is the largest-error negative-price event-day of the "
         "forecast-bias check, not a typical day: it carries {share:.1%} of all negative-quarter-hour "
-        "forecast error. Onshore wind, 50Hertz + Amprion + TransnetBW (TenneT excluded): TSO "
+        "forecast error. The forecast-bias check covers 2025-10-01 to 2026-10-28, all of Germany "
+        "including TenneT, {nq:,} negative-price quarter-hours on {nd} event days; that is not "
+        "Experiment 3's window (2025-10-01 to 2026-09-30, three areas). Plotted here: onshore "
+        "wind, 50Hertz + Amprion + TransnetBW (TenneT excluded): TSO "
         "day-ahead forecast F, actual output G and the quality-assured projection H "
         "(Online-Hochrechnung), with the day-ahead price on the right axis. Shaded: "
         "negative-price quarter-hours.",
@@ -244,9 +252,11 @@ CAPTIONS = {
         "and data/raw/netztransparenz/hochrechnung_wind_onshore_qualitaetsgesichert/ are not in git."),
     "02_motivation_forecast_bias_by_band": (
         "Motivation. Mean forecast error (actual minus day-ahead forecast) by negative price "
-        "band, Germany, with 95% event-day bootstrap intervals. Window 2025-10-01 to "
-        "2026-10-28. A forecast-versus-generation discrepancy, not a causal measure of "
-        "voluntary curtailment.",
+        "band, Germany (all four control areas, TenneT included), with 95% event-day bootstrap "
+        "intervals. Window 2025-10-01 to 2026-10-28, the forecast-bias check's window, not "
+        "Experiment 3's (which ends 2026-09-30 and covers three areas): {nq:,} negative-price "
+        "quarter-hours on {nd} event days. A forecast-versus-generation discrepancy, not a causal "
+        "measure of voluntary curtailment.",
         "archive/results/02_bias_by_price_band.csv, rows area = DE, columns price_band_eur_mwh, "
         "mean_e_mw, ci_lo_mw, ci_hi_mw, qhs, days; totals from archive/results/01_sample_size.csv, "
         "column value."),
@@ -399,7 +409,7 @@ def make_all(out: Path) -> list[Path]:
         ax.set_title(f"{d['berlin_date'][0]}, Easter Sunday: the largest-error event-day "
                      "(three areas, onshore)")
         save(fig, "01_motivation_event_day", d, day=d["berlin_date"][0],
-             share=float(worst["share_of_total_negative_qh_error"][0]))
+             share=float(worst["share_of_total_negative_qh_error"][0]), **_kill_test_counts())
 
     # figure
     d, s = forecast_bias_data(), forecast_bias_sample()
@@ -416,7 +426,7 @@ def make_all(out: Path) -> list[Path]:
     ax.set_xlabel("day-ahead price band, €/MWh")
     ax.set_ylabel("actual − forecast, MW")
     ax.set_title(f"Forecast over-predicts more as prices fall ({n_qh:,} QHs, {n_d} event-days)")
-    save(fig, "02_motivation_forecast_bias_by_band", d)
+    save(fig, "02_motivation_forecast_bias_by_band", d, **_kill_test_counts())
 
     # figure
     d = gap_by_band_data()

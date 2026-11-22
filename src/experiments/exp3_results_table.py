@@ -24,6 +24,8 @@ CSV_OUT = REPO_ROOT / "artifacts" / "exp3_german_application" / "results_table.c
 #: and the quarter-hours and event days behind each functional in the full window.
 READINGS_OUT = REPO_ROOT / "artifacts" / "exp3_german_application" / "readings_table.csv"
 SAMPLES_OUT = REPO_ROOT / "artifacts" / "exp3_german_application" / "sample_sizes.csv"
+#: Phase 5 (22 Nov 2026): per calendar month, what the panel has and what Experiment 3 keeps.
+MONTHS_OUT = REPO_ROOT / "artifacts" / "exp3_german_application" / "window_months.csv"
 MD_OUT = REPO_ROOT / "archive" / "docs" / "C1_conclusions_table.md"   # the archived C1 note, rebuilt byte for byte
 C0_COMMIT = "a67f69a"
 
@@ -314,6 +316,29 @@ def readings_rows() -> list[dict]:
     return out
 
 
+def window_months() -> pl.DataFrame:
+    """Per Berlin month from 2025-10 to the panel's end: quarter-hours in the panel and kept by
+    Experiment 3 (kept requires a published market value), negative-price quarter-hours, and
+    whether the month has a monthly arm (it needs a kept negative-price quarter-hour)."""
+    import numpy as np
+    from src.method.real_panel import THREE_AREA, load_panel
+    from src.method.window import MTU15_FIRST_DELIVERY_DAY
+    p = load_panel(THREE_AREA, "H")
+    bd = p["bdate"].astype(str)
+    months = np.array([d[:7] for d in bd])
+    neg, keep = p["price"] < 0, p["keep"]
+    out = []
+    for m in sorted(set(months[bd >= MTU15_FIRST_DELIVERY_DAY])):
+        sel = months == m
+        out.append({"month": m, "panel_qh": int(sel.sum()), "kept_qh": int((sel & keep).sum()),
+                    "negative_qh_panel": int((sel & neg).sum()),
+                    "negative_qh_kept": int((sel & keep & neg).sum()),
+                    "negative_event_days_kept": int(np.unique(bd[sel & keep & neg]).size),
+                    "market_value_published": bool((sel & keep).any()),
+                    "monthly_arm": bool((sel & keep & neg).any())})
+    return pl.DataFrame(out)
+
+
 def sample_sizes() -> pl.DataFrame:
     """Quarter-hours and event days behind each functional, full window, setting main, H.
 
@@ -411,7 +436,7 @@ def markdown(df: pl.DataFrame) -> str:
     lit = [r["row"] for r in q if r["literal_reading_note"]]
     L = []
     L.append("# What public German wind data can and cannot tell us about price-driven "
-             "curtailment, Oct 2025 – Oct 2026\n")
+             "curtailment, Oct 2025 – Sep 2026\n")
     L.append(f"Built by `src/build_conclusions_table.py` from committed artifacts under the rule "
              f"in `docs/C0_preregistration.md` (commit `{C0_COMMIT}`). Machine-readable copy: "
              f"`results/C1_conclusions_table.csv`. Nothing here was fitted for this table.\n")
@@ -477,7 +502,7 @@ def markdown(df: pl.DataFrame) -> str:
     L.append("## Full-window reading (descriptive, not part of the C0 verdict)\n")
     L.append("Added 16 November 2026 at the student's instruction, after C0. It changes no "
              "verdict above. Each row is the single interval for the whole window "
-             "(2025-10 to 2026-10, main setting, projection H), not the monthly arms the verdict "
+             "(2025-10-01 to 2026-09-30, main setting, projection H), not the monthly arms the verdict "
              "counts. **Reading rule, fixed here and applied to every row:** a response share "
              "lies in [0, 1] (λ₆ in [−1, 1]; λ₅ in [0, its logical maximum] GWh); a bound is read "
              "one-sided when it excludes at least a quarter of that range at its own end, the "
@@ -525,7 +550,8 @@ def main() -> None:
     args = ap.parse_args()
     if args.sample_sizes:
         sample_sizes().write_csv(SAMPLES_OUT)
-        print(f"wrote {SAMPLES_OUT.relative_to(REPO_ROOT)}")
+        window_months().write_csv(MONTHS_OUT)
+        print(f"wrote {SAMPLES_OUT.relative_to(REPO_ROOT)}\nwrote {MONTHS_OUT.relative_to(REPO_ROOT)}")
         return
     df = build()
     md = markdown(df)

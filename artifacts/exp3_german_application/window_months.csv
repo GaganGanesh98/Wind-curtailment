@@ -1,0 +1,14 @@
+month,panel_qh,kept_qh,negative_qh_panel,negative_qh_kept,negative_event_days_kept,market_value_published,monthly_arm
+2025-10,2980,2980,199,199,7,true,true
+2025-11,2880,2880,0,0,0,true,false
+2025-12,2976,2976,0,0,0,true,false
+2026-01,2976,2976,10,10,1,true,true
+2026-02,2688,2688,23,23,2,true,true
+2026-03,2972,2971,139,139,10,true,true
+2026-04,2880,2783,492,492,19,true,true
+2026-05,2976,2976,315,315,15,true,true
+2026-06,2880,2880,199,199,10,true,true
+2026-07,2976,2976,306,306,14,true,true
+2026-08,2976,2976,226,226,12,true,true
+2026-09,2880,2875,143,143,7,true,true
+2026-10,2692,0,7,0,0,false,false
