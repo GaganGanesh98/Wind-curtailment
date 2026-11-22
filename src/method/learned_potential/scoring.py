@@ -33,7 +33,7 @@ def _eval_rows() -> pl.DataFrame:
             .join(s, on=["area", "ts_utc"], how="left"))
 
 
-def learned(models=("L1", "L2")) -> dict[str, pl.DataFrame]:
+def learned(models=("L1", "L2", "N1")) -> dict[str, pl.DataFrame]:
     return {m: pl.read_parquet(ART / f"oof_{m}.parquet") for m in models
             if (ART / f"oof_{m}.parquet").exists()}
 
