@@ -35,9 +35,12 @@ V2_BMAX = 0.15
 V2_LAMS = ("L1", "L2", "L3", "L6")
 
 
-def grid(bmax: float) -> list[float]:
-    k = int(round(bmax / STEP))
-    return [round(i * STEP, 2) for i in range(-k, k + 1)]
+def grid(bmax: float, step: float = STEP) -> list[float]:
+    """b on [-bmax, bmax]. The default step is the pre-registered 0.01 (rounded to 2 places,
+    exactly as before); a finer post-hoc step (docs/08) is rounded to 4 places."""
+    k = int(round(bmax / step))
+    places = 2 if step == STEP else 4
+    return [round(i * step, places) for i in range(-k, k + 1)]
 
 
 def v1_sums() -> list[float]:
@@ -79,15 +82,19 @@ def run_v1(shard: int, n_shards: int) -> Path:
     return out
 
 
-def run_v2() -> Path:
+def run_v2(step: float = STEP, bmax: float = V2_BMAX, out: Path | None = None) -> Path:
+    """V2 on the real full window. Defaults are the pre-registered grid and file; `step`,
+    `bmax` and `out` exist for the post-hoc fine grid (docs/08), which writes elsewhere."""
     from src.method.real_panel import THREE_AREA, load_panel, run_arm
     panel = load_panel(THREE_AREA, "H")
     OUT_DIR_REAL.mkdir(parents=True, exist_ok=True)
-    out = OUT_DIR_REAL / "bias_robust_full_window_cells.csv"
+    out = Path(out) if out is not None else OUT_DIR_REAL / "bias_robust_full_window_cells.csv"
+    if (step, bmax) != (STEP, V2_BMAX) and out == OUT_DIR_REAL / "bias_robust_full_window_cells.csv":
+        raise ValueError("a non-default grid must not overwrite the pre-registered V2 artifact")
     head = git_head()
     fh = writer = None
     try:
-        for b in grid(V2_BMAX):
+        for b in grid(bmax, step):
             scaled = {**panel, "f": np.asarray(panel["f"], dtype=float) * np.exp(b)}
             rows = run_arm(scaled, "main", scaled["keep"], "window", False)
             for r in rows:
@@ -100,7 +107,7 @@ def run_v2() -> Path:
                 writer.writerow({k: r.get(k) for k in writer.fieldnames})
             fh.flush()
             w = {r["lam"]: (r.get("lo"), r.get("hi")) for r in rows if r["lam"] in V2_LAMS}
-            print(f"b {b:+.2f}  " + "  ".join(f"{k}=[{lo:.3f},{hi:.3f}]" for k, (lo, hi)
+            print(f"b {b:+.4f}  " + "  ".join(f"{k}=[{lo:.3f},{hi:.3f}]" for k, (lo, hi)
                                               in w.items() if lo is not None), flush=True)
     finally:
         if fh is not None:
@@ -145,6 +152,9 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--part", choices=("v1", "v2", "demo"), required=True)
     ap.add_argument("--shard", default="0/1", help="i/n: run cells with index % n == i (V1)")
+    ap.add_argument("--step", type=float, default=STEP, help="V2 b-grid step (default 0.01)")
+    ap.add_argument("--bmax", type=float, default=V2_BMAX, help="V2 b-grid half-width (0.15)")
+    ap.add_argument("--out", default=None, help="V2 output file (default: the pre-registered one)")
     args = ap.parse_args()
     if args.part == "demo":
         demo(REPO_ROOT / "demo" / "output" / "bias_robust_cell.txt")
@@ -153,7 +163,7 @@ def main() -> None:
         i, n = (int(x) for x in args.shard.split("/"))
         print(f"wrote {run_v1(i, n)}")
     else:
-        print(f"wrote {run_v2()}")
+        print(f"wrote {run_v2(args.step, args.bmax, args.out)}")
 
 
 if __name__ == "__main__":
