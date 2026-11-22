@@ -1,4 +1,4 @@
-"""The figures, 01-09 and 13, in reading order (docs/00_start_here.md).
+"""The figures, 01-09, 13 and 14, in reading order (docs/00_start_here.md).
 
     python -m src.figures                  # writes figures/
     python -m src.figures --out demo/output/figures
@@ -234,6 +234,13 @@ def data_requirement_data() -> pl.DataFrame:
         pl.col("bias_H").abs().alias("abs_bias_H"))
 
 
+def cnn_trace_data() -> pl.DataFrame:
+    """Figure 14: N1's weighted training and validation loss per epoch, every fit (cnn_loss_trace.csv)."""
+    t = pl.read_csv(ART / "exp4_learned_potential" / "cnn_loss_trace.csv")
+    return t.select(["fit", "layers", "channels", "epoch", "best_epoch", "train_loss_weighted",
+                     "val_loss_weighted"])
+
+
 CAPTIONS = {
     "01_motivation_event_day": (
         "Motivation. {day} (Easter Sunday) is the largest-error negative-price event-day of the "
@@ -339,6 +346,16 @@ CAPTIONS = {
         "breakdown_B, bias_H), built from artifacts/exp1_known_truth_validation/"
         "noise_dial_summary.csv, artifacts/exp3_german_application/breakdown_points.csv and "
         "artifacts/available_power_estimate/error_anchors.csv."),
+    "14_exp4_n1_loss_curves": (
+        "Experiment 4, N1 (temporal CNN): importance-weighted pinball loss per epoch for each fit, "
+        "training (dashed) and validation (solid; the last 28 days of the training span). The "
+        "vertical line marks the epoch early stopping kept. Top row: the four pre-window selection "
+        "fits (layers × channels); then the twelve monthly folds with the chosen 2 × 16 "
+        "configuration. Training loss falls in every fit; validation loss moves up and down from "
+        "epoch to epoch (all {n} fits are 'unstable' under the rule in docs/12b). Descriptive only.",
+        "artifacts/exp4_learned_potential/cnn_loss_trace.csv (columns fit, layers, channels, epoch, "
+        "best_epoch, train_loss_weighted, val_loss_weighted), written by models_cnn --loss-trace, "
+        "which reproduced every stored fit bit for bit."),
 }
 
 
@@ -645,6 +662,28 @@ def make_all(out: Path) -> list[Path]:
         axl.set_title("noise a narrow range tolerates")
         axr.set_title("bias the reading survives")
         save(fig, "13_data_requirement", d)
+
+    # figure 14
+    if (ART / "exp4_learned_potential" / "cnn_loss_trace.csv").exists():
+        from matplotlib.ticker import MaxNLocator
+        d = cnn_trace_data()
+        fits = d.select(["fit", "layers", "channels"]).unique(maintain_order=True).rows()
+        fig, axes = plt.subplots(4, 4, figsize=(15, 12), sharex=True)
+        for ax, (fit, lay, ch) in zip(axes.flat, fits):
+            q = d.filter((pl.col("fit") == fit) & (pl.col("layers") == lay) & (pl.col("channels") == ch)).sort("epoch")
+            ax.plot(q["epoch"], q["train_loss_weighted"], ls="--", color=GREY, lw=1.8, label="training")
+            ax.plot(q["epoch"], q["val_loss_weighted"], marker="o", ms=4, color=BLUE, lw=2, label="validation")
+            ax.axvline(int(q["best_epoch"][0]), color=VERMILION, lw=1.4)
+            ax.set_title(f"selection {lay} × {ch}" if fit == "selection" else f"fold {fit}", fontsize=12)
+            ax.tick_params(labelsize=10)
+            ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        for ax in axes[-1]:
+            ax.set_xlabel("epoch", fontsize=12)
+        for ax in axes[:, 0]:
+            ax.set_ylabel("weighted pinball loss", fontsize=11)
+        axes[0, 0].legend(frameon=False, fontsize=10)
+        n = len(fits)
+        save(fig, "14_exp4_n1_loss_curves", d, n=n)
     return written
 
 

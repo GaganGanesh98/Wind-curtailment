@@ -98,3 +98,55 @@ def test_n1_quantiles_never_cross():
     o = pl.read_parquet(OOF)
     q = o.select([c for c in o.columns if c.startswith("q") and c[1:].isdigit()]).to_numpy()
     assert (np.diff(q, axis=1) >= 0).all()
+
+
+TRACE = ART / "cnn_loss_trace.csv"
+need_trace = pytest.mark.skipif(not TRACE.exists(), reason="N1 loss trace not written yet")
+
+
+def test_trace_pattern_rule():
+    from src.method.learned_potential.report import trace_pattern
+    assert trace_pattern([1.00, 0.99, 0.995, 1.005], 2) == "flat"            # at most 1.5% above best
+    assert trace_pattern([1.2, 1.0, 1.01, 1.03, 1.05], 2) == "rising after the best epoch"
+    assert trace_pattern([1.2, 1.0, 1.10, 1.02, 1.08], 2) == "unstable"
+
+
+@need_trace
+def test_trace_summary_regenerates_and_matches_the_run():
+    from src.method.learned_potential import report
+    assert report.trace_summary().equals(pl.read_csv(report.TRACE_SUMMARY))
+    s = pl.read_csv(report.TRACE_SUMMARY)
+    sel = pl.read_csv(ART / "cnn_selection.csv")
+    oof = pl.read_parquet(OOF).group_by("month").agg(pl.col("best_epoch").first())
+    for r in sel.iter_rows(named=True):
+        q = s.filter((pl.col("fit") == "selection") & (pl.col("layers") == r["layers"])
+                     & (pl.col("channels") == r["channels"])).row(0, named=True)
+        assert q["best_epoch"] == r["best_epoch"] and q["val_best"] == r["val_loss"]
+    for m, be in oof.iter_rows():
+        assert s.filter(pl.col("fit") == m)["best_epoch"][0] == be
+
+
+@need_trace
+def test_validation_window_is_the_last_28_days_before_the_embargo():
+    t = pl.read_csv(TRACE).select(["fit", "fit_last_day", "val_first_day", "val_last_day"]).unique()
+    from src.method.learned_potential.data import train_last_day
+    for r in t.filter(pl.col("fit") != "selection").iter_rows(named=True):
+        assert r["val_last_day"] == train_last_day(r["fit"])
+        assert r["fit_last_day"] < r["val_first_day"]
+        assert (date.fromisoformat(r["val_last_day"]) - date.fromisoformat(r["val_first_day"])).days == 27
+
+
+@need_oof
+def test_selection_rule_and_s2_outcome():
+    from src.method.learned_potential import report
+    assert report.selected_model() == "L2"
+    b = report._agg("L2", "bias")
+    assert not (b["lo"] >= -cfg.S2_HALF_WIDTH and b["hi"] <= cfg.S2_HALF_WIDTH)
+
+
+@need_trace
+def test_figure_14_data_matches_the_trace():
+    from src import figures as mf
+    committed = pl.read_csv(ROOT / "figures" / "14_exp4_n1_loss_curves_data.csv")
+    fresh = pl.read_csv(mf.cnn_trace_data().write_csv().encode())
+    assert fresh.equals(committed)

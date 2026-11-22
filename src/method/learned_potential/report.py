@@ -106,9 +106,16 @@ def criteria(learned=("L1", "L2")) -> str:
         f"- **S3 ({'PASS' if s3 else 'FAIL'}).** "
         + "; ".join(f"{m} σ {fmt(_agg(m, 'sigma'))}" for m in weighted)
         + f", against L1's {fmt(l1)}. Reported as pre-registered; the weighting is not dropped.",
-        f"- **S2 (preliminary, {'PASS' if s2 else 'FAIL'}).** Selected so far by the rule (lowest "
-        f"aggregate look-alike |bias|, ties by σ): {sel}, bias {fmt(sb)}; the interval must lie within "
-        f"±{cfg.S2_HALF_WIDTH:g}. N1 is not fitted yet, so this can still change.",
+        (f"- **S2 (preliminary, {'PASS' if s2 else 'FAIL'}).** Selected so far by the rule (lowest "
+         f"aggregate look-alike |bias|, ties by σ): {sel}, bias {fmt(sb)}; the interval must lie within "
+         f"±{cfg.S2_HALF_WIDTH:g}. N1 is not fitted yet, so this can still change.")
+        if "N1" not in have else
+        (f"- **S2 ({'PASS' if s2 else 'FAIL'}).** All three learned models are fitted. The rule (lowest "
+         f"aggregate look-alike |bias|, ties by σ) selects {sel}, bias {fmt(sb)}; the interval must lie "
+         f"within ±{cfg.S2_HALF_WIDTH:g}. "
+         + ("B̂ can be computed in step 4." if s2 else
+            "As pre-registered, B̂ is reported as not estimable with public inputs, and the readings are "
+            "not compared against it.")),
     ])
 
 
@@ -184,3 +191,97 @@ def write_expectation() -> None:
 
 if __name__ == "__main__":
     write_expectation()
+
+
+# ------------------------------------------------------------- N1 loss trace (doc 46)
+
+TRACE = ART / "cnn_loss_trace.csv"
+TRACE_SUMMARY = ART / "cnn_trace_summary.csv"
+FLAT_BAND = 0.02          # every epoch within 2% of the best validation loss
+DROP_TOL = 0.005          # after the best, no epoch-to-epoch drop larger than 0.5% of the best
+RISE_END = 0.02           # and the last epoch at least 2% above the best
+
+
+def trace_pattern(val: list[float], best_epoch: int) -> str:
+    vb = val[best_epoch - 1]
+    rel = [(v - vb) / vb for v in val]
+    if max(abs(r) for r in rel) < FLAT_BAND:
+        return "flat"
+    post = val[best_epoch - 1:]
+    steps_ok = all(b - a >= -DROP_TOL * vb for a, b in zip(post, post[1:]))
+    if steps_ok and rel[-1] >= RISE_END:
+        return "rising after the best epoch"
+    return "unstable"
+
+
+def trace_summary() -> pl.DataFrame:
+    t = pl.read_csv(TRACE)
+    out = []
+    for (fit, layers, channels), g in t.group_by(["fit", "layers", "channels"], maintain_order=True):
+        g = g.sort("epoch")
+        be = int(g["best_epoch"][0])
+        val, tr = g["val_loss_weighted"].to_list(), g["train_loss_weighted"].to_list()
+        out.append({"fit": fit, "layers": layers, "channels": channels, "epochs": g.height,
+                    "best_epoch": be, "train_epoch1": tr[0], "train_best": tr[be - 1], "train_last": tr[-1],
+                    "val_epoch1": val[0], "val_best": val[be - 1], "val_last": val[-1],
+                    "val_max_rel_to_best": max((v - val[be - 1]) / val[be - 1] for v in val),
+                    "pattern": trace_pattern(val, be),
+                    "val_first_day": g["val_first_day"][0], "val_last_day": g["val_last_day"][0]})
+    return pl.DataFrame(out)
+
+
+def trace_table() -> str:
+    s = pl.read_csv(TRACE_SUMMARY)
+    out = ["| fit | config | epochs | best epoch | train loss: epoch 1 / best / last | validation loss: epoch 1 / best / last | max above best | pattern |",
+           "|---|---|---|---|---|---|---|---|"]
+    for r in s.iter_rows(named=True):
+        out.append(f"| {r['fit']} | {r['layers']} × {r['channels']} | {r['epochs']} | {r['best_epoch']} "
+                   f"| {r['train_epoch1']:.4f} / {r['train_best']:.4f} / {r['train_last']:.4f} "
+                   f"| {r['val_epoch1']:.4f} / {r['val_best']:.4f} / {r['val_last']:.4f} "
+                   f"| {r['val_max_rel_to_best']:.1%} | {r['pattern']} |")
+    return "\n".join(out)
+
+
+def trace_note() -> str:
+    s = pl.read_csv(TRACE_SUMMARY)
+    counts = s.group_by("pattern").len().sort("pattern")
+    c = ", ".join(f"{r['pattern']} {r['len']}" for r in counts.iter_rows(named=True))
+    folds = s.filter(pl.col("fit") != "selection")
+    return "\n".join([
+        f"- **Rule.** With rel = (validation loss − best) / best: flat if every epoch is within "
+        f"{FLAT_BAND:.0%} of the best; rising after the best epoch if, from the best epoch on, no "
+        f"epoch-to-epoch fall exceeds {DROP_TOL:.1%} of the best and the last epoch is at least "
+        f"{RISE_END:.0%} above it; unstable otherwise. Descriptive only.",
+        f"- **Counts over the {s.height} fits:** {c}. Training loss falls in every fit (epoch 1 to last: "
+        f"{s['train_epoch1'].min():.4f}–{s['train_epoch1'].max():.4f} to "
+        f"{s['train_last'].min():.4f}–{s['train_last'].max():.4f}); the folds' best epochs run from "
+        f"{folds['best_epoch'].min()} to {folds['best_epoch'].max()}.",
+        "- The validation windows are the last 28 days of each training span, so their level moves with "
+        "the season of that window; compare curves within a fit, not across fits.",
+    ])
+
+
+def cnn_selection_table() -> str:
+    s = pl.read_csv(ART / "cnn_selection.csv")
+    out = ["| layers | channels | weighted median pinball loss, validation month | best epoch | chosen |",
+           "|---|---|---|---|---|"]
+    for r in s.iter_rows(named=True):
+        out.append(f"| {r['layers']} | {r['channels']} | {r['median_pinball_weighted']:.4f} | {r['best_epoch']} "
+                   f"| {'yes' if r['chosen'] else ''} |")
+    return "\n".join(out)
+
+
+def cnn_selection_note() -> str:
+    r = pl.read_csv(ART / "cnn_selection.csv").filter(pl.col("chosen")).row(0, named=True)
+    lay = sorted({g["layers"] for g in cfg.CNN_GRID})
+    ch = sorted({g["channels"] for g in cfg.CNN_GRID})
+    e = lambda v, s: "lower" if v == s[0] else ("upper" if v == s[-1] else "inner")    # noqa: E731
+    return (f"- **Grid edge.** The selection chose {r['layers']} layers and {r['channels']} channels: the "
+            f"{e(r['layers'], lay)} edge of the layers axis and the {e(r['channels'], ch)} edge of the "
+            f"channels axis, the smallest configuration in the pre-registered grid. The grid is not changed "
+            f"and nothing was retuned; a smaller network outside it might have scored better.")
+
+
+def selected_model() -> str:
+    have = [m for m in cfg.CANDIDATES if _agg(m, "bias")]
+    return min(have, key=lambda m: (round(abs(_agg(m, "bias")["value"]), cfg.TIE_DECIMALS), _agg(m, "sigma")["value"]))

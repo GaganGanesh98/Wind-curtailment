@@ -1,0 +1,5 @@
+14_exp4_n1_loss_curves
+
+Experiment 4, N1 (temporal CNN): importance-weighted pinball loss per epoch for each fit, training (dashed) and validation (solid; the last 28 days of the training span). The vertical line marks the epoch early stopping kept. Top row: the four pre-window selection fits (layers × channels); then the twelve monthly folds with the chosen 2 × 16 configuration. Training loss falls in every fit; validation loss moves up and down from epoch to epoch (all 16 fits are 'unstable' under the rule in docs/12b). Descriptive only.
+
+Source: artifacts/exp4_learned_potential/cnn_loss_trace.csv (columns fit, layers, channels, epoch, best_epoch, train_loss_weighted, val_loss_weighted), written by models_cnn --loss-trace, which reproduced every stored fit bit for bit.
