@@ -47,7 +47,7 @@ def regenerated(tmp_path_factory):
         pytest.skip(f"committed inputs missing: {missing}")
     tmp = tmp_path_factory.mktemp("repro") / "artifacts"
     shutil.copytree(ART, tmp)
-    for out in OUTPUTS:
+    for out in [*OUTPUTS, f"{E3}/readings_table.csv"]:
         (tmp / out).unlink()
     c1_tmp = tmp.parent / "C1_conclusions_table.md"
 
@@ -68,6 +68,7 @@ def regenerated(tmp_path_factory):
         mp.setattr(t3, "ART", tmp)
         mp.setattr(t3, "CSV_OUT", tmp / E3 / "results_table.csv")
         mp.setattr(t3, "MD_OUT", c1_tmp)
+        mp.setattr(t3, "READINGS_OUT", tmp / E3 / "readings_table.csv")
         mp.setattr(t3, "REPO_ROOT", tmp.parent)         # only its closing print uses it
         # the order exp1_known_truth_validation, exp2_..., exp3_german_application run them in
         for f in ("exact_potential_cells.csv", "estimated_potential_cells.csv"):
@@ -94,3 +95,26 @@ def test_summary_regenerates_byte_for_byte(regenerated, name):
 def test_c1_note_regenerates_byte_for_byte(regenerated):
     _, c1_tmp = regenerated
     assert c1_tmp.read_bytes() == C1.read_bytes()
+
+
+def test_readings_table_regenerates_byte_for_byte(regenerated):
+    tmp, _ = regenerated
+    name = f"{E3}/readings_table.csv"
+    assert (tmp / name).read_bytes() == (ART / name).read_bytes()
+
+
+def test_sample_sizes_agree_with_the_cells():
+    """The committed quarter-hour counts equal n_qh_lam in the cells (event days are new)."""
+    import polars as pl
+    ss = {r["lam"]: r for r in pl.read_csv(ART / E3 / "sample_sizes.csv").iter_rows(named=True)}
+    cells = pl.read_csv(ART / E3 / "bias_robust_full_window_cells.csv", infer_schema_length=0)
+    for r in cells.filter(pl.col("b") == "0.0").iter_rows(named=True):
+        assert ss[r["lam"]]["n_qh"] == int(r["n_qh_lam"]), r["lam"]
+        assert ss[r["lam"]]["n_event_days"] <= int(r["n_event_days"])
+
+
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
+def test_sample_sizes_recompute_from_the_panel():
+    import polars as pl
+    from src.experiments.exp3_results_table import sample_sizes
+    assert sample_sizes().equals(pl.read_csv(ART / E3 / "sample_sizes.csv"))

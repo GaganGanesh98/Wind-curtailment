@@ -19,19 +19,23 @@
 λ₅ in GWh):
 
 <!-- generated:exp3_results -->
-| quantity | what it is | full-window interval, H | robust reading | breakdown bias B | informative months, H | monthly verdict (C0 rule) |
-|---|---|---|---|---|---|---|
-| λ₁ | fleet response at depth (−20, −5] €/MWh | [0.300, 0.508] | informative: between 0.300 and 0.508 | 0.04 | 2/8 | NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE |
-| λ₂ | fleet response at depth ≤ −50 €/MWh | [0.525, 0.860] | one-sided: at least 0.525 | 0.06 | 1/3 | NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE |
-| λ₃ | pre-2016 cohort response | [0.000, 0.579] | one-sided: at most 0.579 | > 0.15 | 0/9 | NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE |
-| λ₄ | merged θ ≡ 0 group (collinear pair) | [0.002, 0.996] | no reading: neither bound excludes a quarter of the range | — | 0/10 | NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE; WOULD NEED A MORE ACCURATE ESTIMATE: σ ≤ 0.033, within the tested synthetic conditions |
-| λ₅ | counterfactual energy, GWh (threshold moved to 0) | [0.0, 533.2] | no reading: neither bound excludes a quarter of the range | — | 0/10 | NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE; WOULD NEED A MORE ACCURATE ESTIMATE: σ ≤ 0.033, within the tested synthetic conditions |
-| λ₆ | cohort contrast λ₃ − λ₄ | [-0.967, 0.398] | one-sided: at most 0.398 | 0.04 | 0/9 | NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE |
-| λ₇ | one member of the collinear pair | [0.000, 1.000] | no reading: neither bound excludes a quarter of the range | — | 0/10 | NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE |
+| quantity | what it is | full-window interval, H, B = 0 | quarter-hours / event days | pre-registered reading tested | largest B at which it holds | interval at that B | breakdown B | informative months, H | monthly verdict (C0 rule) |
+|---|---|---|---|---|---|---|---|---|---|
+| λ₁ | fleet switched-off share, price in (−20, −5] €/MWh | [0.300, 0.508] | 301 / 38 | λ₁ informative (width < 0.25) | 0.03 | [0.279, 0.522] | 0.04 | 2/8 | NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE |
+| λ₂ | fleet switched-off share, price ≤ −50 €/MWh | [0.525, 0.860] | 149 / 12 | λ₂ ≥ 0.50 | 0.05 | [0.501, 0.866] | 0.06 | 1/3 | NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE |
+| λ₃ | pre-2016 cohort response | [0.000, 0.579] | 1,050 / 60 | λ₃ ≤ 0.75 | 0.15 | [0.000, 0.658] | > 0.15 | 0/9 | NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE |
+| λ₄ | merged θ ≡ 0 group (collinear pair) | [0.002, 0.996] | 2,052 / 97 | none pre-registered | — | — | — | 0/10 | NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE; WOULD NEED A MORE ACCURATE ESTIMATE: σ ≤ 0.033, within the tested synthetic conditions |
+| λ₅ | counterfactual energy, GWh (threshold moved to 0) | [0.0, 533.2] | 2,052 / 97 | none pre-registered | — | — | — | 0/10 | NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE; WOULD NEED A MORE ACCURATE ESTIMATE: σ ≤ 0.033, within the tested synthetic conditions |
+| λ₆ | cohort contrast λ₃ − λ₄ | [-0.967, 0.398] | 1,050 / 60 | λ₆ ≤ 0.50 | 0.03 | [-1.000, 0.485] | 0.04 | 0/9 | NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE |
+| λ₇ | one member of the collinear pair | [0.000, 1.000] | 2,052 / 97 | none pre-registered | — | — | — | 0/10 | NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE |
 <!-- /generated -->
 
-Readings: λ₁ is a fleet response; λ₂'s reading is a lower bound on response, λ₃'s and λ₆'s are
-upper bounds. Breakdown points are reported for the four readings pre-registered in V0.
+Readings: λ₁ and λ₂ are the switched-off share of the whole three-area onshore fleet over the
+quarter-hours in their price band (`functionals.band_mean`). The reading tested is the V0
+threshold, not the B = 0 bound; the largest B at which it holds and the breakdown B refer to
+that threshold. Quarter-hours and event days are those behind each quantity in the full window
+(`artifacts/exp3_german_application/sample_sizes.csv`). Breakdown points are reported for the
+four readings pre-registered in V0.
 λ₃'s result is an upper bound of 0.579. The 0.75 in its V0 reading is the pre-registered
 threshold at which that reading breaks, not a result.
 

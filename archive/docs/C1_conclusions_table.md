@@ -8,8 +8,8 @@ Real-data counts are monthly functional-months in the main award setting, 50Hert
 
 | row | quantity | synthetic, Anchor T (σ 0.18) | synthetic, Anchor H (σ 0.066) | highest σ informative in ≥ half | real, forecast F | real, projection H | narrowest real interval, H | full window, H | verdict | depends on |
 |---|---|---|---|---|---|---|---|---|---|---|
-| λ₁ | fleet response at depth (−20, −5] €/MWh | 54/54 | 54/54 | ≥ 0.35 (top of grid) | 1/8 (2 undefined) | 2/8 (2 undefined) | [0.182, 0.330] (2025-10) | [0.300, 0.508], informative | **NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE** | Q1: already informative at Anchor H's σ in synthetic cells; real data falls short of that (Q6 explores why) |
-| λ₂ | fleet response at depth ≤ −50 €/MWh | 54/54 | 54/54 | ≥ 0.35 (top of grid) | 0/3 (7 undefined) | 1/3 (7 undefined) | [0.597, 0.793] (2026-04) | [0.525, 0.860], not informative | **NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE** | Q1: already informative at Anchor H's σ in synthetic cells; real data falls short of that (Q6 explores why) |
+| λ₁ | fleet switched-off share, price in (−20, −5] €/MWh | 54/54 | 54/54 | ≥ 0.35 (top of grid) | 1/8 (2 undefined) | 2/8 (2 undefined) | [0.182, 0.330] (2025-10) | [0.300, 0.508], informative | **NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE** | Q1: already informative at Anchor H's σ in synthetic cells; real data falls short of that (Q6 explores why) |
+| λ₂ | fleet switched-off share, price ≤ −50 €/MWh | 54/54 | 54/54 | ≥ 0.35 (top of grid) | 0/3 (7 undefined) | 1/3 (7 undefined) | [0.597, 0.793] (2026-04) | [0.525, 0.860], not informative | **NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE** | Q1: already informative at Anchor H's σ in synthetic cells; real data falls short of that (Q6 explores why) |
 | λ₃ | pre-2016 cohort response | 18/54 | 54/54 | 0.12 | 2/9 (1 undefined) | 0/9 (1 undefined) | [0.000, 0.269] (2026-02) | [0.000, 0.579], not informative | **NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE** | Q1: already informative at Anchor H's σ in synthetic cells; real data falls short of that (Q6 explores why) |
 | λ₄ | merged θ ≡ 0 group response (collinear pair) | 18/54 | 24/54 | 0.033 | 1/10 | 0/10 | [0.184, 0.695] (2025-10) | [0.002, 0.996], not informative | **NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE**; WOULD NEED A MORE ACCURATE ESTIMATE: σ ≤ 0.033, within the tested synthetic conditions | an available-power estimate with σ ≤ 0.033 (Q1 synthetic cells) |
 | λ₅ | counterfactual energy, GWh, staircase cohort's threshold moved to 0 | 18/54 | 24/54 | 0.033 | 0/10 | 0/10 | [0.0, 6.2] (2026-02) | [0.0, 533.2], not informative | **NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE**; WOULD NEED A MORE ACCURATE ESTIMATE: σ ≤ 0.033, within the tested synthetic conditions | an available-power estimate with σ ≤ 0.033 (Q1 synthetic cells) |
@@ -66,12 +66,14 @@ Added 16 November 2026 at the student's instruction, after C0. It changes no ver
 
 Added 16 November 2026 at the student's instruction, after C0; it changes no verdict. Each full-window reading above is recomputed with a bias-robust interval: the hull of the identified sets over every constant multiplicative bias |b| ≤ B in the projection, on a 0.01 grid (`docs/V0_preregistration.md`). The **breakdown point** is the smallest B at which the reading no longer holds. On synthetic cells this construction covers the truth whenever B ≥ |true bias| (324 of 324 at every such level, `docs/V_results.md` V1).
 
-| row | reading | breaks when | breakdown B | interval at B = 0 | interval at B = 0.15 |
-|---|---|---|---|---|---|
-| λ₁ | informative | width ≥ 0.25 | 0.04 | [0.300, 0.508] | [0.187, 0.574] |
-| λ₂ | lower bound at least 0.5 | lower bound < 0.5 | 0.06 | [0.525, 0.860] | [0.449, 0.876] |
-| λ₃ | upper bound at most 0.75 | upper bound > 0.75 | > 0.15 | [0.000, 0.579] | [0.000, 0.658] |
-| λ₆ | upper bound at most 0.5 | upper bound > 0.5 | 0.04 | [-0.967, 0.398] | [-1.000, 0.654] |
+| row | reading tested | breaks when | largest B at which it holds | interval there | breakdown B | interval at B = 0 | interval at B = 0.15 |
+|---|---|---|---|---|---|---|---|
+| λ₁ | λ₁ informative (width < 0.25) | width ≥ 0.25 | 0.03 | [0.279, 0.522] | 0.04 | [0.300, 0.508] | [0.187, 0.574] |
+| λ₂ | λ₂ ≥ 0.50 | lower bound < 0.5 | 0.05 | [0.501, 0.866] | 0.06 | [0.525, 0.860] | [0.449, 0.876] |
+| λ₃ | λ₃ ≤ 0.75 | upper bound > 0.75 | 0.15 | [0.000, 0.658] | > 0.15 | [0.000, 0.579] | [0.000, 0.658] |
+| λ₆ | λ₆ ≤ 0.50 | upper bound > 0.5 | 0.03 | [-1.000, 0.485] | 0.04 | [-0.967, 0.398] | [-1.000, 0.654] |
+
+The reading tested is the pre-registered threshold, not the B = 0 bound: λ₂'s lower bound of 0.525 at B = 0 is not what survives to the largest B shown; the reading λ₂ ≥ 0.50 is. Columns separated on 22 Nov 2026.
 
 For scale only: the projection's measured bias on price ≥ 0 quarter-hours is −0.0326 on the quality-assured series Experiment 3 uses (operational series −0.0472, `docs/Q0_preregistration.md` §1; corrected 22 Nov 2026, this sentence previously gave the operational value alone). Its bias during negative prices is not measured. Figure: `figures/findings/F10_bias_breakdown.png`.
 

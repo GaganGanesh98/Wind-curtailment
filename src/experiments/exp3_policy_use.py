@@ -62,10 +62,10 @@ COHORTS = {"L1": FLEET, "L2": FLEET, "L3": ("pre2016_in_support_no_s51",),
 POST_FEB_2025 = "post_feb2025_qh"
 
 QUESTION = {
-    "L1": "At moderately negative prices (−20 to −5 €/MWh), what share of exposed wind capacity "
-          "switches off?",
-    "L2": "At deeply negative prices (−50 €/MWh or lower), what share of exposed wind capacity "
-          "switches off?",
+    "L1": "At moderately negative prices (−20 to −5 €/MWh), what share of the whole onshore "
+          "fleet's potential is switched off?",
+    "L2": "At deeply negative prices (−50 €/MWh or lower), what share of the whole onshore "
+          "fleet's potential is switched off?",
     "L3": "Do plants commissioned before 2016, which no negative-price rule reaches, switch off?",
     "L4": "Do plants that earn nothing at any negative price (out of support, or under the "
           "post-February-2025 rule) switch off, taken together?",

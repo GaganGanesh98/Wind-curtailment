@@ -7,8 +7,8 @@ number readable.
 
 The quantities, and why each one is here:
 
-  L1  fleet response in the price band (-20, -5]   -- an aggregate; should be pinned
-  L2  fleet response at price <= -50               -- the same, where data is thinnest
+  L1  fleet switched-off share, price in (-20, -5]  -- an aggregate; should be pinned
+  L2  fleet switched-off share, price <= -50         -- the same, where data is thinnest
   L3  response of one named cohort alone           -- a cohort-level claim
   L4  response of the collinear theta = 0 GROUP    -- the combination that IS identified
   L5  curtailed energy if one cohort's threshold moved to 0, GWh -- a policy counterfactual
@@ -55,7 +55,8 @@ def band_mean(design: BoundsDesign, price: np.ndarray, lo: float, hi: float) -> 
     """L1, L2: mean of c over the quarter-hours whose price lies in (lo, hi].
 
     `lam @ r` is the mean predicted switched-off share over the band, which is the
-    fleet response there -- exposure composition included, as it must be, because a
+    fleet's switched-off share there (the whole fleet, not only its exposed part) --
+    exposure composition included, as it must be, because a
     cohort that is not exposed contributes nothing to the fleet's response.
     """
     p = np.asarray(price, dtype=float)[design.rows]

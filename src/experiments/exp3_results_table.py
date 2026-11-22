@@ -20,6 +20,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 ART = REPO_ROOT / "artifacts"
 ARCHIVED_ART = REPO_ROOT / "archive" / "artifacts"   # Q6 is archived; its verdict row stays
 CSV_OUT = REPO_ROOT / "artifacts" / "exp3_german_application" / "results_table.csv"
+#: Phase 3 (22 Nov 2026), new files: the readings V2 tests, apart from the B = 0 intervals,
+#: and the quarter-hours and event days behind each functional in the full window.
+READINGS_OUT = REPO_ROOT / "artifacts" / "exp3_german_application" / "readings_table.csv"
+SAMPLES_OUT = REPO_ROOT / "artifacts" / "exp3_german_application" / "sample_sizes.csv"
 MD_OUT = REPO_ROOT / "archive" / "docs" / "C1_conclusions_table.md"   # the archived C1 note, rebuilt byte for byte
 C0_COMMIT = "a67f69a"
 
@@ -28,9 +32,9 @@ SIGMA_H, SIGMA_T = 0.066, 0.18          # grid levels for Anchor H and Anchor T 
 # SIGMA_H: the operational series' value; the quality-assured series gives σ 0.0610 and bias −0.0326 (docs/03).
 
 QUANTITY_ROWS = (
-    ("L1", "λ₁", "fleet response at depth (−20, −5] €/MWh",
-     "What share of exposed fleet potential is switched off at moderately negative prices?"),
-    ("L2", "λ₂", "fleet response at depth ≤ −50 €/MWh",
+    ("L1", "λ₁", "fleet switched-off share, price in (−20, −5] €/MWh",
+     "What share of the whole fleet's potential is switched off at moderately negative prices?"),
+    ("L2", "λ₂", "fleet switched-off share, price ≤ −50 €/MWh",
      "The same at deeply negative prices?"),
     ("L3", "λ₃", "pre-2016 cohort response",
      "How does one cohort of turbines respond?"),
@@ -281,6 +285,67 @@ def build() -> pl.DataFrame:
     return pl.DataFrame(quantity_rows() + evidence_rows(), infer_schema_length=None)
 
 
+#: V0 section 3's readings, written as the test they apply (bias_robust_summary.V2_RULES).
+READING_TESTED = {"L1": "λ₁ informative (width < 0.25)", "L2": "λ₂ ≥ 0.50",
+                  "L3": "λ₃ ≤ 0.75", "L6": "λ₆ ≤ 0.50"}
+
+
+def readings_rows() -> list[dict]:
+    """Per V2 reading: the largest tested B at which it still holds (every smaller B holding
+    too), the interval there, and the breakdown B. Read from the committed V2 summaries."""
+    iv = pl.read_csv(ART / "exp3_german_application" / "bias_robust_full_window_intervals.csv")
+    bd = {r["lam"]: r for r in pl.read_csv(ART / "exp3_german_application" / "breakdown_points.csv",
+                                           infer_schema_length=0).iter_rows(named=True)}
+    out = []
+    for lam, test in READING_TESTED.items():
+        q = iv.filter(pl.col("lam") == lam).sort("B")
+        holds = None
+        for r in q.iter_rows(named=True):
+            if not r["reading_holds"]:
+                break
+            holds = r
+        out.append({"lam": lam, "reading_tested": test, "reading_v0": bd[lam]["reading"],
+                    "largest_B_holds": None if holds is None else holds["B"],
+                    "lo_at_largest_B": None if holds is None else holds["lo"],
+                    "hi_at_largest_B": None if holds is None else holds["hi"],
+                    "breakdown_B": bd[lam]["breakdown_B"],
+                    "lo_B0": float(bd[lam]["lo_B0"]), "hi_B0": float(bd[lam]["hi_B0"]),
+                    "tested_up_to_B": float(q["B"].max())})
+    return out
+
+
+def sample_sizes() -> pl.DataFrame:
+    """Quarter-hours and event days behind each functional, full window, setting main, H.
+
+    Rebuilds `real_panel.run_arm`'s design (no fit) and selects each functional's rows the way
+    `functionals.py` does; the quarter-hour counts must equal `n_qh_lam` in the committed cells.
+    λ₆'s count is min(λ₃, λ₄), the convention of `functionals.difference`, so its rows are λ₃'s.
+    """
+    import numpy as np
+    from src.method.bounds import build_design
+    from src.method.real_panel import (COLLINEAR_PAIR, L3_COHORT, L7_COHORT, THREE_AREA,
+                                       load_panel)
+    p = load_panel(THREE_AREA, "H")
+    sel = p["keep"]
+    price, bdate = p["price"][sel], p["bdate"][sel]
+    theta = p["theta_for"]("main")[:, sel]
+    s = (price[None, :] < theta).astype(float)
+    depth = np.maximum(0.0, theta - price[None, :]) * s
+    design = build_design(s, depth, p["shares"], p["runlen"][:, sel], cohort_ids=p["ids"])
+    rows = design.rows
+    pr, days = price[rows], bdate[rows]
+    k = {c: p["ids"].index(c) for c in p["ids"]}
+    m3 = s[k[L3_COHORT], rows] > 0
+    m4 = np.zeros(rows.size, dtype=bool)
+    for c in COLLINEAR_PAIR:
+        m4 |= s[k[c], rows] > 0
+    masks = {"L1": (pr > -20.0) & (pr <= -5.0), "L2": pr <= -50.0, "L3": m3, "L4": m4,
+             "L5": pr < 0.0, "L6": m3 if m3.sum() <= m4.sum() else m4,
+             "L7": s[k[L7_COHORT], rows] > 0}
+    return pl.DataFrame([{"lam": lam, "n_qh": int(m.sum()), "n_event_days": int(np.unique(days[m]).size)}
+                         for lam, m in masks.items()])
+
+
 def _kn(k, n, u=None) -> str:
     if k is None:
         return "—"
@@ -310,13 +375,23 @@ def _breakdown_section() -> list[str]:
          "B at which the reading no longer holds. On synthetic cells this construction covers the "
          f"truth whenever B ≥ |true bias| ({int(v1['n_covered'].min())} of "
          f"{int(v1['n_scored'].max())} at every such level, `docs/V_results.md` V1).\n",
-         "| row | reading | breaks when | breakdown B | interval at B = 0 | interval at B = 0.15 |",
-         "|---|---|---|---|---|---|"]
+         "| row | reading tested | breaks when | largest B at which it holds | interval there "
+         "| breakdown B | interval at B = 0 | interval at B = 0.15 |",
+         "|---|---|---|---|---|---|---|---|"]
+    rd = {r["lam"]: r for r in readings_rows()}
     for r in bd.iter_rows(named=True):
         lam = r["lam"]
         b0 = f"[{_fmt(float(r['lo_B0']), lam)}, {_fmt(float(r['hi_B0']), lam)}]"
         b15 = f"[{_fmt(float(r['lo_B015']), lam)}, {_fmt(float(r['hi_B015']), lam)}]"
-        L.append(f"| {sym[lam]} | {r['reading']} | {rule[lam]} | {r['breakdown_B']} | {b0} | {b15} |")
+        h = rd[lam]
+        hb = "none" if h["largest_B_holds"] is None else f"{h['largest_B_holds']:.2f}"
+        hi = ("—" if h["largest_B_holds"] is None
+              else f"[{_fmt(h['lo_at_largest_B'], lam)}, {_fmt(h['hi_at_largest_B'], lam)}]")
+        L.append(f"| {sym[lam]} | {h['reading_tested']} | {rule[lam]} | {hb} | {hi} "
+                 f"| {r['breakdown_B']} | {b0} | {b15} |")
+    L.append("\nThe reading tested is the pre-registered threshold, not the B = 0 bound: λ₂'s "
+             "lower bound of 0.525 at B = 0 is not what survives to the largest B shown; the "
+             "reading λ₂ ≥ 0.50 is. Columns separated on 22 Nov 2026.")
     from src.experiments.available_power_anchors import primary_h
     q, o = primary_h(), primary_h(series="operational")
     L.append("\nFor scale only: the projection's measured bias on price ≥ 0 quarter-hours is "
@@ -445,15 +520,23 @@ def markdown(df: pl.DataFrame) -> str:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--print", action="store_true", help="print the markdown, write nothing")
+    ap.add_argument("--sample-sizes", action="store_true",
+                    help="write sample_sizes.csv only (needs data/processed/panel_qh.parquet)")
     args = ap.parse_args()
+    if args.sample_sizes:
+        sample_sizes().write_csv(SAMPLES_OUT)
+        print(f"wrote {SAMPLES_OUT.relative_to(REPO_ROOT)}")
+        return
     df = build()
     md = markdown(df)
     if args.print:
         print(md)
         return
     df.write_csv(CSV_OUT)
+    pl.DataFrame(readings_rows(), infer_schema_length=None).write_csv(READINGS_OUT)
     MD_OUT.write_text(md, encoding="utf-8")
-    print(f"wrote {CSV_OUT.relative_to(REPO_ROOT)}\nwrote {MD_OUT.relative_to(REPO_ROOT)}")
+    print(f"wrote {CSV_OUT.relative_to(REPO_ROOT)}\nwrote {READINGS_OUT.relative_to(REPO_ROOT)}"
+          f"\nwrote {MD_OUT.relative_to(REPO_ROOT)}")
 
 
 if __name__ == "__main__":

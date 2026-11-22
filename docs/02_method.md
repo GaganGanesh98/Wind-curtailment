@@ -25,5 +25,9 @@ One method, in six steps. Code in `src/method/`; each step names its module.
 6. **Breakdown points.** For each reading (for example, a lower bound of at least 0.5), the
    breakdown point is the smallest B at which the bias-robust set no longer supports it.
 
+λ₁ and λ₂ are fleet switched-off shares (`functionals.band_mean`): the mean switched-off share
+of the whole three-area onshore fleet over the quarter-hours whose price lies in (−20, −5] €/MWh
+and at or below −50 €/MWh, exposure composition included.
+
 The seven functionals λ₁–λ₇ are defined in `archive/docs/P0_preregistration.md` §7 and
 `archive/docs/P3_results.md` §0.6–0.7; plain-English names are in `docs/06_exp3_german_application.md`.

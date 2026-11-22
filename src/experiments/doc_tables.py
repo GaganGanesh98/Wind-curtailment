@@ -23,7 +23,7 @@ ART = REPO_ROOT / "artifacts"
 AP, E1, E2, E3 = (ART / "available_power_estimate", ART / "exp1_known_truth_validation",
                   ART / "exp2_bias_robustness_validation", ART / "exp3_german_application")
 SYM = {"L1": "λ₁", "L2": "λ₂", "L3": "λ₃", "L4": "λ₄", "L5": "λ₅", "L6": "λ₆", "L7": "λ₇"}
-QTY = {"L1": "fleet response at depth (−20, −5] €/MWh", "L2": "fleet response at depth ≤ −50 €/MWh",
+QTY = {"L1": "fleet switched-off share, price in (−20, −5] €/MWh", "L2": "fleet switched-off share, price ≤ −50 €/MWh",
        "L3": "pre-2016 cohort response", "L4": "merged θ ≡ 0 group (collinear pair)",
        "L5": "counterfactual energy, GWh (threshold moved to 0)", "L6": "cohort contrast λ₃ − λ₄",
        "L7": "one member of the collinear pair"}
@@ -172,20 +172,34 @@ def _fmt(v: float, lam: str) -> str:
 
 
 def exp3_results() -> str:
+    """docs/06's table. Since 22 Nov 2026 the B = 0 interval, the pre-registered reading V2
+    tests, the largest B at which that reading holds (and the interval there) and the
+    breakdown B are separate columns, so a B = 0 bound is never read as the robust one."""
     t = pl.read_csv(E3 / "results_table.csv", infer_schema_length=None).filter(pl.col("kind") == "quantity")
-    bd = {r["lam"]: r for r in pl.read_csv(E3 / "breakdown_points.csv", infer_schema_length=0).iter_rows(named=True)}
+    rd = {r["lam"]: r for r in pl.read_csv(E3 / "readings_table.csv", infer_schema_length=None).iter_rows(named=True)}
+    ss = {r["lam"]: r for r in pl.read_csv(E3 / "sample_sizes.csv").iter_rows(named=True)}
     rows = []
     for r in t.iter_rows(named=True):
         lam = r["lam"]
         interval = (f"[{_fmt(r['window_lo'], lam)}, {_fmt(r['window_hi'], lam)}]"
                     if r["window_lo"] is not None else "undefined")
-        reading = r["window_reading"] or "—"
-        breakdown = (f"{bd[lam]['breakdown_B']}" if lam in bd else "—")
+        n = ss[lam]
+        if lam in rd:
+            h = rd[lam]
+            tested = h["reading_tested"]
+            hb = "none" if h["largest_B_holds"] is None else f"{h['largest_B_holds']:.2f}"
+            hi = ("—" if h["largest_B_holds"] is None
+                  else f"[{_fmt(h['lo_at_largest_B'], lam)}, {_fmt(h['hi_at_largest_B'], lam)}]")
+            bk = str(h["breakdown_B"])
+        else:
+            tested, hb, hi, bk = "none pre-registered", "—", "—", "—"
         verdict = r["verdict"] + (f"; {r['sub_label']}" if r["sub_label"] else "")
-        rows.append([SYM[lam], QTY[lam], interval, reading, breakdown,
-                     f"{r['real_H_k']}/{r['real_H_n']}", verdict])
-    return _md(["quantity", "what it is", "full-window interval, H", "robust reading",
-                "breakdown bias B", "informative months, H", "monthly verdict (C0 rule)"], rows)
+        rows.append([SYM[lam], QTY[lam], interval, f"{n['n_qh']:,} / {n['n_event_days']}",
+                     tested, hb, hi, bk, f"{r['real_H_k']}/{r['real_H_n']}", verdict])
+    return _md(["quantity", "what it is", "full-window interval, H, B = 0",
+                "quarter-hours / event days", "pre-registered reading tested",
+                "largest B at which it holds", "interval at that B", "breakdown B",
+                "informative months, H", "monthly verdict (C0 rule)"], rows)
 
 
 def _ex(s: str) -> str:
