@@ -118,7 +118,14 @@ def lookalike_days(s: pl.DataFrame) -> pl.DataFrame:
 
 
 def main() -> None:
+    import sys
     ART.mkdir(parents=True, exist_ok=True)
+    if "--diagnose" in sys.argv[1:]:
+        d = overlap_diagnosis()
+        d.write_csv(DIAGNOSIS)
+        print(d)
+        print(f"wrote {DIAGNOSIS}")
+        return
     s = build()
     s.select(["area", "ts_utc", "berlin_date", "month", "valid", "clean", "target", "p",
               "p_heldout_month", "w", "w_clip", "lookalike", "lookalike_aggregate",
@@ -129,6 +136,36 @@ def main() -> None:
     lookalike_days(s).write_csv(ART / "lookalike_days.csv")
     print(o)
     print(f"wrote {SCORES} and three CSVs in {ART}")
+
+
+
+# ------------------------------------------------- overlap diagnosis (Amendment 1)
+
+DIAGNOSIS = ART / "overlap_diagnosis.csv"
+
+
+def overlap_diagnosis() -> pl.DataFrame:
+    """Per area, evaluation window: the target quarter-hours without overlap against the clean
+    quarter-hours. Reads the committed step 1 scores; nothing is refitted (Amendment 1)."""
+    from src.method.learned_potential.data import load_rows
+    s = pl.read_parquet(SCORES).select(["area", "ts_utc", "p"])
+    d = load_rows().join(s, on=["area", "ts_utc"], how="left").filter(
+        (pl.col("berlin_date") >= cfg.EVAL_WINDOW[0]) & (pl.col("berlin_date") <= cfg.EVAL_WINDOW[1]))
+    rows = []
+    for a in cfg.AREAS:
+        q = d.filter(pl.col("area") == a)
+        t = q.filter(pl.col("target"))
+        no = t.filter(pl.col("p") > cfg.OVERLAP_P)
+        cl = q.filter(pl.col("clean"))
+        rows.append({"area": a, "n_target": t.height, "n_target_no_overlap": no.height,
+                     "n_target_overlap": t.height - no.height,
+                     "share_target_with_overlap": (t.height - no.height) / t.height,
+                     "median_solar_mw_target_no_overlap": float(no["f_solar_mw"].median()),
+                     "share_rd_positive_target_no_overlap": float((no["rd"] > 0).mean()),
+                     "median_solar_mw_clean": float(cl["f_solar_mw"].median()),
+                     "n_clean": cl.height})
+    return pl.DataFrame(rows)
+
 
 
 if __name__ == "__main__":

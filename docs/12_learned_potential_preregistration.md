@@ -98,3 +98,80 @@ the same quarter-hours.
 A1 is an assumption. The look-alike quarter-hours resemble negative-price quarter-hours in the
 allowed inputs, not in everything; if Â is biased there in a way the inputs do not reveal, B̂ is
 biased too.
+
+## Amendment 1 (22 November 2026): limited overlap
+
+<!-- generated:exp4_amendment1 -->
+### Status when written
+
+Written after step 1 and before any available-power model was fitted. The only model fitted on
+real data so far is the domain classifier. No look-alike score, b̂_H or B̂ has been computed.
+The amendment responds to the overlap result below and to nothing else.
+
+### What happened
+
+The pre-registered stop was crossed. The share of target quarter-hours with domain classifier
+score p > 0.99 (no clean quarter-hour resembles them) is:
+
+| unit | share without overlap |
+|---|---|
+| 50Hertz | 25.7% (527 of 2,052) |
+| Amprion | 6.6% |
+| TransnetBW | 2.1% |
+| pooled area rows | 11.5% (707 of 6,156) |
+| three-area aggregate | 2.7% (55 of 2,052) |
+
+The pre-registration did not name the unit for this check. This amendment does not choose
+the unit after the fact. The check is treated as failed in every unit above 10%, which is
+50Hertz and the pooled area rows.
+
+### Why it happened
+
+The 50Hertz target quarter-hours without overlap are sunny middays. Their median day-ahead
+solar forecast is 10.7 GW and 77% of them carry renewable redispatch. The clean 50Hertz
+quarter-hours have a median solar forecast of 0 GW. The clean-set rule R = 0 removes these
+middays because R includes distribution-cluster redispatch, which is mostly solar (Phase 6).
+The learned model therefore has no training labels in the region where the target hours sit.
+(Medians and shares: `artifacts/exp4_learned_potential/overlap_diagnosis.csv`, evaluation window.)
+
+### Changes
+
+**C1. The clean-set rule is unchanged.** Clean set: price > 5 €/MWh and R = 0 in the area.
+Target set: price < 0. The overlap threshold (p > 0.99) is unchanged.
+
+**C2. Primary estimand: target quarter-hours with overlap.** b̂_H is computed over target
+quarter-hours with out-of-fold p ≤ 0.99. Its scope is stated as these quarter-hours only.
+For 50Hertz this is 74.3% of its negative-price quarter-hours. The look-alike correction and
+the bootstrap are unchanged and run on the same trimmed set.
+
+**C3. Sensitivity arm: untrimmed.** b̂_H and B̂ are also computed over all target quarter-hours,
+as pre-registered. This arm relies on extrapolation and is labelled as such.
+
+**C4. Reporting rule.** Each reading is classified at the primary B̂. A reading whose verdict
+differs between the trimmed and untrimmed B̂ is reported as "depends on extrapolation", whatever
+the primary verdict says.
+
+**C5. Per-area reporting.** b̂_H is reported per area and for the pooled area rows. The trimmed
+share per area is reported next to each value.
+
+**C6. Exploratory arm E1, a revised clean rule for 50Hertz, gated by validation test V1.**
+
+- Revised rule: in 50Hertz, a quarter-hour with R > 0 counts as clean if every redispatch
+  measure in it is a distribution-cluster or solar measure, by the plant-name rule in
+  `redispatch_checks`. Price > 5 €/MWh still applies.
+- V1, fixed now: take the positive-price (> 5 €/MWh) 50Hertz quarter-hours that the revised rule
+  adds. Compute the mean of log(G / H) with a day-block 95% bootstrap interval (5,000 draws).
+  Compute the same for the existing 50Hertz clean set. V1 passes if the interval for the
+  difference between the two lies within ±0.02. Wind output then behaves as uncurtailed in the
+  added quarter-hours.
+- If V1 fails, E1 is not run and the result is reported.
+- If V1 passes, E1 refits the domain classifier and L2 with the revised clean set and reports
+  overlap and b̂_H. E1 is never the primary result and never sets B̂.
+- If the plant-name rule cannot be applied to every measure in the added quarter-hours, V1 is
+  reported as not possible and E1 is not run.
+
+### What stays as pre-registered
+
+Allowed and forbidden inputs, models, hyperparameter grids, folds, look-alike set, metrics,
+success criteria S1 to S3, model selection rule and the downstream comparison.
+<!-- /generated -->

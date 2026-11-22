@@ -59,6 +59,12 @@ TIE_DECIMALS = 4                        # |bias| ties, broken by sigma
 CANDIDATES = ("L1", "L2", "N1")         # models the selection rule chooses among
 AGREE_BREAKDOWN_TOLERANCE = 0.01        # Experiment 3 arm agrees if breakdown moves less than this
 
+# ------------------------------------------- Amendment 1 (22 Nov 2026), docs/12
+OVERLAP_TRIM_P = OVERLAP_P              # primary estimand keeps target quarter-hours with p <= this
+PRIMARY_ESTIMAND = "trimmed"            # b-hat_H and B-hat over target quarter-hours with overlap
+V1_TOLERANCE = 0.02                     # E1's validation test: difference interval within this
+V1_BOOTSTRAP_DRAWS = N_BOOT
+
 
 def design_text() -> str:
     """The design block of docs/12 (generated, so the number checker holds it)."""

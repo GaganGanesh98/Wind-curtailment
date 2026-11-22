@@ -1,0 +1,4 @@
+area,n_target,n_target_no_overlap,n_target_overlap,share_target_with_overlap,median_solar_mw_target_no_overlap,share_rd_positive_target_no_overlap,median_solar_mw_clean,n_clean
+50Hertz,2052,527,1525,0.74317738791423,10712.72,0.7722960151802657,0.0,25217
+Amprion,2052,136,1916,0.9337231968810916,10640.3,0.0,1.0,31538
+TransnetBW,2052,44,2008,0.9785575048732943,6863.66,0.0,0.0,30726
