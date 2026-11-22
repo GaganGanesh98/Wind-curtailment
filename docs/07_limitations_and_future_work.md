@@ -1,12 +1,14 @@
 # Limitations and future work
 
 **Limitations**
+<!-- generated:h_limitations -->
 - **H is not ground truth.** It behaves as if market curtailment is added back (available-power
   estimate), but not every projected-minus-observed difference is voluntary curtailment, and its
-  σ = 0.066 is a lower bound on its error.
+  σ = 0.061 (quality-assured series; operational 0.066) is a lower bound on its error.
 - **The bias of H at negative prices cannot be measured.** It was measured at positive prices
-  only (−0.0472); experiment 3 therefore reports how much bias each reading survives, not
-  whether it holds.
+  only (−0.0326, quality-assured; operational −0.0472); experiment 3 therefore reports how much bias
+  each reading survives, not whether it holds.
+<!-- /generated -->
 - **TenneT is excluded** from every projection aggregate (supervisor minute T-D(vii)); the real
   data cover three of the four control areas.
 - **Synthetic results hold on the tested grid only** (σ and b as listed in experiments 1 and 2).

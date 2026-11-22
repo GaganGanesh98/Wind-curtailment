@@ -171,7 +171,14 @@ def anchors() -> dict:
     return {"H": float(h[0]), "T": float(t[0])}
 
 
+def h_bias_primary() -> float:
+    """H's bias for Experiment 3: quality-assured series, its own window, price >= 0."""
+    from src.experiments.available_power_anchors import primary_h
+    return float(primary_h()["bias"])
+
+
 def anchors_bias_h() -> float:
+    """The operational row of error_anchors.csv (the bias dial's calibration point)."""
     a = pl.read_csv(AP / "error_anchors.csv")
     h = a.filter((pl.col("anchor") == "H") & pl.col("area").str.starts_with("DE excl. TenneT")
                  & (pl.col("sample") == "price >= 0"))["bias"]
@@ -269,7 +276,7 @@ CAPTIONS = {
     "06_exp1_noise_dial": (
         "Experiment 1: share of the 54 synthetic cells in which each functional is informative, "
         "against i.i.d. noise σ in the potential. Vertical lines: the statutory projection H "
-        "(σ is a lower bound on its error) and the TSO day-ahead forecast. λ₄ and λ₅ coincide "
+        "(σ is a lower bound on its error; the operational series' value; the quality-assured series gives σ 0.0610 and bias −0.0326 (docs/03)) and the TSO day-ahead forecast. λ₄ and λ₅ coincide "
         "at most levels, so they are drawn with different markers and a small horizontal "
         "offset. λ₇, one member of an exactly collinear pair, is not identified even at σ = 0: "
         "informative in {l7_k} of {l7_n} cells.",
@@ -281,7 +288,7 @@ CAPTIONS = {
         "Experiment 1: median width of the identified set (line) and interquartile range (band) "
         "across the 54 synthetic cells, against i.i.d. noise σ in the potential, on the tested "
         "grid only. Left: fleet functionals; right: cohort functionals. Log scale. Vertical "
-        "lines: the statutory projection H (σ is a lower bound on its error) and the TSO "
+        "lines: the statutory projection H (σ is a lower bound on its error; the operational series' value; the quality-assured series gives σ 0.0610 and bias −0.0326 (docs/03)) and the TSO "
         "forecast. Dashed horizontal line: 0.25, the informative limit for λ₁–λ₄ and λ₇ (λ₆'s "
         "is 0.5). λ₅ is omitted: it is an energy in GWh, not a share of potential.",
         "artifacts/exp1_known_truth_validation/noise_dial_summary.csv, rows noise = iid, lam in "
@@ -290,7 +297,7 @@ CAPTIONS = {
     "08_exp2_coverage_under_bias": (
         "Experiment 2: coverage of the known truth when the potential carries a constant "
         "multiplicative bias b. Left: the plain identified set, at σ = 0 (circles) and with "
-        "noise σ = 0.066 and 0.18 (other markers). Right: the bias-robust set for budget B "
+        "noise σ = 0.066 (the operational series' value; the quality-assured series gives σ 0.0610 and bias −0.0326 (docs/03)) and 0.18 (other markers). Right: the bias-robust set for budget B "
         "(hull over |b| ≤ B), against the true bias. Dashed line: the 95% target. λ₅ is left "
         "out of the right panel, as pre-registered.",
         "artifacts/exp2_bias_robustness_validation/bias_dial_coverage.csv (columns dial, sigma, "
@@ -302,7 +309,8 @@ CAPTIONS = {
         "constant multiplicative bias |b| ≤ B on a 0.01 grid). Dashed line: the bound the reading "
         "needs (λ₁: width below 0.25, shown as the interval itself). Vertical line: the breakdown "
         "B, the smallest B at which the reading no longer holds. Dotted line, for scale only: "
-        "|−0.0472|, the projection's measured bias on price ≥ 0 quarter-hours; its bias during "
+        "|{hb:.4f}|, the projection's measured bias on price ≥ 0 quarter-hours, quality-assured "
+        "series on the Experiment 3 window (operational series |{hb_op:.4f}|); its bias during "
         "negative prices is not measured.",
         "artifacts/exp3_german_application/bias_robust_full_window_intervals.csv (columns lam, B, "
         "lo, hi, width) and breakdown_points.csv (column breakdown_B); scale line from "
@@ -312,7 +320,8 @@ CAPTIONS = {
         "Experiment 3, the accuracy each quantity needs. Left: the highest noise level σ at "
         "which the quantity is informative in at least half the synthetic cells (Experiment 1, "
         "i.i.d. noise; synthetic, best case, not a guarantee: real data are far less "
-        "informative than the synthetic cells at the same σ). Vertical line: H's measured σ. "
+        "informative than the synthetic cells at the same σ). Vertical line: H's measured σ, "
+        "quality-assured series on the Experiment 3 window. "
         "Right: the breakdown bias B of the quantity's pre-registered reading on real data. "
         "Vertical line: |bias| of H on price ≥ 0 quarter-hours; its bias during negative prices "
         "is not measured. Arrows mark values at or beyond the top of the tested grid.",
@@ -474,7 +483,7 @@ def make_all(out: Path) -> list[Path]:
             ax.plot(q["sigma"].to_numpy() + offset.get(lam, 0.0),
                     q["share_informative"].to_numpy(), marker=mk, ms=8,
                     ls="--" if lam == "L5" else "-", color=col, lw=2, label=LAM_LABEL[lam])
-    for k, ls, lab in (("H", ":", "statutory projection H\n(lower bound)"),
+    for k, ls, lab in (("H", ":", "statutory projection H,\noperational (lower bound)"),
                        ("T", "--", "TSO forecast")):
         ax.axvline(anc[k], color="black", ls=ls, lw=1.3)
         ax.text(anc[k], 1.04, f"{lab}\nσ = {anc[k]:.3f}", ha="center", va="bottom", fontsize=11)
@@ -512,7 +521,7 @@ def make_all(out: Path) -> list[Path]:
         ax.legend(frameon=False, fontsize=11, loc="center right")
     axes[0].set_ylabel("interval width (log)")
     for ax in axes:
-        for k, lab in (("H", "projection H\n(lower bound)"), ("T", "TSO\nforecast")):
+        for k, lab in (("H", "projection H, operational\n(lower bound)"), ("T", "TSO\nforecast")):
             ax.text(anc[k] + 0.004, 0.03, lab, transform=ax.get_xaxis_transform(),
                     ha="left", va="bottom", fontsize=10)
     fig.suptitle("Intervals widen with noise; cohort intervals cross the informative limit first",
@@ -547,7 +556,7 @@ def make_all(out: Path) -> list[Path]:
     # figure
     if (E3 / "bias_robust_full_window_intervals.csv").exists():
         d = bias_breakdown_data()
-        hb = abs(anchors_bias_h())
+        hb = abs(h_bias_primary())
         fig, axes = plt.subplots(2, 2, figsize=(12, 8.5), sharex=True)
         for ax, lam, col in zip(axes.flat, ("L1", "L2", "L3", "L6"),
                                 (BLUE, ORANGE, GREEN, PURPLE)):
@@ -577,7 +586,8 @@ def make_all(out: Path) -> list[Path]:
             ax.set_xlabel("bias budget B")
         fig.suptitle("Full-window readings with H: how much constant bias they survive",
                      fontsize=15)
-        save(fig, "09_exp3_bias_breakdown", d.with_columns(pl.lit(hb).alias("abs_bias_h_positive_prices")))
+        save(fig, "09_exp3_bias_breakdown", d.with_columns(pl.lit(hb).alias("abs_bias_h_positive_prices")),
+             hb=hb, hb_op=abs(anchors_bias_h()))
 
     # figure 13
     if (ART / "exp3_data_requirement.parquet").exists():

@@ -9,6 +9,9 @@ potential widen them?
   potential (three seeds, 162 cells) and with an estimated one (a cross-fitted stage A, seed 45).
 - The noise dial: the true potential multiplied by exp(e), e i.i.d. at σ ∈ {0, 0.033, 0.066,
   0.12, 0.18, 0.25, 0.35}, plus one AR(1) arm at σ = 0.18.
+<!-- generated:h_grid_note -->
+The grid values σ = 0.066 and b = −0.047 are the operational series' values; the quality-assured series gives σ 0.0610 and bias −0.0326 (`docs/03_available_power_estimate.md`).
+<!-- /generated -->
 
 **Pre-registrations.** `archive/docs/P0_preregistration.md` §7 (commit `1cd4b30`), gaps filled
 in `archive/docs/P3_results.md` §0; the noise dial in `archive/docs/Q0_preregistration.md` §3
@@ -34,7 +37,7 @@ in `archive/docs/P3_results.md` §0; the noise dial in `archive/docs/Q0_preregis
 **Cells informative, of 54, by noise level** (`noise_dial_summary.csv`):
 
 <!-- generated:exp1_informative -->
-| functional | σ = 0 | σ = 0.066 (H) | σ = 0.18 (F) | σ = 0.35 |
+| functional | σ = 0 | σ = 0.066 (H, operational) | σ = 0.18 (F) | σ = 0.35 |
 |---|---|---|---|---|
 | λ₁ | 54/54 | 54/54 | 54/54 | 50/54 |
 | λ₂ | 54/54 | 54/54 | 54/54 | 41/54 |

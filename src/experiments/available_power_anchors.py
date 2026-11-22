@@ -3,7 +3,8 @@
     python -m src.experiments.available_power_anchors
 
 Phase Q hard rule 5: the anchor levels come from this repo's own panel, measured
-here, never from a paper or from the brief. Writes `artifacts/available_power_estimate/error_anchors.csv`.
+here, never from a paper or from the brief. Writes `artifacts/available_power_estimate/error_anchors.csv`
+and `artifacts/available_power_estimate/h_anchor_by_series.csv` (`--by-series` writes only the second).
 
 WHAT AN ANCHOR IS
 -----------------
@@ -186,6 +187,11 @@ def anchor_t(area: str, series: str) -> list[dict]:
 def _projection() -> pl.DataFrame:
     """The Nr. 5.1 projection, long format, through the repo's working reader.
 
+    NOTE (22 Nov 2026): this reads `load_projection()`'s default folder, the OPERATIONAL series
+    (2026-09-01 to 2026-10-28), not the quality-assured one Experiment 3 uses. Kept as it is so
+    that error_anchors.csv, which archived notes cite, reproduces; `anchor_h_by_series` reports
+    both series, labelled.
+
     `src/check_nr51_compliance.py` is used rather than
     `src/check_hochrechnung_onshore.py`: the latter has carried a module-level
     `re.compile` with no `import re` in every commit it has ever appeared in, so it
@@ -285,7 +291,107 @@ def anchor_h() -> list[dict]:
     return rows
 
 
+# --------------------------------------------- Anchor H by series (22 Nov 2026, Phase 2)
+#
+# `_projection()` reads `load_projection()`'s default folder, which is the OPERATIONAL series
+# (2026-09-01 to 2026-10-28). `error_anchors.csv` keeps those rows unchanged, because archived
+# notes cite them. Experiment 3 uses the QUALITY-ASSURED series, so the anchor that describes
+# Experiment 3's potential is computed here on that series, on Experiment 3's own window, and
+# written to its own file beside the operational rows.
+
+BY_SERIES = OUT_DIR / "h_anchor_by_series.csv"
+EXP3_WINDOW = ("2025-10-01", "2026-09-30")
+AGG_AREA = "50Hertz+Amprion+TransnetBW"
+OPERATIONAL_ROLE = "operational, Sep to Oct 2026, reported for comparison"
+PRIMARY_ROLE = "primary: quality-assured, Experiment 3 window"
+BY_SERIES_FIELDS = ("anchor", "quantity", "series", "role", "area", "first_date", "last_date",
+                    "sample", "n_qh", "n_days", "n_dropped", "sigma", "sigma_lo", "sigma_hi",
+                    "bias", "bias_lo", "bias_hi", "note")
+
+
+def anchor_h_by_series() -> list[dict]:
+    """H and the like-for-like F on both series; log((G + R)/H) on the quality-assured one."""
+    from src.method.available_power import AGG_NAME, load_frames
+    rows: list[dict] = []
+    d = load_frames("quality-assured")[AGG_NAME].filter(
+        (pl.col("berlin_date") >= EXP3_WINDOW[0]) & (pl.col("berlin_date") <= EXP3_WINDOW[1]))
+    g, h, f, r = (d[c].to_numpy().astype(float)
+                  for c in ("act_onshore_mw", "hr_mw", "da_onshore_mw", "rd_mw"))
+    price = d["price_eur_mwh"].to_numpy().astype(float)
+    days = d["berlin_date"].to_numpy().astype(str)
+    base = {"series": "quality-assured", "role": PRIMARY_ROLE, "area": AGG_AREA,
+            "first_date": EXP3_WINDOW[0], "last_date": EXP3_WINDOW[1]}
+    for label, m in (("price >= 0", price >= 0.0), (f"price > {SAFE_FLOOR:g}", price > SAFE_FLOOR)):
+        for anchor, quantity, num, den, note in (
+            ("H", "log(G/H)", g, h, "the H anchor for Experiment 3"),
+            ("T|H-matched", "log(G/F)", g, f, "the same quarter-hours as the H row above"),
+            ("H, G+R", "log((G+R)/H)", g + r, h,
+             "R = onshore wind redispatch (projection_and_redispatch.redispatch_qh), each "
+             "measure spread evenly over its quarter-hours; separates projection error from "
+             "grid curtailment"),
+        ):
+            rows.append({"anchor": anchor, "quantity": quantity, **base, "sample": label,
+                         **log_ratio_stats(num, den, days, m), "note": note})
+    # The operational rows, exactly as error_anchors.csv has them (same code path).
+    for r_ in anchor_h():
+        if not str(r_.get("area", "")).startswith("DE excl. TenneT"):
+            continue
+        dates = sorted(_operational_dates())
+        rows.append({"anchor": r_["anchor"],
+                     "quantity": "log(G/H)" if r_["anchor"] == "H" else "log(G/F)",
+                     "series": "operational", "role": OPERATIONAL_ROLE, "area": AGG_AREA,
+                     "first_date": r_["window_start"], "last_date": dates[-1],
+                     "sample": r_["sample"],
+                     **{k: r_[k] for k in ("n_qh", "n_days", "n_dropped", "sigma", "sigma_lo",
+                                           "sigma_hi", "bias", "bias_lo", "bias_hi")},
+                     "note": "the row error_anchors.csv labels 'DE excl. TenneT'"})
+    return rows
+
+
+def _operational_dates() -> set[str]:
+    """Berlin dates on which all three areas have an operational projection and a panel row."""
+    hr = _projection()
+    per = []
+    for area in AREAS_FOR_H:
+        sub = hr.filter(pl.col("area") == area).select("ts_utc")
+        panel = load_window(area, start="2000-01-01").select(["ts_utc", "berlin_date"])
+        per.append(panel.join(sub, on="ts_utc", how="inner"))
+    common = per[0]
+    for q in per[1:]:
+        common = common.join(q.select("ts_utc"), on="ts_utc", how="inner")
+    return set(common["berlin_date"].to_list())
+
+
+def write_by_series() -> Path:
+    rows = anchor_h_by_series()
+    with open(BY_SERIES, "w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, fieldnames=BY_SERIES_FIELDS, lineterminator="\n")
+        w.writeheader()
+        for r in rows:
+            w.writerow({k: r.get(k, "") for k in BY_SERIES_FIELDS})
+    for r in rows:
+        print(f"{r['series']:<16}{r['anchor']:<13}{r['sample']:<11}{r['first_date']}..{r['last_date']} "
+              f"n={r['n_qh']:>6} days={r['n_days']:>4} sigma={r['sigma']:.4f} bias={r['bias']:+.4f}")
+    print(f"wrote {BY_SERIES}")
+    return BY_SERIES
+
+
+def primary_h(sample: str = "price >= 0", anchor: str = "H",
+              series: str = "quality-assured") -> dict:
+    """One row of h_anchor_by_series.csv. Default: the H anchor for Experiment 3."""
+    a = pl.read_csv(BY_SERIES, infer_schema_length=None)
+    r = a.filter((pl.col("anchor") == anchor) & (pl.col("sample") == sample)
+                 & (pl.col("series") == series))
+    if r.height != 1:
+        raise ValueError(f"expected one {series} {anchor} {sample} row, found {r.height}")
+    return r.row(0, named=True)
+
+
 def main() -> None:
+    import sys
+    if "--by-series" in sys.argv[1:]:
+        write_by_series()
+        return
     head, today = git_head(), date.today().isoformat()
     rows: list[dict] = []
     for area in AREAS:
@@ -333,6 +439,7 @@ def main() -> None:
               f"{r['sigma']:>9.4f}{ci:>22}{r['bias']:>9.4f}"
               f"{r.get('n_qh', 0):>8}{r.get('n_days', 0):>6}")
     print(f"\nwrote {path}")
+    write_by_series()
 
 
 if __name__ == "__main__":

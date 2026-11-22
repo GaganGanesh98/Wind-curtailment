@@ -50,7 +50,9 @@ def test_every_verdict_matches_the_breakdown_points(pol):
     bd = {r["lam"]: r["breakdown_B"] for r in
           pl.read_csv(E3 / "breakdown_points.csv", infer_schema_length=0).iter_rows(named=True)}
     bias = abs(pu.h_anchor()["bias"])
-    assert abs(bias - 0.0472) < 5e-5
+    assert abs(bias - 0.0326) < 5e-5               # quality-assured, Experiment 3 window
+    need = pu.first_grid_at_or_above(bias)
+    assert need == 0.04
     rows = pol.filter(pl.col("lam") != "")
     assert rows.height == 7
     for r in rows.iter_rows(named=True):
@@ -60,8 +62,8 @@ def test_every_verdict_matches_the_breakdown_points(pol):
         elif b.startswith(">"):
             want = "robust"
         else:
-            # the reading must still hold at B = 0.05, the first grid budget >= 0.0472
-            want = "robust" if float(b) > 0.05 + 1e-9 else "fragile"
+            # the reading must still hold at the first grid budget >= |bias| (0.04)
+            want = "robust" if float(b) > need + 1e-9 else "fragile"
         assert r["verdict"] == want, r["lam"]
         assert r["breakdown_B"] == (b if b is not None else "no reading"), r["lam"]
     assert dict(zip(rows["lam"], rows["verdict"])) == {
@@ -86,8 +88,9 @@ def test_largest_informative_B_agrees_with_committed_intervals(req):
 
 
 def test_h_sigma_is_the_measured_anchor(req):
+    from src.experiments.available_power_anchors import primary_h
     a = pu.h_anchor()
-    assert round(a["sigma"], 3) == 0.066
+    assert a["sigma"] == primary_h()["sigma"] and round(a["sigma"], 3) == 0.061
     assert all(r["sigma_H"] == a["sigma"] for r in req.values())
 
 

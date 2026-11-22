@@ -36,15 +36,31 @@ def _md(header: list[str], rows: list[list[str]]) -> str:
 
 
 def available_power_anchors() -> str:
+    """H on both series (h_anchor_by_series.csv) and F, at price >= 0. Labelled by series:
+    until 22 Nov 2026 this table called the operational row 'quality-assured'."""
+    b = pl.read_csv(AP / "h_anchor_by_series.csv", infer_schema_length=None).filter(
+        pl.col("sample") == "price >= 0")
     a = pl.read_csv(AP / "error_anchors.csv", infer_schema_length=None).with_columns(
         *(pl.col(c).cast(pl.Float64, strict=False) for c in ("sigma", "sigma_lo", "sigma_hi", "bias")))
-    h = a.filter((pl.col("anchor") == "H") & pl.col("area").str.starts_with("DE excl. TenneT")
-                 & (pl.col("sample") == "price >= 0")).row(0, named=True)
     t = a.filter((pl.col("anchor") == "T") & (pl.col("area") == "DE") & (pl.col("series") == "onshore")
                  & (pl.col("sample") == "price >= 0")).row(0, named=True)
-    rows = [[n, r["area"], f"{r['sigma']:.4f}", f"[{r['sigma_lo']:.4f}, {r['sigma_hi']:.4f}]", f"{r['bias']:+.4f}"]
-            for n, r in (("projection H (quality-assured)", h), ("day-ahead forecast F", t))]
-    return _md(["estimate", "area", "σ", "95% interval", "bias"], rows)
+    names = {("quality-assured", "H"): "projection H, quality-assured (primary)",
+             ("quality-assured", "T|H-matched"): "day-ahead forecast F, same quarter-hours",
+             ("quality-assured", "H, G+R"): "projection H against G + R (redispatch added back)",
+             ("operational", "H"): "projection H, operational (for comparison)",
+             ("operational", "T|H-matched"): "day-ahead forecast F, same quarter-hours"}
+    rows = []
+    for r in b.iter_rows(named=True):
+        rows.append([names[(r["series"], r["anchor"])], f"{r['first_date']} to {r['last_date']}",
+                     r["area"], f"{r['n_qh']:,}", str(r["n_days"]), f"{r['sigma']:.4f}",
+                     f"[{r['sigma_lo']:.4f}, {r['sigma_hi']:.4f}]", f"{r['bias']:+.4f}",
+                     f"[{r['bias_lo']:+.4f}, {r['bias_hi']:+.4f}]"])
+    rows.append(["day-ahead forecast F, all quarter-hours", f"from {t['window_start']}", "DE",
+                 f"{int(t['n_qh']):,}", str(int(t["n_days"])), f"{t['sigma']:.4f}",
+                 f"[{t['sigma_lo']:.4f}, {t['sigma_hi']:.4f}]", f"{t['bias']:+.4f}",
+                 f"[{float(t['bias_lo']):+.4f}, {float(t['bias_hi']):+.4f}]"])
+    return _md(["estimate", "window", "area", "quarter-hours", "event days", "σ", "95% interval",
+                "bias", "95% interval"], rows)
 
 
 def available_power_adds_back() -> str:
@@ -57,6 +73,51 @@ def available_power_adds_back() -> str:
         rows.append([area, f"{float(r['D']):+.4f}", f"[{float(r['D_lo']):+.4f}, {float(r['D_hi']):+.4f}]",
                      r["verdict"]])
     return _md(["area", "D", "95% interval", "verdict"], rows)
+
+
+def _m(x: float, places: int) -> str:
+    """A signed number with a typographic minus, as the docs write it."""
+    return f"{x:.{places}f}".replace("-", "−")
+
+
+def _h_rows() -> tuple[dict, dict, dict]:
+    from src.experiments.available_power_anchors import primary_h
+    return primary_h(), primary_h(series="operational"), primary_h(anchor="H, G+R")
+
+
+def h_grid_note() -> str:
+    """For pre-registered grid points calibrated on the operational series (Phase 2, 22 Nov 2026)."""
+    q, o, _ = _h_rows()
+    return (f"The grid values σ = {o['sigma']:.3f} and b = {_m(o['bias'], 3)} are the operational "
+            f"series' values; the quality-assured series gives σ {q['sigma']:.4f} and bias "
+            f"{_m(q['bias'], 4)} (`docs/03_available_power_estimate.md`).")
+
+
+def h_scale_line() -> str:
+    q, o, r = _h_rows()
+    return (f"- For scale only: H's measured bias on price ≥ 0 quarter-hours is {_m(q['bias'], 4)} "
+            f"(quality-assured series, Experiment 3 window; operational series {_m(o['bias'], 4)}; "
+            f"against G + R {_m(r['bias'], 4)}); its bias during negative prices is not measured.")
+
+
+def h_limitations() -> str:
+    q, o, _ = _h_rows()
+    return (f"- **H is not ground truth.** It behaves as if market curtailment is added back "
+            f"(available-power\n  estimate), but not every projected-minus-observed difference is "
+            f"voluntary curtailment, and its\n  σ = {q['sigma']:.3f} (quality-assured series; "
+            f"operational {o['sigma']:.3f}) is a lower bound on its error.\n"
+            f"- **The bias of H at negative prices cannot be measured.** It was measured at positive "
+            f"prices\n  only ({_m(q['bias'], 4)}, quality-assured; operational {_m(o['bias'], 4)}); "
+            f"experiment 3 therefore reports how much bias\n  each reading survives, not whether it holds.")
+
+
+def policy_verdict_rule() -> str:
+    from src.experiments.exp3_policy_use import first_grid_at_or_above, h_anchor
+    b = abs(h_anchor()["bias"])
+    return (f"A verdict is robust when the reading still holds at B = {first_grid_at_or_above(b):.2f}, "
+            f"the first tested allowance at or above H's measured bias of {b:.4f} (quality-assured "
+            f"series), fragile when it breaks at or below that, and not identifiable when the "
+            f"quantity has no reading.")
 
 
 def exp1_coverage() -> str:
@@ -83,7 +144,7 @@ def exp1_informative() -> str:
             r = q.filter((pl.col("lam") == lam) & (pl.col("sigma") == s)).row(0, named=True)
             cells.append(f"{r['n_informative']}/{r['n_cells']}")
         rows.append([SYM[lam]] + cells)
-    return _md(["functional", "σ = 0", "σ = 0.066 (H)", "σ = 0.18 (F)", "σ = 0.35"], rows)
+    return _md(["functional", "σ = 0", "σ = 0.066 (H, operational)", "σ = 0.18 (F)", "σ = 0.35"], rows)
 
 
 def exp2_bias_dial() -> str:
@@ -169,7 +230,9 @@ TABLES = {"available_power_anchors": available_power_anchors,
           "exp1_coverage": exp1_coverage, "exp1_informative": exp1_informative,
           "exp2_bias_dial": exp2_bias_dial, "exp2_bias_robust": exp2_bias_robust,
           "exp3_results": exp3_results, "exp3_data_requirement": exp3_data_requirement,
-          "exp3_policy_use": exp3_policy_use, "exp3_policy_rules": exp3_policy_rules}
+          "exp3_policy_use": exp3_policy_use, "exp3_policy_rules": exp3_policy_rules,
+          "h_grid_note": h_grid_note, "h_scale_line": h_scale_line,
+          "h_limitations": h_limitations, "policy_verdict_rule": policy_verdict_rule}
 BLOCK = re.compile(r"(<!-- generated:([a-z0-9_]+) -->\n)(.*?)(<!-- /generated -->)", re.S)
 
 

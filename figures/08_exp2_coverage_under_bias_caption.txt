@@ -1,5 +1,5 @@
 08_exp2_coverage_under_bias
 
-Experiment 2: coverage of the known truth when the potential carries a constant multiplicative bias b. Left: the plain identified set, at σ = 0 (circles) and with noise σ = 0.066 and 0.18 (other markers). Right: the bias-robust set for budget B (hull over |b| ≤ B), against the true bias. Dashed line: the 95% target. λ₅ is left out of the right panel, as pre-registered.
+Experiment 2: coverage of the known truth when the potential carries a constant multiplicative bias b. Left: the plain identified set, at σ = 0 (circles) and with noise σ = 0.066 (the operational series' value; the quality-assured series gives σ 0.0610 and bias −0.0326 (docs/03)) and 0.18 (other markers). Right: the bias-robust set for budget B (hull over |b| ≤ B), against the true bias. Dashed line: the 95% target. λ₅ is left out of the right panel, as pre-registered.
 
 Source: artifacts/exp2_bias_robustness_validation/bias_dial_coverage.csv (columns dial, sigma, b, n_covered, n_scored, level_coverage) and bias_robust_coverage.csv (columns B, b_true, n_covered, n_scored, coverage).

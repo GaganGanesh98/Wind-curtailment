@@ -7,6 +7,9 @@ coverage within its budget?
 - The bias dial: the same 54 cells with the true potential multiplied by exp(b), b ∈ {−0.100,
   −0.047, 0, +0.033, +0.100} at σ = 0, then crossed with σ ∈ {0, 0.066, 0.18} at
   b ∈ {−0.10, 0, +0.10}.
+<!-- generated:h_grid_note -->
+The grid values σ = 0.066 and b = −0.047 are the operational series' values; the quality-assured series gives σ 0.0610 and bias −0.0326 (`docs/03_available_power_estimate.md`).
+<!-- /generated -->
 - The bias-robust set (method step 5) on the bias-dial cells at σ = 0, for B ∈ {0, 0.05, 0.10}.
 
 **Pre-registrations.** `archive/docs/Q0_preregistration.md` §4 (commit `b261c9f`);

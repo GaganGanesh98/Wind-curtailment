@@ -112,7 +112,8 @@ def demo(out: Path, b_true: float = -0.047, budget: float = 0.05) -> Path:
     """One synthetic cell with a known bias, end to end, in seconds (demo/run_demo.sh).
 
     The potential carries a constant bias b_true; the plain set (B = 0) and the bias-robust
-    hull for `budget` are printed beside the known truth, per functional.
+    hull for `budget` are printed beside the known truth, per functional. b_true = -0.047 is
+    the bias dial's grid point, the operational series' value; the quality-assured series gives σ 0.0610 and bias −0.0326 (docs/03).
     """
     rate, gamma, shape, seed, hetero = 0.10, 0.0, "step", SEED_GEN, "homogeneous"
     prep = prepare_cell(rate, gamma, shape, seed, hetero)

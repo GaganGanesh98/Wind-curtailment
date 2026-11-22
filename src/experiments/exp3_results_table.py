@@ -25,6 +25,7 @@ C0_COMMIT = "a67f69a"
 
 GRID = (0.0, 0.033, 0.066, 0.12, 0.18, 0.25, 0.35)
 SIGMA_H, SIGMA_T = 0.066, 0.18          # grid levels for Anchor H and Anchor T (0.1806)
+# SIGMA_H: the operational series' value; the quality-assured series gives σ 0.0610 and bias −0.0326 (docs/03).
 
 QUANTITY_ROWS = (
     ("L1", "λ₁", "fleet response at depth (−20, −5] €/MWh",
@@ -316,10 +317,14 @@ def _breakdown_section() -> list[str]:
         b0 = f"[{_fmt(float(r['lo_B0']), lam)}, {_fmt(float(r['hi_B0']), lam)}]"
         b15 = f"[{_fmt(float(r['lo_B015']), lam)}, {_fmt(float(r['hi_B015']), lam)}]"
         L.append(f"| {sym[lam]} | {r['reading']} | {rule[lam]} | {r['breakdown_B']} | {b0} | {b15} |")
+    from src.experiments.available_power_anchors import primary_h
+    q, o = primary_h(), primary_h(series="operational")
     L.append("\nFor scale only: the projection's measured bias on price ≥ 0 quarter-hours is "
-             "−0.0472 (`docs/Q0_preregistration.md` §1), larger than the budget at which λ₁ and "
-             "λ₆ break. Its bias during negative prices is not measured. "
-             "Figure: `figures/findings/F10_bias_breakdown.png`.\n")
+             f"{q['bias']:.4f} on the quality-assured series Experiment 3 uses (operational "
+             f"series {o['bias']:.4f}, `docs/Q0_preregistration.md` §1; corrected 22 Nov 2026, "
+             "this sentence previously gave the operational value alone). "
+             "Its bias during negative prices is not measured. "
+             "Figure: `figures/findings/F10_bias_breakdown.png`.\n".replace("-0.", "−0."))
     return L
 
 
@@ -369,7 +374,8 @@ def markdown(df: pl.DataFrame) -> str:
                  f"| {_kn(r['real_H_k'], r['real_H_n'], r['real_H_undefined'])} "
                  f"| {r['verdict']} | {r['depends_on']} |")
     L.append("\nFor the Q2 row the synthetic columns count cell-functionals that cover the known "
-             "truth at Anchor T's bias (+0.033) and Anchor H's bias (−0.047), σ = 0. The Q2 row "
+             "truth at Anchor T's bias (+0.033) and Anchor H's bias (−0.047, the operational "
+             "series' value; the quality-assured series gives −0.0326), σ = 0. The Q2 row "
              "was added on 16 November 2026, after C0, at the student's instruction; C0 fixed four "
              "evidence rows. It carries no verdict under the C0 rule and changes no other row.")
     L.append("\nFor the pooled row the synthetic columns count split cells that reject a single "

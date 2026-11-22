@@ -79,6 +79,12 @@ downloads into `data/raw/netztransparenz/` (`docs/sources/data_sources.md`); MaS
 | 6 | figures 01–09 and 13 regenerated into `demo/output/figures/` | 3 s |
 | full suite | `bash demo/run_full_suite.sh` | about 35 s |
 
+<!-- /numbers-check -->
+<!-- generated:h_grid_note -->
+The grid values σ = 0.066 and b = −0.047 are the operational series' values; the quality-assured series gives σ 0.0610 and bias −0.0326 (`docs/03_available_power_estimate.md`).
+<!-- /generated -->
+<!-- numbers-check: skip -->
+
 The demo writes only to `demo/output/` and stops with an error if anything under `artifacts/`
 or `figures/` changed.
 <!-- /numbers-check -->

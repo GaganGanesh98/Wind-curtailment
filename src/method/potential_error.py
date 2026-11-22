@@ -49,6 +49,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 PREREG_COMMIT = "b261c9f"          # docs/Q0_preregistration.md
 
 SEED_GEN = 45                      # Q0 section 6: Arm D's generator seed
+# 0.066 and -0.047 are Anchor H's sigma and bias: the operational series' value; the quality-assured series gives σ 0.0610 and bias −0.0326 (docs/03).
+# Pre-registered grid points, kept unchanged.
 SIGMA_GRID = (0.000, 0.033, 0.066, 0.120, 0.180, 0.250, 0.350)
 BIAS_GRID = (-0.100, -0.047, 0.000, 0.033, 0.100)
 CROSS_SIGMA = (0.000, 0.066, 0.180)

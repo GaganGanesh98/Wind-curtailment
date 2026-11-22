@@ -12,13 +12,13 @@ built from `artifacts/exp1_known_truth_validation/noise_dial_summary.csv`,
 <!-- generated:exp3_data_requirement -->
 | quantity | highest informative σ (synthetic, best case) | H's measured σ | largest informative B on real data | breakdown B (V0 reading) | accuracy needed |
 |---|---|---|---|---|---|
-| λ₁ | ≥ 0.35 (top of grid) | 0.066 | 0.03 | 0.04 (informative) | its reading (informative) needs a bias below 0.04; its range stays narrow for a bias up to 0.03 |
-| λ₂ | ≥ 0.35 (top of grid) | 0.066 | range not narrow on real data at B = 0 | 0.06 (lower bound at least 0.5) | its reading (lower bound at least 0.5) needs a bias below 0.06 |
-| λ₃ | ≤ 0.12 | 0.066 | range not narrow on real data at B = 0 | > 0.15 (upper bound at most 0.75) | its reading (upper bound at most 0.75) survives every tested bias (> 0.15); a narrow range needs σ ≤ 0.12 (synthetic, best case) |
-| λ₄ | ≤ 0.033 | 0.066 | range not narrow on real data at B = 0 | no reading | a narrow range needs σ ≤ 0.033 (synthetic, best case) |
-| λ₅ | ≤ 0.033 | 0.066 | range not narrow on real data at B = 0 | no reading | a narrow range needs σ ≤ 0.033 (synthetic, best case) |
-| λ₆ | ≤ 0.066 | 0.066 | range not narrow on real data at B = 0 | 0.04 (upper bound at most 0.5) | its reading (upper bound at most 0.5) needs a bias below 0.04; a narrow range needs σ ≤ 0.066 (synthetic, best case) |
-| λ₇ | not identifiable with perfect data | 0.066 | not identifiable with perfect data | no reading | not identifiable with perfect data |
+| λ₁ | ≥ 0.35 (top of grid) | 0.061 | 0.03 | 0.04 (informative) | its reading (informative) needs a bias below 0.04; its range stays narrow for a bias up to 0.03 |
+| λ₂ | ≥ 0.35 (top of grid) | 0.061 | range not narrow on real data at B = 0 | 0.06 (lower bound at least 0.5) | its reading (lower bound at least 0.5) needs a bias below 0.06 |
+| λ₃ | ≤ 0.12 | 0.061 | range not narrow on real data at B = 0 | > 0.15 (upper bound at most 0.75) | its reading (upper bound at most 0.75) survives every tested bias (> 0.15); a narrow range needs σ ≤ 0.12 (synthetic, best case) |
+| λ₄ | ≤ 0.033 | 0.061 | range not narrow on real data at B = 0 | no reading | a narrow range needs σ ≤ 0.033 (synthetic, best case) |
+| λ₅ | ≤ 0.033 | 0.061 | range not narrow on real data at B = 0 | no reading | a narrow range needs σ ≤ 0.033 (synthetic, best case) |
+| λ₆ | ≤ 0.066 | 0.061 | range not narrow on real data at B = 0 | 0.04 (upper bound at most 0.5) | its reading (upper bound at most 0.5) needs a bias below 0.04; a narrow range needs σ ≤ 0.066 (synthetic, best case) |
+| λ₇ | not identifiable with perfect data | 0.061 | not identifiable with perfect data | no reading | not identifiable with perfect data |
 <!-- /generated -->
 
 - σ is the highest noise level on the Experiment 1 grid at which the quantity is informative in
@@ -28,8 +28,8 @@ built from `artifacts/exp1_known_truth_validation/noise_dial_summary.csv`,
 - B is the largest bias allowance at which the real-data range is still informative (width
   below a quarter of its widest possible range). The breakdown B is the smallest allowance at
   which the pre-registered reading fails. The reading names the V0 threshold, not the result.
-- H's measured σ and bias are from positive-price quarter-hours. Its bias during negative
-  prices is not measured.
+- H's measured σ and bias are the quality-assured series on the Experiment 3 window, from
+  positive-price quarter-hours. Its bias during negative prices is not measured.
 
 ## Policy use
 
@@ -49,9 +49,9 @@ built from `artifacts/exp1_known_truth_validation/noise_dial_summary.csv`,
 Verdicts come from each reading's breakdown point against H's measured bias, not from the
 informativeness rule, so a one-sided bound can be robust while the full range is wide (λ₂).
 
-A verdict is robust when the reading still holds at B = 0.05, the first tested allowance at or
-above H's measured bias of 0.0472, fragile when it breaks at or below that, and not identifiable
-when the quantity has no reading.
+<!-- generated:policy_verdict_rule -->
+A verdict is robust when the reading still holds at B = 0.04, the first tested allowance at or above H's measured bias of 0.0326 (quality-assured series), fragile when it breaks at or below that, and not identifiable when the quantity has no reading.
+<!-- /generated -->
 
 EEG rule rows referred to above, with the rule table's legal source column:
 

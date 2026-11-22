@@ -39,7 +39,7 @@ step2() {
 }
 
 step3() {
-  header 3 "experiment 2: one cell whose potential is biased by -0.047 -- plain set vs bias-robust set (B = 0.05)"
+  header 3 "experiment 2: one cell whose potential is biased by -0.047 (the operational series' bias; quality-assured: sigma 0.0610, bias -0.0326) -- plain set vs bias-robust set (B = 0.05)"
   have_panel || return 0
   $PY -m src.method.bias_robust --part demo
 }

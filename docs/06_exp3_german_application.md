@@ -40,8 +40,9 @@ threshold at which that reading breaks, not a result.
 - Robust readings: "λ₁'s informative full-window reading and λ₆'s one-sided bound survive a
   constant bias of up to 0.03 in the projection, and break at 0.04. λ₂'s lower bound survives up
   to 0.05 and breaks at 0.06. λ₃'s one-sided bound survives the whole tested range."
-- For scale only: H's measured bias on price ≥ 0 quarter-hours is −0.0472; its bias during
-  negative prices is not measured.
+<!-- generated:h_scale_line -->
+- For scale only: H's measured bias on price ≥ 0 quarter-hours is −0.0326 (quality-assured series, Experiment 3 window; operational series −0.0472; against G + R −0.0003); its bias during negative prices is not measured.
+<!-- /generated -->
 
 **Figure.** `figures/09_exp3_bias_breakdown.png`.
 

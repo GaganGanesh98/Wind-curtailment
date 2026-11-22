@@ -21,7 +21,7 @@ Rules, all reused rather than restated:
 - B: the hull over |b| ≤ B of the committed real-data cells, informative when its width is
   below 0.25 of the logical maximum (Q0 section 5), as in `bias_robust_summary`.
 - Verdict: from the breakdown point of each reading (V0 section 3) against H's measured bias.
-  Robust when the reading still holds at B = 0.05, the first grid budget at or above |bias|;
+  Robust when the reading still holds at the first grid budget at or above |bias|;
   fragile when it breaks at or below that; not identifiable when the quantity has no reading.
 """
 
@@ -95,12 +95,17 @@ def _breakdowns() -> dict[str, dict]:
 
 
 def h_anchor() -> dict:
-    """H's measured σ and bias: the row docs/03 and docs/06 quote (three areas, price >= 0)."""
-    a = pl.read_csv(ART / "available_power_estimate" / "error_anchors.csv",
-                    infer_schema_length=None)
-    r = a.filter((pl.col("anchor") == "H") & pl.col("area").str.starts_with("DE excl. TenneT")
-                 & (pl.col("sample") == "price >= 0")).row(0, named=True)
+    """H's measured σ and bias for Experiment 3: the quality-assured series on its own window,
+    price >= 0 (h_anchor_by_series.csv, primary row). Until 22 Nov 2026 this read the
+    operational row of error_anchors.csv (σ 0.0660, bias −0.0472) by mistake."""
+    from src.experiments.available_power_anchors import primary_h
+    r = primary_h()
     return {"sigma": float(r["sigma"]), "bias": float(r["bias"])}
+
+
+def first_grid_at_or_above(x: float) -> float:
+    """The first B on the 0.01 grid at or above x (0.0326 -> 0.04)."""
+    return float(np.ceil(round(x / STEP, 6)) * STEP)
 
 
 def rule_ids(lam_or_post: str) -> list[str]:
@@ -193,7 +198,7 @@ def verdict(breakdown_B: str | None, bias: float) -> str:
     """V0 breakdown against |bias|: robust if the reading holds at the first grid B >= |bias|."""
     if breakdown_B in (None, "", "no reading"):
         return NOT_ID
-    need = np.ceil(round(abs(bias) / STEP, 6)) * STEP          # 0.0472 -> 0.05
+    need = first_grid_at_or_above(abs(bias))
     if breakdown_B.startswith(">"):
         return ROBUST
     return ROBUST if float(breakdown_B) > need + 1e-9 else FRAGILE

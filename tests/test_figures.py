@@ -146,5 +146,5 @@ def test_exp3_breakdown_is_the_full_window_hulls():
     l1 = d.filter((pl.col("lam") == "L1") & (pl.col("B") == 0.0))
     assert abs(l1["lo"][0] - 0.300) < 5e-4 and abs(l1["hi"][0] - 0.508) < 5e-4
     assert d.filter(pl.col("lam") == "L1")["breakdown_B"][0] == "0.04"
-    _same(d.with_columns(pl.lit(abs(mf.anchors_bias_h())).alias("abs_bias_h_positive_prices")),
+    _same(d.with_columns(pl.lit(abs(mf.h_bias_primary())).alias("abs_bias_h_positive_prices")),
           _committed("09_exp3_bias_breakdown"))
