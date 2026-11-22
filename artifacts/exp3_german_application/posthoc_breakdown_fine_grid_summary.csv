@@ -1,0 +1,5 @@
+lam,reading,grid,largest_B_holds,lo_at_largest_B,hi_at_largest_B,breakdown_B,breakdown_above_grid,grid_top,compare_0_value,compare_0_needs_B,compare_0_survives,compare_1_value,compare_1_needs_B,compare_1_survives
+L1,informative,post-hoc 0.0025,0.035,0.27517976791200693,0.5246837133713215,0.0375,false,0.06,0.03244480492936421,0.0325,true,0.032629621930796285,0.035,true
+L2,lower bound at least 0.5,post-hoc 0.0025,0.05,0.5010743852000956,0.8659396936776584,0.0525,false,0.06,0.03244480492936421,0.0325,true,0.032629621930796285,0.035,true
+L6,upper bound at most 0.5,post-hoc 0.0025,0.035,-0.9999999999708361,0.4971836144207455,0.0375,false,0.06,0.03244480492936421,0.0325,true,0.032629621930796285,0.035,true
+L3,upper bound at most 0.75,pre-registered 0.01,0.15,5.5072250067118765e-12,0.6582529576525542,"",true,0.15,0.03244480492936421,0.04,true,0.032629621930796285,0.04,true

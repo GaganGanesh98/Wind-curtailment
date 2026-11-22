@@ -1,6 +1,6 @@
 """POST-HOC (22 Nov 2026): Experiment 3's breakdown points on a finer bias grid.
 
-Design fixed in `docs/08_posthoc_breakdown_grid.md`, written after the pre-registered V2
+Design fixed in `docs/10_posthoc_breakdown_grid.md`, written after the pre-registered V2
 results were known. The V2 result (0.01 grid) stays the headline; this is a refinement.
 
     python -m src.method.bias_robust --part v2 --step 0.0025 --bmax 0.06 \\
@@ -40,7 +40,7 @@ def comparison_values() -> dict[str, float]:
 
 
 def design_text() -> str:
-    """The design, as docs/08 states it (a generated block, so the number checker holds it)."""
+    """The design, as docs/10 states it (a generated block, so the number checker holds it)."""
     import math
     cv = comparison_values()
     lines = [f"- Fine grid for λ₁, λ₂ and λ₆: b from −{BMAX:.2f} to {BMAX:.2f} in steps of "
@@ -106,6 +106,87 @@ def summarise() -> "pl.DataFrame":
                                             if at else None)
         rows.append(row)
     return pl.DataFrame(rows, infer_schema_length=None)
+
+
+SYM = {"L1": "λ₁", "L2": "λ₂", "L3": "λ₃", "L6": "λ₆"}
+TESTED = {"L1": "λ₁ informative (width < 0.25)", "L2": "λ₂ ≥ 0.50", "L3": "λ₃ ≤ 0.75",
+          "L6": "λ₆ ≤ 0.50"}
+
+
+def _hull(lam: str, B: float) -> tuple[float, float]:
+    """S_B from the unrounded fine-grid cells (λ₁, λ₂, λ₆) or the V2 intervals (λ₃)."""
+    import polars as pl
+    if lam in FINE_LAMS:
+        c = (pl.read_csv(CELLS, infer_schema_length=0)
+               .with_columns(*(pl.col(x).cast(pl.Float64) for x in ("b", "lo", "hi")))
+               .with_columns(pl.col("b").round(4))
+               .filter((pl.col("lam") == lam) & (pl.col("b").abs() <= B + 1e-9)
+                       & (pl.col("feasible") == "True")))
+        return float(c["lo"].min()), float(c["hi"].max())
+    iv = pl.read_csv(E3 / "bias_robust_full_window_intervals.csv").filter(
+        (pl.col("lam") == lam) & ((pl.col("B") - B).abs() < 1e-9)).row(0, named=True)
+    return float(iv["lo"]), float(iv["hi"])
+
+
+def margin(lam: str, lo: float, hi: float) -> float:
+    """How far the reading is from failing, in its own unit (positive = holds)."""
+    return {"L1": 0.25 - (hi - lo), "L2": lo - 0.5, "L3": 0.75 - hi, "L6": 0.5 - hi}[lam]
+
+
+def results_table() -> str:
+    import polars as pl
+    d = pl.read_csv(SUMMARY)
+    cv = list(comparison_values().values())
+    head = ["reading tested", "grid", "largest B at which it holds", "breakdown B"]
+    for v, need in ((cv[0], d["compare_0_needs_B"]), (cv[1], d["compare_1_needs_B"])):
+        head.append(f"at bias {v:.4f} in size: holds? (margin at the B it needs)")
+    out = ["| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
+    for r in d.iter_rows(named=True):
+        lam = r["lam"]
+        cells = [TESTED[lam], r["grid"], f"{r['largest_B_holds']:.4f}",
+                 r["breakdown_B"] if r["breakdown_B"] else f"> {r['grid_top']:.2f}"]
+        for i in (0, 1):
+            need = r[f"compare_{i}_needs_B"]
+            m = margin(lam, *_hull(lam, need))
+            cells.append(f"{'yes' if r[f'compare_{i}_survives'] else 'no'} at B = {need:.4f} "
+                         f"({m:+.7f})")
+        out.append("| " + " | ".join(cells) + " |")
+    return "\n".join(out)
+
+
+def l1_edge_table() -> str:
+    rows = ["| B | λ₁ lower | λ₁ upper | width | width < 0.25 |", "|---|---|---|---|---|"]
+    for B in (0.0325, 0.0350, 0.0375):
+        lo, hi = _hull("L1", B)
+        rows.append(f"| {B:.4f} | {lo:.7f} | {hi:.7f} | {hi - lo:.7f} | {'yes' if hi - lo < 0.25 else 'no'} |")
+    return "\n".join(rows)
+
+
+def results_note() -> str:
+    cv = comparison_values()
+    q = list(cv.values())[1]
+    need = __import__("math").ceil(round(q / STEP, 6)) * STEP
+    m1 = margin("L1", *_hull("L1", need))
+    m6 = margin("L6", *_hull("L6", need))
+    m2 = margin("L2", *_hull("L2", need))
+    return (f"At the H anchor's bias ({q:.4f}, checked at B = {need:.4f}) λ₁ and λ₆ hold, with "
+            f"almost no margin: λ₁'s width is {0.25 - m1:.7f} against 0.25 and λ₆'s upper bound "
+            f"{0.5 - m6:.7f} against 0.50, and both break at the next grid step. λ₂'s lower bound "
+            f"holds with margin {m2:.4f}. On the pre-registered 0.01 grid λ₁ and λ₆ are reported "
+            f"as breaking at 0.04 and that stays the result; this is a post-hoc refinement, and "
+            f"the bias during negative prices is still not measured, so no reading is "
+            f"unconditionally robust. The hull is formed over the grid's b values only; a bias "
+            f"between two grid points is not refitted.")
+
+
+def docs06_line() -> str:
+    import polars as pl
+    d = {r["lam"]: r for r in pl.read_csv(SUMMARY).iter_rows(named=True)}
+    q = list(comparison_values().values())[1]
+    return (f"- Post-hoc (22 Nov 2026, `docs/10_posthoc_breakdown_grid.md`): on a {STEP:.4f} bias "
+            f"grid the breakdowns are λ₁ {d['L1']['breakdown_B']}, λ₂ {d['L2']['breakdown_B']} and "
+            f"λ₆ {d['L6']['breakdown_B']}, so λ₁ and λ₆ hold at the quality-assured bias of "
+            f"{q:.4f}, with almost no margin. The pre-registered 0.01-grid breakdowns stay the result.")
 
 
 def main() -> None:

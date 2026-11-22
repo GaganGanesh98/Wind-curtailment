@@ -21,7 +21,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 ACTIVE_DOCS = ("README.md", "docs/00_start_here.md", "docs/01_objective.md", "docs/02_method.md",
                "docs/03_available_power_estimate.md", "docs/04_exp1_known_truth_validation.md",
                "docs/05_exp2_bias_robustness_validation.md", "docs/06_exp3_german_application.md",
-               "docs/06b_policy_use_and_data_requirement.md", "docs/08_posthoc_breakdown_grid.md",
+               "docs/06b_policy_use_and_data_requirement.md", "docs/10_posthoc_breakdown_grid.md",
                "docs/07_limitations_and_future_work.md")
 _GENERATED = re.compile(r"<!-- generated:[a-z0-9_]+ -->.*?<!-- /generated -->", re.S)
 _SKIP = re.compile(r"<!-- numbers-check: skip -->.*?<!-- /numbers-check -->", re.S)

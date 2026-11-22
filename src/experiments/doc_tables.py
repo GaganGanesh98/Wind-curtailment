@@ -247,8 +247,16 @@ TABLES = {"available_power_anchors": available_power_anchors,
           "exp3_policy_use": exp3_policy_use, "exp3_policy_rules": exp3_policy_rules,
           "h_grid_note": h_grid_note, "h_scale_line": h_scale_line,
           "h_limitations": h_limitations, "policy_verdict_rule": policy_verdict_rule,
-          "posthoc_grid_design": lambda: __import__(
-              "src.experiments.exp3_posthoc_breakdown", fromlist=["design_text"]).design_text()}
+          "posthoc_grid_design": lambda: _ph().design_text(),
+          "posthoc_grid_results": lambda: _ph().results_table(),
+          "posthoc_l1_edge": lambda: _ph().l1_edge_table(),
+          "posthoc_grid_note": lambda: _ph().results_note(),
+          "posthoc_docs06_line": lambda: _ph().docs06_line()}
+
+
+def _ph():
+    from src.experiments import exp3_posthoc_breakdown
+    return exp3_posthoc_breakdown
 BLOCK = re.compile(r"(<!-- generated:([a-z0-9_]+) -->\n)(.*?)(<!-- /generated -->)", re.S)
 
 

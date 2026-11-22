@@ -37,7 +37,7 @@ V2_LAMS = ("L1", "L2", "L3", "L6")
 
 def grid(bmax: float, step: float = STEP) -> list[float]:
     """b on [-bmax, bmax]. The default step is the pre-registered 0.01 (rounded to 2 places,
-    exactly as before); a finer post-hoc step (docs/08) is rounded to 4 places."""
+    exactly as before); a finer post-hoc step (docs/10) is rounded to 4 places."""
     k = int(round(bmax / step))
     places = 2 if step == STEP else 4
     return [round(i * step, places) for i in range(-k, k + 1)]
@@ -84,7 +84,7 @@ def run_v1(shard: int, n_shards: int) -> Path:
 
 def run_v2(step: float = STEP, bmax: float = V2_BMAX, out: Path | None = None) -> Path:
     """V2 on the real full window. Defaults are the pre-registered grid and file; `step`,
-    `bmax` and `out` exist for the post-hoc fine grid (docs/08), which writes elsewhere."""
+    `bmax` and `out` exist for the post-hoc fine grid (docs/10), which writes elsewhere."""
     from src.method.real_panel import THREE_AREA, load_panel, run_arm
     panel = load_panel(THREE_AREA, "H")
     OUT_DIR_REAL.mkdir(parents=True, exist_ok=True)
