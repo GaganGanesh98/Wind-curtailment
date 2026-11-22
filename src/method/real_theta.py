@@ -30,12 +30,11 @@ if str(REPO_ROOT) not in sys.path:
 
 from src.method.exposure import (  # noqa: E402
     build_clock_features, exposure_differs_by_day, mastr_cohort_set,
-    placeholder_cohort_set, trigger_active,
+    trigger_active,
 )
 from src.method.collinearity import (  # noqa: E402
     FALLBACK_MODES, MAX_COND_S, MIN_PAIR_DIFFER_QH, fallback_identifiability,
-    fallback_partition, format_fallback, format_merge_map, format_report,
-    gate_identification_verdict, identification_diagnostics, merge_cohorts,
+    fallback_partition, format_fallback, format_merge_map, gate_identification_verdict, merge_cohorts,
     theta_merge_map,
 )
 

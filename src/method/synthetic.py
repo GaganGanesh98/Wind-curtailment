@@ -400,7 +400,6 @@ def _inject_prices(
             # hour still averages above zero given its remaining positive ones.
             hour_sl = slice(sl.start, min(sl.start + 4, n))
             others = price[hour_sl].sum() - price[sl].sum()
-            n_neg = sl.stop - sl.start
             max_total_negative = others - 1e-6  # mean stays > 0
             if max_total_negative <= 0:
                 continue

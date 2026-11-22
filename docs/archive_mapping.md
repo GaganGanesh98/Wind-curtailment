@@ -100,10 +100,21 @@ archive/  everything else, internal layout kept (archive/src/â€¦, archive/docs/â
 ## 4. Counts
 
 331 tracked files at `25b3885` in `src/`, `docs/`, `results/`, `artifacts/`, `figures/`, `tests/`,
-`demo/`, `tools/`, `archive/`: **108 KEEP (renamed), 19 KEEP-AS-COMPONENT, 204 ARCHIVE.**
+`demo/`, `tools/`, `archive/`: **111 KEEP (renamed), 19 KEEP-AS-COMPONENT, 201 ARCHIVE.** (Corrected 22 Nov 2026 from 108 and
+204: three test files listed as archived were renamed and kept active in step 4.)
 Not counted: the untracked `tb_lambda_widening.py` (F-8) and the git-excluded `literature/`
 folder, which stays where it is. New files added by the restructure (runners, `__init__.py`,
 new docs) are not in the table.
+
+## 4b. Moved after the consolidation (22 Nov 2026)
+
+Two root files that describe the dropped M1/M2 plan, moved in Phase 7 of the 22 Nov 2026 fixes.
+They are outside the accounting of section 5, which covers the consolidation commit only.
+
+| old path | class | new path | note |
+|---|---|---|---|
+| PROJECT_CONTEXT.md | ARCHIVE | archive/docs/PROJECT_CONTEXT.md | 30 Oct project context, M1/M2 plan |
+| CLAUDE_CODE_PROMPT.md | ARCHIVE | archive/docs/CLAUDE_CODE_PROMPT.md | Phase 2 build prompt, M1/M2 plan |
 
 ## 5. Full mapping table (every tracked file at `25b3885`)
 
@@ -425,16 +436,16 @@ new docs) are not in the table.
 | `tests/test_gate_writer.py` | ARCHIVE | `archive/tests/test_gate_writer.py` | tests of archived code |
 | `tests/test_identification.py` | KEEP | `tests/test_collinearity.py` | F-6: its two M1-metric tests move to archive/tests in Step 4 |
 | `tests/test_lambda5_truth.py` | KEEP | `tests/test_lambda5_truth.py` |  |
-| `tests/test_leakage.py` | ARCHIVE | `archive/tests/test_leakage.py` | M1 feature leakage |
+| `tests/test_leakage.py` | KEEP | `tests/test_stage_a_leakage.py` | M1 feature leakage (corrected 22 Nov 2026: step 4 renamed it and kept it active) |
 | `tests/test_leakage_postauction.py` | ARCHIVE | `archive/tests/test_leakage_postauction.py` | forecast allow-list (P) + K0 extension |
-| `tests/test_m2.py` | ARCHIVE | `archive/tests/test_m2.py` | tests of archived code |
+| `tests/test_m2.py` | KEEP | `tests/test_stage_a_reservation_depth_model.py` | stage A tests (corrected 22 Nov 2026: step 4 renamed it and kept it active) |
 | `tests/test_market_value_coverage.py` | KEEP | `tests/test_market_value_coverage.py` | data |
 | `tests/test_market_value_resolution.py` | KEEP | `tests/test_market_value_resolution.py` | data |
 | `tests/test_panel_rebuild.py` | KEEP | `tests/test_panel_rebuild.py` | data |
 | `tests/test_real_panel.py` | ARCHIVE | `archive/tests/test_real_panel.py` | tests of archived code |
 | `tests/test_reported_numbers.py` | KEEP | `tests/test_reported_numbers.py` | FLAG: split proposed (active docs here; archived docs' checks under archive/tests/) |
 | `tests/test_response_curve_truth.py` | ARCHIVE | `archive/tests/test_response_curve_truth.py` | tests of archived code |
-| `tests/test_response_head.py` | ARCHIVE | `archive/tests/test_response_head.py` | tests of archived code |
+| `tests/test_response_head.py` | KEEP | `tests/test_stage_a_response_head.py` | stage A tests (corrected 22 Nov 2026: step 4 renamed it and kept it active) |
 | `tests/test_synthetic.py` | KEEP | `tests/test_synthetic.py` |  |
 | `tests/test_tb.py` | ARCHIVE | `archive/tests/test_tb.py` | tests of archived code |
 | `tests/test_tb_resume.py` | ARCHIVE | `archive/tests/test_tb_resume.py` | tests of archived code |

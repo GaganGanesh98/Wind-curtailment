@@ -4,7 +4,6 @@ say, the refit's b = 0 row is the pre-registered V2 row, and the knife-edge is s
 from __future__ import annotations
 
 import polars as pl
-import pytest
 
 from src.experiments import exp3_posthoc_breakdown as ph
 

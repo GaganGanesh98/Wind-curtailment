@@ -246,8 +246,8 @@ def main() -> None:
         w.writeheader()
         w.writerows(tab.to_dicts())
 
-    print(f"\nShare of in-support capacity with MP = 0 (theta = 0 de facto),")
-    print(f"against the CORRECT reference per unit:\n")
+    print("\nShare of in-support capacity with MP = 0 (theta = 0 de facto),")
+    print("against the CORRECT reference per unit:\n")
     print(f"  {'month':<9}{'MV':>8}{'JW':>8}{'MP=0 share':>12}{'neg QHs':>10}")
     for r in tab.iter_rows(named=True):
         print(f"  {r['year']}-{r['month']:02d}{r['mv_eur_mwh']:>8.1f}"

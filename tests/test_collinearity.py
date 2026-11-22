@@ -280,8 +280,7 @@ def test_weak_duplicates_leave_rank_s_deficient_but_are_still_identified():
 
 def _two_cohort_set(macros):
     """A CohortSet with chosen macros, for partition tests."""
-    from src.method.exposure import MACRO_HOUR, MACRO_QH
-    names = {MACRO_QH: "post_feb2025_qh", MACRO_HOUR: "pre2016_out_of_support"}
+    from src.method.exposure import MACRO_QH
     out = []
     for i, mac in enumerate(macros):
         out.append(Cohort(

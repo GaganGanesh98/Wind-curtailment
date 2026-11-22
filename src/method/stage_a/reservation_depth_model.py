@@ -77,7 +77,7 @@ remains worth scoring; it is simply not justified by the tie argument.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 

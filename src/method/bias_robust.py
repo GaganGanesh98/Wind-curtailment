@@ -115,11 +115,11 @@ def run_v2(step: float = STEP, bmax: float = V2_BMAX, out: Path | None = None,
     `bmax` and `out` exist for the post-hoc fine grid (docs/10), and `masks` for the redispatch
     sensitivity (docs/11); both write elsewhere and leave the default run unchanged."""
     from src.method.real_panel import THREE_AREA, load_panel, run_arm
-    panel = load_panel(THREE_AREA, "H")
-    OUT_DIR_REAL.mkdir(parents=True, exist_ok=True)
     out = Path(out) if out is not None else OUT_DIR_REAL / "bias_robust_full_window_cells.csv"
     if ((step, bmax) != (STEP, V2_BMAX) or masks) and out == OUT_DIR_REAL / "bias_robust_full_window_cells.csv":
         raise ValueError("a non-default run must not overwrite the pre-registered V2 artifact")
+    panel = load_panel(THREE_AREA, "H")
+    OUT_DIR_REAL.mkdir(parents=True, exist_ok=True)
     arms = [(None, panel["keep"])] if not masks else [
         (m, panel["keep"] & redispatch_keep(panel, m)) for m in masks]
     head = git_head()

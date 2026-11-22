@@ -22,7 +22,7 @@ built from `artifacts/exp1_known_truth_validation/noise_dial_summary.csv`,
 <!-- /generated -->
 
 - σ is the highest noise level on the Experiment 1 grid at which the quantity is informative in
-  at least half the synthetic cells, the rule behind the σ ≤ 0.033 of `docs/06`. It is a best
+  at least half the synthetic cells, the rule behind the σ ≤ 0.033 of `docs/06_exp3_german_application.md`. It is a best
   case, not a guarantee: real data are far less informative than the synthetic cells at the
   same noise level, and the gap is unexplained (`docs/07_limitations_and_future_work.md`).
 - B is the largest bias allowance at which the real-data range is still informative (width

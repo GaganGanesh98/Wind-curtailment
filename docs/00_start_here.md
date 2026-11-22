@@ -22,6 +22,9 @@ before its numbers existed; the pre-registrations are in `archive/docs/`, cited 
 | `06_exp3_german_application.md` | the German results table |
 | `06b_policy_use_and_data_requirement.md` | what each quantity answers, and the accuracy it needs |
 | `07_limitations_and_future_work.md` | limits and next steps |
+| `10_posthoc_breakdown_grid.md` | post-hoc: breakdown points on a finer bias grid |
+| `11_redispatch_sensitivity_preregistration.md` | pre-registration: redispatch masking arms |
+| `11b_redispatch_sensitivity_results.md` | redispatch sensitivity results |
 | `archive_mapping.md` | every old file → new path |
 
 Motivation figures: `figures/01_motivation_event_day.png`, `02_motivation_forecast_bias_by_band.png`
@@ -53,6 +56,10 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 Each `src.experiments.exp*` runner re-derives its summaries from the committed cell-level
 artifacts and reproduces them byte for byte; `--fits` prints the long-fit commands instead.
 
+`data/` is not committed. Without it, tests that read the panel or the raw Netztransparenz files
+skip with the missing path as the reason, and demo steps 2 and 3 print one skip line; steps 4,
+5 and 6 run from the committed artifacts.
+
 ```bash
 bash demo/run_demo.sh
 ```
@@ -67,17 +74,21 @@ downloads into `data/raw/netztransparenz/` (`docs/sources/data_sources.md`); MaS
 `src/method/ingest_mastr.py --download`; BNetzA award statistics into `data/raw/bnetza/`.
 
 <!-- numbers-check: skip -->
-`demo/run_demo.sh`, measured on the student's laptop on 16 Nov 2026 (wall clock, whole seconds):
+`demo/run_demo.sh`, measured on the student's laptop on 22 Nov 2026 (wall clock, whole seconds):
 
 | step | shows | time |
 |---|---|---|
 | 1 | environment and commit | 1 s |
-| 2 | experiment 1: one synthetic cell, true value, interval and coverage per functional | 5 s |
-| 3 | experiment 2: one cell with its potential biased by −0.047, plain set vs bias-robust set at B = 0.05 | 9 s |
-| 4 | experiment 3: the German results table, rebuilt from the artifacts | 1 s |
+| 2 | experiment 1: one synthetic cell, true value, interval and coverage per functional | 4 s |
+| 3 | experiment 2: one cell with its potential biased by −0.047, plain set vs bias-robust set at B = 0.05 | 10 s |
+| 4 | experiment 3: the German results table, rebuilt from the artifacts | 0 s |
 | 5 | the number checker, active docs and archived notes | 6 s |
 | 6 | figures 01–09 and 13 regenerated into `demo/output/figures/` | 3 s |
-| full suite | `bash demo/run_full_suite.sh` | about 35 s |
+| full suite | `bash demo/run_full_suite.sh` | about 57 s |
+
+Test counts on 22 Nov 2026: with `data/` present, 2,845 passed and 2 skipped; on a clean clone
+without `data/`, 2,778 passed and 36 skipped, none failed. The demo's number checker runs 2,164
+checks with `data/` and 2,131 without.
 
 <!-- /numbers-check -->
 <!-- generated:h_grid_note -->

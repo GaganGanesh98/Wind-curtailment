@@ -16,7 +16,6 @@ from src.method.stage_a.reservation_depth_model import (
     XCHECK_RTOL,
     build_design,
     eventday_folds,
-    fista,
     knot_grid,
     numerical_rank,
     pool_blocks,
@@ -89,7 +88,7 @@ def test_simplex_projection_is_the_nearest_point():
     """Checked against a brute-force search on a coarse lattice."""
     v = np.array([[0.9, -0.4, 0.2]])
     p = simplex_projection(v)[0]
-    best, bd = None, np.inf
+    bd = np.inf
     g = np.linspace(0, 1, 101)
     for a in g:
         for b in g:
@@ -98,7 +97,7 @@ def test_simplex_projection_is_the_nearest_point():
             q = np.array([a, b, 1 - a - b])
             d = np.sum((q - v[0]) ** 2)
             if d < bd:
-                best, bd = q, d
+                bd = d
     assert np.sum((p - v[0]) ** 2) <= bd + 1e-6
 
 

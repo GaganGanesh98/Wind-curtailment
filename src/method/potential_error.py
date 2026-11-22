@@ -246,7 +246,7 @@ def main() -> None:
             for b in bad[:20]:
                 print("  " + b)
             raise SystemExit(1)
-        print(f"\nport check: sigma = 0 reproduces P3 Arm O on every compared row")
+        print("\nport check: sigma = 0 reproduces P3 Arm O on every compared row")
     print(f"\nwrote {out_path}")
 
 

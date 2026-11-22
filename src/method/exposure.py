@@ -4,7 +4,7 @@ Spec: `docs/06_pivot_mechanism_aware_censoring.md` section 3 (v1.5).
 Rule source: `data/reference/eeg_negative_price_rules.csv` + `docs/05_eeg_rule_table.md`.
 
 The statutory facts below are already verified from the consolidated texts and are
-implemented, not re-derived (CLAUDE_CODE_PROMPT.md, Phase 2):
+implemented, not re-derived (archive/docs/CLAUDE_CODE_PROMPT.md, Phase 2):
 
 1. **Two price clocks run at once.** Cohorts under the rule in force from 25 Feb 2025
    (R09) are judged per *quarter-hour* on the quarter-hour price. Every older,
@@ -102,9 +102,11 @@ class Cohort:
         pilot wind, size-exempt cohorts). Their theta is the market premium throughout.
     in_support : False once the EEG support period has ended. theta = 0 regardless of
         any trigger, because there is no premium left to lose.
-    aw_eur_mwh : award value (anzulegender Wert). PLACEHOLDER in Phase 2 -- real values
-        come from MaStR and the tender results in Phase 3 (rule 19: a range, run at
-        three settings). None is only valid when in_support is False.
+    aw_eur_mwh : award value (anzulegender Wert). Used for theta only by the synthetic
+        cohorts of `placeholder_cohort_set` (Experiments 1 and 2). On the real panel theta is
+        built from the real award values in `cohort_parameters` (low / main / high settings,
+        `real_theta._real_panel_theta`), not from this field. None is only valid when
+        in_support is False.
     capacity_share : share of fleet capacity, w_k. Shares across a CohortSet must sum
         to 1.
     macro : MACRO_QH or MACRO_HOUR, used by the two-cohort fallback.
@@ -571,10 +573,11 @@ def placeholder_cohort_set(
 
 MASTR_SHARES_PATH = REPO_ROOT / "artifacts" / "method_inputs" / "mastr_cohort_shares.csv"
 
-# Award values remain PLACEHOLDERS until the tender results are ingested (rule 19:
-# a range, three settings, keyed to the Zuschlagsnummer). The capacity SHARES below
-# are real -- they key on commissioning date and size, which MaStR gives directly
-# and which the Zuschlagsnummer join does not affect.
+# The `aw` values below are placeholders kept so that a CohortSet validates (an
+# in-support cohort needs an award value). Nothing on the real-data path reads them for
+# theta: Experiment 3 takes the real award values, ingested from the tender results, from
+# `cohort_parameters` (rule 19: a range, three settings). The capacity SHARES are real --
+# they key on commissioning date and size, which MaStR gives directly.
 MASTR_COHORT_SPEC = {
     "out_of_support": dict(
         rule_id="R01", clock=HOUR_CLOCK, run_length_h=None, subject_to_s51=False,
@@ -623,8 +626,9 @@ MASTR_COHORT_SPEC = {
 def mastr_cohort_set(area: str = "DE", path: Path = MASTR_SHARES_PATH) -> CohortSet:
     """Cohorts with REAL capacity shares from the MaStR snapshot.
 
-    Replaces `placeholder_cohort_set`, whose shares were invented. Award values are
-    still placeholders and are marked as such; the shares are real.
+    Replaces `placeholder_cohort_set`, whose shares were invented. The shares are real. The
+    Cohort award values are placeholders that only satisfy validation; theta on the real
+    panel uses `cohort_parameters` (see MASTR_COHORT_SPEC).
     """
     if not path.exists():
         raise FileNotFoundError(

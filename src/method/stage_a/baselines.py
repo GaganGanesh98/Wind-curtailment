@@ -16,7 +16,7 @@ baselines used a different functional form, a win for M1 could just be the form.
 | Oracle | trained on the true A | synthetic benchmark only |
 
 B5 (quantile LightGBM with price and exposure features) and the price-free proxy
-baseline are **not** in this module yet: they are listed in CLAUDE_CODE_PROMPT.md as
+baseline are **not** in this module yet: they are listed in archive/docs/CLAUDE_CODE_PROMPT.md as
 post-smoke-run work. Nothing here depends on them.
 
 Deferred to the same step, and worth stating so the smoke-run numbers are read with

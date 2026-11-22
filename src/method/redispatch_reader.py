@@ -42,7 +42,7 @@ import polars as pl
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from smard_config import (  # noqa: E402
-    AREAS, AREA_LABEL, BERLIN, N_BOOT, PROCESSED_DIR, RESULTS_DIR, SEED, UTC,
+    AREAS, AREA_LABEL, N_BOOT, PROCESSED_DIR, RESULTS_DIR, SEED, UTC,
 )
 from event_day_bootstrap import ci_excludes_zero, eventday_bootstrap_mean  # noqa: E402
 
@@ -361,7 +361,7 @@ def main() -> int:
             m_z, lo_z, hi_z, n_z, nd_z = eventday_bootstrap_mean(
                 e[zero_rd], days[zero_rd], N_BOOT, SEED)
         else:
-            m_z = lo_z = hi_z = np.nan; n_z = nd_z = 0
+            m_z = lo_z = hi_z = np.nan; n_z = 0
 
         out_rows.append({
             "area": AREA_LABEL[area],

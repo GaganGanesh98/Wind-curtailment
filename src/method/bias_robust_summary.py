@@ -23,7 +23,6 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-import numpy as np
 import polars as pl
 
 from src.method.synthetic_scoring import TOL_COVER

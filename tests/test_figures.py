@@ -8,7 +8,6 @@ Builders whose input file is absent are skipped, as in `test_reported_numbers.py
 
 from __future__ import annotations
 
-from pathlib import Path
 
 import polars as pl
 import pytest

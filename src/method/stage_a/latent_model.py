@@ -37,13 +37,12 @@ failure that would let A absorb curtailment and quietly invalidate the whole res
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Mapping, Sequence
+from typing import Sequence
 
 import numpy as np
 import torch
 from torch import nn
 
-from src.method.exposure import CohortSet
 
 SEED = 42
 

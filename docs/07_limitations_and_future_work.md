@@ -25,6 +25,15 @@
   data cover three of the four control areas.
 - **Synthetic results hold on the tested grid only** (σ and b as listed in experiments 1 and 2).
   "σ\* ≥ 0.35" is a lower bound, not a value.
+- **The ε-set is not a confidence set.** The identified set is ε-relaxed: ε is the 95th
+  percentile of the residual norm over event-day bootstrap draws, and its coverage is
+  established empirically on the synthetic grid only. It carries no formal confidence level.
+- **V1's pass where B ≥ |b\*| at σ = 0 holds largely by construction.** With no noise and a
+  constant bias inside the budget, the true potential is one of the scaled potentials the hull
+  takes, so that pass checks the implementation rather than the method's power.
+- **The bias model is a constant multiplicative factor.** The bias-robust set covers H scaled by
+  exp(b) for one b at a time; a bias that varies with price depth, time or wind level is not
+  covered.
 - **The synthetic-to-real gap is unexplained.** Real data are far less informative than the
   synthetic cells at the same noise level; an exploratory diagnostic did not explain it
   (`archive/docs/Q6_results.md`).

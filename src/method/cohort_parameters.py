@@ -111,12 +111,12 @@ def main() -> None:
     jw26 = jw_2026_ytd(published)
 
     print("JW 2026 year-to-date, used for annual-reference cohorts")
-    print(f"  = sum over Jan-Sep of (published monthly MW x SMARD monthly onshore")
+    print("  = sum over Jan-Sep of (published monthly MW x SMARD monthly onshore")
     print(f"    energy) / total energy = {jw26:.2f} EUR/MWh")
     print(f"  NOT a plain mean of the monthly values, which would give "
           f"{float(published.filter(pl.col('year') == 2026)['mv_wind_onshore'].mean()):.2f}.")
-    print(f"  APPROXIMATE on two counts: the year is not over, and the weights are")
-    print(f"  SMARD metered output rather than the Anlage 1 Nr. 5.1 projection the")
+    print("  APPROXIMATE on two counts: the year is not over, and the weights are")
+    print("  SMARD metered output rather than the Anlage 1 Nr. 5.1 projection the")
     print(f"  statute prescribes. JW 2025 = {JW_2025_EUR_MWH:.2f} (given).")
 
     print("\nCohort parameters (real MaStR shares, AW from the provenance):")
@@ -192,7 +192,7 @@ def main() -> None:
     theta, theta_untriggered, trig = results["main"]
     s = (price[None, :] < theta).astype(int)
 
-    mask = covered_mask = np.array([k in have for k in ym])
+    mask = np.array([k in have for k in ym])
     differs = (s.max(axis=0) != s.min(axis=0)) & mask
     dates = panel["berlin_date"].to_numpy()
     days_differ = sorted(set(dates[differs]))
@@ -214,22 +214,22 @@ def main() -> None:
     s_prem = (price[None, :] < th_prem).astype(int)
     prem_differs = (s_prem.max(axis=0) != s_prem.min(axis=0)) & mask
 
-    print(f"\nRULE 18 -- event-days on which the cohort exposure vectors differ")
+    print("\nRULE 18 -- event-days on which the cohort exposure vectors differ")
     print(f"  quarter-hours with differing exposure: {int(differs.sum()):,}")
     print(f"  EVENT-DAYS with differing exposure:    {len(days_differ):,}")
-    print(f"  pre-registered threshold:              10")
+    print("  pre-registered threshold:              10")
     print(f"  -> {'K-COHORT MODEL STANDS' if len(days_differ) >= 10 else 'TWO-COHORT FALLBACK APPLIES'}")
     both = clock_differs & prem_differs
-    print(f"\n  source of the difference, by quarter-hour (counterfactuals, so they")
-    print(f"  need not sum to the total):")
+    print("\n  source of the difference, by quarter-hour (counterfactuals, so they")
+    print("  need not sum to the total):")
     print(f"    clock or run length alone: {int((clock_differs & ~prem_differs).sum()):>6,}")
     print(f"    market premium alone:      {int((prem_differs & ~clock_differs).sum()):>6,}")
     print(f"    both channels:             {int(both.sum()):>6,}")
     print(f"    neither (interaction):     "
           f"{int((differs & ~clock_differs & ~prem_differs).sum()):>6,}")
-    print(f"\n  Where the premium is zero, theta = 0 whether or not the section 51")
-    print(f"  trigger is active, so the trigger cannot create a difference at all.")
-    print(f"  The clock channel is only live while a premium is.")
+    print("\n  Where the premium is zero, theta = 0 whether or not the section 51")
+    print("  trigger is active, so the trigger cannot create a difference at all.")
+    print("  The clock channel is only live while a premium is.")
 
     print("\nRULE 18 UNDER RULE 19's AW SETTINGS, AND THE BASE-TARIFF STRESS CASE")
     print("  (stress = all pre-2016 in-support capacity forced to MP = 0)")

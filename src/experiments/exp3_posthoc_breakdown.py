@@ -12,6 +12,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import polars as pl
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 E3 = REPO_ROOT / "artifacts" / "exp3_german_application"
 AP = REPO_ROOT / "artifacts" / "available_power_estimate"
@@ -56,7 +58,7 @@ def design_text() -> str:
     return "\n".join(lines)
 
 
-def summarise() -> "pl.DataFrame":
+def summarise() -> pl.DataFrame:
     """Per reading: breakdown B and largest holding B on the fine grid (λ₁, λ₂, λ₆) or the
     pre-registered grid (λ₃), and whether the reading survives each comparison value."""
     import math

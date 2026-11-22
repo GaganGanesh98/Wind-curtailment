@@ -39,10 +39,9 @@ from __future__ import annotations
 import csv
 import re
 import sys
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import numpy as np
 import polars as pl
 
 REPO_ROOT = Path(__file__).resolve().parents[2]

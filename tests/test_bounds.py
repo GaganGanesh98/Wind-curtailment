@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from src.method.bounds import (
-    DEPTH_EDGES, _bin_of, build_design, epsilon_from_bootstrap, identified_set,
+    _bin_of, build_design, epsilon_from_bootstrap, identified_set,
     in_row_space, point_fit, pooled_fit,
 )
 from src.method import functionals as fx
