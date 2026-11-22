@@ -87,3 +87,17 @@ def test_quantiles_never_cross_and_cover_the_window(model):
     q = o.select(gbm.QCOLS).to_numpy()
     assert (np.diff(q, axis=1) >= 0).all()
     assert sorted(o["month"].unique().to_list())[0] == cfg.EVAL_WINDOW[0][:7]
+
+
+@need_oof
+def test_fold_table_agrees_and_no_scored_month_is_trained_on():
+    f = pl.read_csv(ART / "gbm_fold_training.csv")
+    assert (f["n_train_recomputed"] == f["n_train_L1_stored"]).all()
+    assert (f["n_train_recomputed"] == f["n_train_L2_stored"]).all()
+    assert (f["target_rows_in_train"] == 0).all() and (f["rows_on_or_after_month"] == 0).all()
+
+
+@need_oof
+@pytest.mark.needs_data("data/processed/panel_qh.parquet")
+def test_fold_table_recomputes():
+    assert gbm.fold_training_table().equals(pl.read_csv(ART / "gbm_fold_training.csv"))

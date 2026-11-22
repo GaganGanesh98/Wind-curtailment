@@ -1,0 +1,29 @@
+  parsed 56039 measure rows from 2 file(s)
+  header: ['BEGINN_DATUM', 'BEGINN_UHRZEIT', 'ZEITZONE_VON', 'ENDE_DATUM', 'ENDE_UHRZEIT', 'ZEITZONE_BIS', 'GRUND_DER_MASSNAHME', 'RICHTUNG', 'MITTLERE_LEISTUNG_MW', 'MAXIMALE_LEISTUNG_MW', 'GESAMTE_ARBEIT_MWH', 'ANWEISENDER_UENB', 'ANFORDERNDER_UENB', 'BETROFFENE_ANLAGE', 'PRIMAERENERGIEART']
+  L1 2025-10: 4 s
+  L1 2025-11: 4 s
+  L1 2025-12: 4 s
+  L1 2026-01: 5 s
+  L1 2026-02: 5 s
+  L1 2026-03: 5 s
+  L1 2026-04: 5 s
+  L1 2026-05: 5 s
+  L1 2026-06: 6 s
+  L1 2026-07: 6 s
+  L1 2026-08: 6 s
+  L1 2026-09: 6 s
+wrote oof_L1.parquet (params {'num_leaves': 15, 'n_estimators': 300})
+  L2 2025-10: 31 s
+  L2 2025-11: 31 s
+  L2 2025-12: 34 s
+  L2 2026-01: 39 s
+  L2 2026-02: 35 s
+  L2 2026-03: 38 s
+  L2 2026-04: 40 s
+  L2 2026-05: 40 s
+  L2 2026-06: 41 s
+  L2 2026-07: 41 s
+  L2 2026-08: 43 s
+  L2 2026-09: 44 s
+wrote oof_L2.parquet (params {'num_leaves': 15, 'n_estimators': 300})
+wrote /Users/gagan/msc-thesis-wind-curtailment/.claude/worktrees/tennet-contrast-case-76ddc5/artifacts/exp4_learned_potential/gbm_selection.csv

@@ -305,6 +305,12 @@ TABLES = {"available_power_anchors": available_power_anchors,
                                             fromlist=["design_text"]).design_text(),
           "exp4_amendment1": lambda: __import__("src.method.learned_potential.amendments",
                                                 fromlist=["amendment1_text"]).amendment1_text(),
+          "exp4_selection": lambda: _lp().selection_table(),
+          "exp4_folds": lambda: _lp().folds_table(),
+          "exp4_lookalike_all": lambda: _lp().lookalike_table("all look-alike"),
+          "exp4_lookalike_sunny": lambda: _lp().lookalike_table("sunny look-alike days"),
+          "exp4_criteria_step2": lambda: _lp().criteria(("L1", "L2")),
+          "exp4_notes_step2": lambda: _lp().selection_note() + "\n" + _lp().sunny_note(),
           "rd_samples": lambda: _rs().table_samples(), "rd_rule": lambda: _rs().table_rule(),
           "rd_l1_widths": lambda: _rs().table_l1_widths(),
           "rd_l2_diagnosis": lambda: _rs().table_l2_diagnosis(), "rd_note": lambda: _rs().note(),
@@ -314,6 +320,11 @@ TABLES = {"available_power_anchors": available_power_anchors,
           "posthoc_l1_edge": lambda: _ph().l1_edge_table(),
           "posthoc_grid_note": lambda: _ph().results_note(),
           "posthoc_docs06_line": lambda: _ph().docs06_line()}
+
+
+def _lp():
+    from src.method.learned_potential import report
+    return report
 
 
 def _rs():

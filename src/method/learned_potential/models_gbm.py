@@ -102,11 +102,39 @@ def run_fold(d: pl.DataFrame, month: str, params: dict, weighted: bool) -> pl.Da
         (pl.col("p_domain") <= cfg.OVERLAP_TRIM_P).alias("overlap_ok"))
 
 
+FOLD_TABLE = ART / "gbm_fold_training.csv"
+
+
+def fold_training_table(d: pl.DataFrame | None = None) -> pl.DataFrame:
+    """Per fold: training rows (recomputed and as stored by each model), the sum of L2's weights,
+    and the target and look-alike rows in training (none of the scored month may be there)."""
+    d = rows() if d is None else d
+    oof = {m: pl.read_parquet(ART / f"oof_{m}.parquet") for m in MODELS}
+    out = []
+    for month in eval_months():
+        tr = d.filter(train_mask(d, month))
+        stored = {m: oof[m].filter(pl.col("month") == month)["n_train"].unique().to_list() for m in MODELS}
+        out.append({"month": month, "train_last_day": train_last_day(month),
+                    "n_train_recomputed": tr.height,
+                    **{f"n_train_{m}_stored": (v[0] if len(v) == 1 else -1) for m, v in stored.items()},
+                    "sum_w_L1": float(tr.height), "sum_w_L2": round(float(tr["w"].sum()), 1),
+                    "w_null": int(tr["w"].null_count()), "w_max": round(float(tr["w"].max()), 2),
+                    "target_rows_in_train": int(tr["target"].sum()),
+                    "lookalike_rows_in_train": int((tr["lookalike"] | tr["lookalike_aggregate"]).sum()),
+                    "rows_on_or_after_month": int((tr["berlin_date"] >= month + "-01").sum())})
+    return pl.DataFrame(out)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--time-one-fold", action="store_true")
+    ap.add_argument("--fold-table", action="store_true", help="write gbm_fold_training.csv only")
     args = ap.parse_args()
     d = rows()
+    if args.fold_table:
+        fold_training_table(d).write_csv(FOLD_TABLE)
+        print(f"wrote {FOLD_TABLE}")
+        return
     if args.time_one_fold:
         t0 = time.time()
         params, _ = select(d, False)

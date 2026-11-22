@@ -25,6 +25,7 @@ ACTIVE_DOCS = ("README.md", "docs/00_start_here.md", "docs/01_objective.md", "do
                "docs/11_redispatch_sensitivity_preregistration.md",
                "docs/11b_redispatch_sensitivity_results.md",
                "docs/12_learned_potential_preregistration.md",
+               "docs/12b_learned_potential_results.md",
                "docs/07_limitations_and_future_work.md")
 _GENERATED = re.compile(r"<!-- generated:[a-z0-9_]+ -->.*?<!-- /generated -->", re.S)
 _SKIP = re.compile(r"<!-- numbers-check: skip -->.*?<!-- /numbers-check -->", re.S)
