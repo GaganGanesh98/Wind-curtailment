@@ -59,7 +59,14 @@ FILTERS = {
     "act_onshore": 4067,  # Realisierte Erzeugung / Wind Onshore
     "act_offshore": 1225, # Realisierte Erzeugung / Wind Offshore
     "price":       4169,  # Markt / Grosshandelspreise / Deutschland-Luxemburg
+    # Added 22 Nov 2026 for Experiment 4 (docs/12); fetched only with --series da_solar.
+    "da_solar":    125,   # Prognostizierte Erzeugung Day-Ahead / Photovoltaik
 }
+
+#: Regions for the day-ahead solar forecast (filter 125 is published per control area).
+SOLAR_AREAS = ["DE", "50Hertz", "Amprion", "TransnetBW"]
+#: Series not in the default job list: fetched only when named with --series.
+OPT_IN_SERIES = {"da_solar": SOLAR_AREAS}
 
 ONSHORE_SERIES = ["da_onshore", "id_onshore", "act_onshore"]
 OFFSHORE_SERIES = ["da_offshore", "id_offshore", "act_offshore"]

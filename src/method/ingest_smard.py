@@ -31,6 +31,7 @@ from smard_config import (  # noqa: E402
     OFFSHORE_AREAS,
     OFFSHORE_SERIES,
     ONSHORE_SERIES,
+    OPT_IN_SERIES,
     PERIOD_END_BERLIN,
     PERIOD_START_BERLIN,
     RAW_DIR,
@@ -43,8 +44,26 @@ TIMEOUT = 60
 RETRIES = 4
 
 
-def jobs() -> list[tuple[str, int, str]]:
-    """(series_name, filter_id, region) for every series we need."""
+def jobs(only: list[str] | None = None) -> list[tuple[str, int, str]]:
+    """(series_name, filter_id, region) for every series we need.
+
+    `only` restricts the list to the named series; opt-in series (OPT_IN_SERIES, e.g. the
+    day-ahead solar forecast) are fetched only when named this way.
+    """
+    if only:
+        out = []
+        for name in only:
+            if name in OPT_IN_SERIES:
+                out += [(name, FILTERS[name], area) for area in OPT_IN_SERIES[name]]
+            elif name in ONSHORE_SERIES:
+                out += [(name, FILTERS[name], area) for area in AREAS]
+            elif name in OFFSHORE_SERIES:
+                out += [(name, FILTERS[name], area) for area in OFFSHORE_AREAS]
+            elif name == "price":
+                out.append(("price", FILTERS["price"], "DE"))
+            else:
+                raise SystemExit(f"unknown series {name!r}")
+        return out
     out: list[tuple[str, int, str]] = []
     for name in ONSHORE_SERIES:
         for area in AREAS:
@@ -107,6 +126,9 @@ def main() -> int:
                     help="override the period start (Berlin local)")
     ap.add_argument("--end", metavar="YYYY-MM-DD",
                     help="override the period end (Berlin local, inclusive day)")
+    ap.add_argument("--series", default="",
+                    help="comma-separated series to fetch only (e.g. da_solar); their "
+                         "manifest goes to _manifest_<series>.json, the main one is untouched")
     args = ap.parse_args()
 
     start = PERIOD_START_BERLIN
@@ -140,7 +162,8 @@ def main() -> int:
     total_files = total_points = total_nulls = 0
     failures = []
 
-    for name, fid, region in jobs():
+    only = [s for s in args.series.split(",") if s]
+    for name, fid, region in jobs(only):
         tag = f"{fid}_{region}"
         outdir = os.path.join(RAW_DIR, tag)
         os.makedirs(outdir, exist_ok=True)
@@ -195,7 +218,8 @@ def main() -> int:
         for f in failures[:40]:
             print("   ", f)
 
-    with open(os.path.join(RAW_DIR, "_manifest.json"), "w") as fh:
+    manifest_name = "_manifest.json" if not only else f"_manifest_{'_'.join(only)}.json"
+    with open(os.path.join(RAW_DIR, manifest_name), "w") as fh:
         json.dump({
             "downloaded_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "source": "SMARD (Bundesnetzagentur), CC BY 4.0, https://www.smard.de",
@@ -205,7 +229,7 @@ def main() -> int:
             "series": manifest,
             "failures": [list(f) for f in failures],
         }, fh, indent=2)
-    print(f"manifest -> {RAW_DIR}/_manifest.json")
+    print(f"manifest -> {RAW_DIR}/{manifest_name}")
     return 1 if failures else 0
 
 
