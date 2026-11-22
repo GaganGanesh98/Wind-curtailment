@@ -21,6 +21,7 @@ import time
 from pathlib import Path
 
 import numpy as np
+import polars as pl
 
 from src.method.synthetic_scoring import GAMMAS, HETERO, RATES, SHAPES, prepare_cell
 from src.method.potential_error import BIAS_GRID, SEED_GEN, git_head, score_under_potential
@@ -82,33 +83,67 @@ def run_v1(shard: int, n_shards: int) -> Path:
     return out
 
 
-def run_v2(step: float = STEP, bmax: float = V2_BMAX, out: Path | None = None) -> Path:
+#: Redispatch masks (docs/11_redispatch_sensitivity_preregistration.md, 22 Nov 2026).
+MASK_AREAS = ("50Hertz", "Amprion", "TransnetBW")
+MASKS = {"M0": "drop QHs with renewable redispatch R > 0 in any of the three areas",
+         "M1": "drop QHs with R > 1% of H in any of the three areas (each against its own H)"}
+M1_SHARE = 0.01
+
+
+def redispatch_keep(panel: dict, mask: str) -> np.ndarray:
+    """True where a quarter-hour survives `mask`, aligned to the panel. R is the renewable
+    'reduzieren' series of `available_power.load_frames` (it includes solar and offshore)."""
+    from src.method.available_power import load_frames
+    if mask not in MASKS:
+        raise ValueError(f"unknown mask {mask!r}; known: {sorted(MASKS)}")
+    frames = load_frames("quality-assured")
+    ts = pl.DataFrame({"ts_utc": panel["ts_utc"]})
+    drop = np.zeros(ts.height, dtype=bool)
+    for area in MASK_AREAS:
+        j = ts.join(frames[area].select(["ts_utc", "rd_mw", "hr_mw"]), on="ts_utc", how="left")
+        if (j["ts_utc"].to_numpy() != panel["ts_utc"]).any():
+            raise ValueError("redispatch does not align with the panel")
+        r = j["rd_mw"].fill_null(0.0).to_numpy().astype(float)
+        h = j["hr_mw"].to_numpy().astype(float)
+        drop |= (r > 0.0) if mask == "M0" else (r > M1_SHARE * np.nan_to_num(h, nan=np.inf))
+    return ~drop
+
+
+def run_v2(step: float = STEP, bmax: float = V2_BMAX, out: Path | None = None,
+           masks: tuple[str, ...] = ()) -> Path:
     """V2 on the real full window. Defaults are the pre-registered grid and file; `step`,
-    `bmax` and `out` exist for the post-hoc fine grid (docs/10), which writes elsewhere."""
+    `bmax` and `out` exist for the post-hoc fine grid (docs/10), and `masks` for the redispatch
+    sensitivity (docs/11); both write elsewhere and leave the default run unchanged."""
     from src.method.real_panel import THREE_AREA, load_panel, run_arm
     panel = load_panel(THREE_AREA, "H")
     OUT_DIR_REAL.mkdir(parents=True, exist_ok=True)
     out = Path(out) if out is not None else OUT_DIR_REAL / "bias_robust_full_window_cells.csv"
-    if (step, bmax) != (STEP, V2_BMAX) and out == OUT_DIR_REAL / "bias_robust_full_window_cells.csv":
-        raise ValueError("a non-default grid must not overwrite the pre-registered V2 artifact")
+    if ((step, bmax) != (STEP, V2_BMAX) or masks) and out == OUT_DIR_REAL / "bias_robust_full_window_cells.csv":
+        raise ValueError("a non-default run must not overwrite the pre-registered V2 artifact")
+    arms = [(None, panel["keep"])] if not masks else [
+        (m, panel["keep"] & redispatch_keep(panel, m)) for m in masks]
     head = git_head()
     fh = writer = None
     try:
-        for b in grid(bmax, step):
-            scaled = {**panel, "f": np.asarray(panel["f"], dtype=float) * np.exp(b)}
-            rows = run_arm(scaled, "main", scaled["keep"], "window", False)
-            for r in rows:
-                r.update({"b": b, "potential": "H", "v0_commit": V0_COMMIT, "git_head": head})
-            if writer is None:
-                fh = open(out, "w", newline="", encoding="utf-8")
-                writer = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
-                writer.writeheader()
-            for r in rows:
-                writer.writerow({k: r.get(k) for k in writer.fieldnames})
-            fh.flush()
-            w = {r["lam"]: (r.get("lo"), r.get("hi")) for r in rows if r["lam"] in V2_LAMS}
-            print(f"b {b:+.4f}  " + "  ".join(f"{k}=[{lo:.3f},{hi:.3f}]" for k, (lo, hi)
-                                              in w.items() if lo is not None), flush=True)
+        for mask, keep in arms:
+            for b in grid(bmax, step):
+                scaled = {**panel, "f": np.asarray(panel["f"], dtype=float) * np.exp(b)}
+                rows = run_arm(scaled, "main", keep, "window", False)
+                for r in rows:
+                    r.update({"b": b, "potential": "H", "v0_commit": V0_COMMIT, "git_head": head})
+                    if mask is not None:
+                        r["mask"] = mask
+                if writer is None:
+                    fh = open(out, "w", newline="", encoding="utf-8")
+                    writer = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
+                    writer.writeheader()
+                for r in rows:
+                    writer.writerow({k: r.get(k) for k in writer.fieldnames})
+                fh.flush()
+                w = {r["lam"]: (r.get("lo"), r.get("hi")) for r in rows if r["lam"] in V2_LAMS}
+                print(f"{mask or 'V2'} b {b:+.4f}  " + "  ".join(
+                    f"{k}=[{lo:.3f},{hi:.3f}]" for k, (lo, hi) in w.items() if lo is not None),
+                    flush=True)
     finally:
         if fh is not None:
             fh.close()
@@ -155,6 +190,7 @@ def main() -> None:
     ap.add_argument("--step", type=float, default=STEP, help="V2 b-grid step (default 0.01)")
     ap.add_argument("--bmax", type=float, default=V2_BMAX, help="V2 b-grid half-width (0.15)")
     ap.add_argument("--out", default=None, help="V2 output file (default: the pre-registered one)")
+    ap.add_argument("--masks", default="", help="comma-separated redispatch masks, e.g. M0,M1 (docs/11)")
     args = ap.parse_args()
     if args.part == "demo":
         demo(REPO_ROOT / "demo" / "output" / "bias_robust_cell.txt")
@@ -163,7 +199,8 @@ def main() -> None:
         i, n = (int(x) for x in args.shard.split("/"))
         print(f"wrote {run_v1(i, n)}")
     else:
-        print(f"wrote {run_v2(args.step, args.bmax, args.out)}")
+        masks = tuple(m for m in args.masks.split(",") if m)
+        print(f"wrote {run_v2(args.step, args.bmax, args.out, masks)}")
 
 
 if __name__ == "__main__":

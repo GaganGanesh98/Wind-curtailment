@@ -147,6 +147,7 @@ def load_panel(region: str = AREA, potential: str = "F"):
         "shares": _region_shares(cohorts, region),
         "area": region, "potential": potential,
         "ids": tuple(c.cohort_id for c in cohorts),
+        "ts_utc": obs["ts_utc"].to_numpy(),        # for masks joined on time (docs/11)
         "n_dropped_non_finite": int((~finite & (bdate >= MTU15_FIRST_DELIVERY_DAY)
                                      & mv_mask).sum()),
     }
