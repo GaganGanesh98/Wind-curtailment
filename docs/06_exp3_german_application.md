@@ -6,6 +6,8 @@
 - 50Hertz + Amprion + TransnetBW, 2025-10-01 to 2026-09-30, award setting `main`, H as the
   potential: identified sets for λ₁–λ₇ on the full window and on each month with a published
   market value and a negative-price quarter-hour.
+  The window ends on 2026-09-30 because October 2026 has no published market value. The
+  October end date in the caption of figure `02` belongs to the forecast-bias check, not here.
 - The bias-robust full-window sets for B from 0 to 0.15, and the breakdown point of each reading.
 - The monthly verdict per quantity by the rule pre-registered in C0.
 
@@ -30,6 +32,8 @@
 
 Readings: λ₁ is a fleet response; λ₂'s reading is a lower bound on response, λ₃'s and λ₆'s are
 upper bounds. Breakdown points are reported for the four readings pre-registered in V0.
+λ₃'s result is an upper bound of 0.579. The 0.75 in its V0 reading is the pre-registered
+threshold at which that reading breaks, not a result.
 
 **Verdicts (quoted).**
 - Monthly: "**NOT IDENTIFIABLE WITH TODAY'S BEST PUBLIC ESTIMATE** (7 of 7)."
