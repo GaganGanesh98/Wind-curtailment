@@ -1,0 +1,5 @@
+17_exp4_overlap
+
+Experiment 4: distribution of the cross-fitted domain classifier's score p (probability that a quarter-hour belongs to the negative-price target set, from price-free inputs only), for clean and target quarter-hours in the evaluation window, per area. Shares within each set, bins of 0.02. Dotted line: the overlap threshold p = 0.99; target quarter-hours beyond it have no clean look-alike. 50Hertz has the largest mass there.
+
+Source: artifacts/exp4_learned_potential/domain_scores.parquet (columns area, berlin_date, clean, target, p).

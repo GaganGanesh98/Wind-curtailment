@@ -37,3 +37,20 @@ def test_bias_estimate_recomputes():
     assert fresh.columns == stored.columns
     for c in ("b_hat_H", "corrected", "corrected_lo", "corrected_hi", "n_target_qh"):
         assert fresh[c].to_list() == pytest.approx(stored[c].to_list(), abs=1e-12), c
+
+
+@pytest.mark.parametrize("name,builder", [("15_exp4_lookalike_error", "exp4_lookalike_data"),
+                                          ("16_exp4_bias_descriptive", "exp4_bias_data"),
+                                          ("17_exp4_overlap", "exp4_overlap_data")])
+def test_experiment4_figure_data_match_the_artifacts(name, builder):
+    from pathlib import Path
+    from src import figures as mf
+    committed = pl.read_csv(Path(mf.OUT_DIR) / f"{name}_data.csv")
+    fresh = pl.read_csv(getattr(mf, builder)().write_csv().encode())
+    assert fresh.columns == committed.columns and fresh.height == committed.height
+    for c in fresh.columns:
+        a, b = fresh[c], committed[c]
+        if a.dtype.is_float() or b.dtype.is_float():
+            assert ((a.cast(pl.Float64) - b.cast(pl.Float64)).abs().fill_null(0) <= 1e-9).all(), c
+        else:
+            assert a.cast(pl.String).to_list() == b.cast(pl.String).to_list(), c

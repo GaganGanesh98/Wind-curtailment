@@ -25,6 +25,8 @@ before its numbers existed; the pre-registrations are in `archive/docs/`, cited 
 | `10_posthoc_breakdown_grid.md` | post-hoc: breakdown points on a finer bias grid |
 | `11_redispatch_sensitivity_preregistration.md` | pre-registration: redispatch masking arms |
 | `11b_redispatch_sensitivity_results.md` | redispatch sensitivity results |
+| `12_learned_potential_preregistration.md` | Experiment 4 pre-registration and Amendment 1 |
+| `12b_learned_potential_results.md` | Experiment 4 results: learning available power (a negative result) |
 | `archive_mapping.md` | every old file → new path |
 
 Motivation figures: `figures/01_motivation_event_day.png`, `02_motivation_forecast_bias_by_band.png`
@@ -34,11 +36,11 @@ Motivation figures: `figures/01_motivation_event_day.png`, `02_motivation_foreca
 
 | folder | content |
 |---|---|
-| `src/method/` | the method: exposure, bounds, functionals, bias-robust set, data loaders, stage A |
+| `src/method/` | the method: exposure, bounds, functionals, bias-robust set, data loaders, stage A; `learned_potential/` for Experiment 4 |
 | `src/experiments/` | thin runners for experiments 1–3 and the available-power section, their summarisers, the doc tables |
-| `src/figures.py` | figures 01–09 and 13 |
+| `src/figures.py` | figures 01–09 and 13–17 |
 | `artifacts/` | one folder per experiment, `available_power_estimate/`, and `method_inputs/` (θ and exposure inputs) |
-| `figures/` | figures 01–09 and 13 with data CSV and caption |
+| `figures/` | figures 01–09 and 13–17 with data CSV and caption |
 | `tests/` | active tests and the number checker for these docs |
 | `archive/` | everything else, unchanged and still verified (`archive/README.md`) |
 | `docs/sources/` | statute and literature PDFs cited by the code, the §51 rule table, the data-source sheet |
@@ -83,12 +85,12 @@ downloads into `data/raw/netztransparenz/` (`docs/sources/data_sources.md`); MaS
 | 3 | experiment 2: one cell with its potential biased by −0.047, plain set vs bias-robust set at B = 0.05 | 10 s |
 | 4 | experiment 3: the German results table, rebuilt from the artifacts | 0 s |
 | 5 | the number checker, active docs and archived notes | 6 s |
-| 6 | figures 01–09 and 13 regenerated into `demo/output/figures/` | 3 s |
+| 6 | figures 01–09 and 13–17 regenerated into `demo/output/figures/` | 5 s |
 | full suite | `bash demo/run_full_suite.sh` | about 57 s |
 
-Test counts on 22 Nov 2026: with `data/` present, 2,843 passed and 2 skipped; on a clean clone
-without `data/`, 2,776 passed and 36 skipped, none failed. The demo's number checker runs 2,164
-checks with `data/` and 2,131 without.
+Test counts on 23 Nov 2026: with `data/` present, 3,180 passed and 2 skipped; on a clean clone
+without `data/`, 3,109 passed and 40 skipped, none failed. The demo's number checker runs 2,428
+checks with `data/` and 2,395 without.
 
 <!-- /numbers-check -->
 <!-- generated:h_grid_note -->

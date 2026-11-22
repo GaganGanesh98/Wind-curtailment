@@ -239,3 +239,14 @@ pre-registered 0.01 B grid; `exp3_arm_readings.csv`):
 - **Agreement:** 0 of 4 readings agree with the headline. Under Â the data-fit tolerance ε at B = 0 is 0.241, against 0.113 under H, on the same 34,937 quarter-hours: Â follows output much less closely than H, so every identified set widens. As fixed before step 4, this disagreement is not resolved by public data and is not evidence that H is wrong.
 - **b̂_H** at the aggregate, trimmed (primary): corrected mean log(H / A) +0.2665 [+0.2100, +0.3236]. Descriptive only: L2 failed S2, no B̂ is defined and no reading is classified against it. It cannot tell H adding back more than was curtailed apart from Â, which never saw negative-price hours, falling short there.
 <!-- /generated -->
+
+## Summary of Experiment 4
+
+<!-- generated:exp4_summary -->
+- **S2 failed.** The selected model, L2, has an aggregate look-alike bias of -0.0147 [-0.0505, 0.0191], not within ±0.02. B̂ is therefore not estimable with public inputs, and no reading is classified against a budget.
+- **The σ gap.** For an unbiased model's interval to fit within ±0.02, its aggregate look-alike σ would need to be about 0.139 (expectation section above); the best learned model, L1, reached 0.235. Neither the shift correction nor the temporal model closed that gap.
+<!-- /generated -->
+
+**Figures.** `figures/15_exp4_lookalike_error.png` (look-alike error per model),
+`figures/16_exp4_bias_descriptive.png` (b̂_H per area, trimmed and untrimmed, descriptive),
+`figures/17_exp4_overlap.png` (domain score distributions), and `figures/14_exp4_n1_loss_curves.png`.

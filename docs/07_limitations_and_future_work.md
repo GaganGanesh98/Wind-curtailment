@@ -38,7 +38,17 @@
   synthetic cells at the same noise level; an exploratory diagnostic did not explain it
   (`archive/docs/Q6_results.md`).
 
+<!-- generated:exp4_limitations -->
+- **Experiment 4 rests on assumption A1:** conditional on the price-free inputs, available power does not depend on the price. It cannot be proven from data; the look-alike check and the overlap report are the only evidence offered.
+- **Overlap is incomplete in 50Hertz:** only 74.3% of its negative-price quarter-hours have a clean look-alike, because the clean-set rule (no renewable redispatch) removes sunny middays there.
+- **The sunny-day look-alike set is thin:** 7 days at the three-area aggregate, so the learned potential is barely checked under the conditions where negative prices occur.
+- **N1's validation curves are unstable** in all 16 fits, so its early-stopping epoch is driven largely by noise in the validation loss.
+<!-- /generated -->
+
 **Future work**
 - Estimate the bias of H per day from the law's no-exposure quarter-hours (the cancelled Phase K
   idea; its first gate failed, `archive/docs/K_results.md`).
 - Validate against ground truth where unit-level availability is published (AEMO, ERCOT).
+<!-- generated:exp4_future_work -->
+- Finer price-free weather inputs (for example station wind or numerical weather fields) for the learned potential, judged against the σ target: its aggregate look-alike σ would need to fall from about 0.235 to about 0.139 before H's bias at negative prices can be bounded.
+<!-- /generated -->

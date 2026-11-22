@@ -1,0 +1,5 @@
+15_exp4_lookalike_error
+
+Experiment 4: error of each potential on look-alike quarter-hours (clean quarter-hours that the domain classifier finds most like negative-price ones), with day-block 95% intervals. Left: σ of log(G / Â); right: mean of log(G / Â). Top: three-area aggregate; bottom: pooled area rows. F is the TSO day-ahead forecast, H the quality-assured projection, L1 and L2 the LightGBM models (L2 importance-weighted), N1 the temporal CNN. Dashed lines on the right: the S2 tolerance ±0.02.
+
+Source: artifacts/exp4_learned_potential/lookalike_scores.csv (subset all look-alike; units three-area aggregate and pooled area rows; columns model, metric, value, lo, hi).

@@ -1,4 +1,4 @@
-"""The figures, 01-09, 13 and 14, in reading order (docs/00_start_here.md).
+"""The figures, 01-09 and 13-17, in reading order (docs/00_start_here.md).
 
     python -m src.figures                  # writes figures/
     python -m src.figures --out demo/output/figures
@@ -241,6 +241,43 @@ def cnn_trace_data() -> pl.DataFrame:
                      "val_loss_weighted"])
 
 
+EXP4 = ART / "exp4_learned_potential"
+
+
+def exp4_lookalike_data() -> pl.DataFrame:
+    """Figure 15: σ and bias of log(G / Â) on look-alike quarter-hours, every model, at the
+    aggregate and on the pooled area rows (lookalike_scores.csv, all look-alike)."""
+    s = pl.read_csv(EXP4 / "lookalike_scores.csv").filter(
+        (pl.col("subset") == "all look-alike")
+        & pl.col("unit").is_in(["three-area aggregate", "pooled area rows"])
+        & (pl.col("metric").str.starts_with("sigma") | pl.col("metric").str.starts_with("bias")))
+    return s.select(["unit", "model", "metric", "value", "lo", "hi", "n_qh", "n_days"]).sort(["unit", "metric", "model"])
+
+
+def exp4_bias_data() -> pl.DataFrame:
+    """Figure 16: corrected b̂_H per unit, trimmed and untrimmed (bias_budget.csv; descriptive)."""
+    return pl.read_csv(EXP4 / "bias_budget.csv").select(
+        ["unit", "arm", "n_target_qh", "share_of_target_kept", "corrected", "corrected_lo", "corrected_hi", "status"])
+
+
+def exp4_overlap_data() -> pl.DataFrame:
+    """Figure 17: histogram of the domain score p, clean against target quarter-hours, per area,
+    evaluation window (domain_scores.parquet)."""
+    s = pl.read_parquet(EXP4 / "domain_scores.parquet").filter(
+        (pl.col("berlin_date") >= "2025-10-01") & (pl.col("berlin_date") <= "2026-09-30")
+        & (pl.col("clean") | pl.col("target")))
+    edges = np.linspace(0.0, 1.0, 51)
+    rows = []
+    for area in ("50Hertz", "Amprion", "TransnetBW"):
+        for name, flag in (("clean", "clean"), ("target", "target")):
+            p = s.filter((pl.col("area") == area) & pl.col(flag))["p"].to_numpy()
+            h, _ = np.histogram(p, bins=edges)
+            for lo, hi, n in zip(edges[:-1], edges[1:], h):
+                rows.append({"area": area, "set": name, "p_lo": round(float(lo), 2), "p_hi": round(float(hi), 2),
+                             "count": int(n), "share": float(n / max(p.size, 1))})
+    return pl.DataFrame(rows)
+
+
 CAPTIONS = {
     "01_motivation_event_day": (
         "Motivation. {day} (Easter Sunday) is the largest-error negative-price event-day of the "
@@ -356,6 +393,32 @@ CAPTIONS = {
         "artifacts/exp4_learned_potential/cnn_loss_trace.csv (columns fit, layers, channels, epoch, "
         "best_epoch, train_loss_weighted, val_loss_weighted), written by models_cnn --loss-trace, "
         "which reproduced every stored fit bit for bit."),
+    "15_exp4_lookalike_error": (
+        "Experiment 4: error of each potential on look-alike quarter-hours (clean quarter-hours that "
+        "the domain classifier finds most like negative-price ones), with day-block 95% intervals. "
+        "Left: σ of log(G / Â); right: mean of log(G / Â). Top: three-area aggregate; bottom: "
+        "pooled area rows. F is the TSO day-ahead forecast, H the quality-assured projection, L1 and "
+        "L2 the LightGBM models (L2 importance-weighted), N1 the temporal CNN. Dashed lines on the "
+        "right: the S2 tolerance ±{tol}.",
+        "artifacts/exp4_learned_potential/lookalike_scores.csv (subset all look-alike; units "
+        "three-area aggregate and pooled area rows; columns model, metric, value, lo, hi)."),
+    "16_exp4_bias_descriptive": (
+        "Experiment 4, descriptive only (S2 failed, so no budget B̂ is defined and no reading is "
+        "judged against these numbers): the corrected mean of log(H / A) at negative prices, i.e. "
+        "b̂_H = mean log(H / Â) minus L2's look-alike bias, with day-block 95% intervals, per area, "
+        "pooled and at the aggregate. Filled: trimmed to target quarter-hours with overlap "
+        "(primary); open: untrimmed (sensitivity, relies on extrapolation). It cannot separate H "
+        "adding back more than was curtailed from Â falling short at negative prices.",
+        "artifacts/exp4_learned_potential/bias_budget.csv (columns unit, arm, corrected, "
+        "corrected_lo, corrected_hi)."),
+    "17_exp4_overlap": (
+        "Experiment 4: distribution of the cross-fitted domain classifier's score p (probability "
+        "that a quarter-hour belongs to the negative-price target set, from price-free inputs only), "
+        "for clean and target quarter-hours in the evaluation window, per area. Shares within each "
+        "set, bins of 0.02. Dotted line: the overlap threshold p = {thr}; target quarter-hours "
+        "beyond it have no clean look-alike. 50Hertz has the largest mass there.",
+        "artifacts/exp4_learned_potential/domain_scores.parquet (columns area, berlin_date, clean, "
+        "target, p)."),
 }
 
 
@@ -684,6 +747,68 @@ def make_all(out: Path) -> list[Path]:
         axes[0, 0].legend(frameon=False, fontsize=10)
         n = len(fits)
         save(fig, "14_exp4_n1_loss_curves", d, n=n)
+
+    # figures 15-17 (Experiment 4)
+    if (EXP4 / "lookalike_scores.csv").exists():
+        d = exp4_lookalike_data()
+        models = ["F", "H", "L1", "L2", "N1"]
+        cols = {"F": GREY, "H": GREEN, "L1": BLUE, "L2": SKY, "N1": ORANGE}
+        fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+        for i, unit in enumerate(["three-area aggregate", "pooled area rows"]):
+            for j, met in enumerate(["sigma", "bias"]):
+                ax = axes[i, j]
+                for k, m in enumerate(models):
+                    q = d.filter((pl.col("unit") == unit) & (pl.col("model") == m) & pl.col("metric").str.starts_with(met))
+                    if q.height == 0:
+                        continue
+                    r = q.row(0, named=True)
+                    ax.errorbar(k, r["value"], yerr=[[r["value"] - r["lo"]], [r["hi"] - r["value"]]],
+                                fmt="o", ms=9, capsize=6, lw=2, color=cols[m])
+                ax.set_xticks(range(len(models)), models)
+                if met == "bias":
+                    ax.axhline(0, color=GREY, lw=1)
+                    for v in (-0.02, 0.02):
+                        ax.axhline(v, color="black", ls="--", lw=1)
+                    ax.set_ylabel("mean of log(G / Â)")
+                else:
+                    ax.set_ylabel("σ of log(G / Â)")
+                    ax.set_ylim(bottom=0)
+                ax.set_title(unit)
+        save(fig, "15_exp4_lookalike_error", d, tol=0.02)
+
+    if (EXP4 / "bias_budget.csv").exists():
+        d = exp4_bias_data()
+        units = ["50Hertz", "Amprion", "TransnetBW", "pooled area rows", "three-area aggregate"]
+        fig, ax = plt.subplots(figsize=(11, 5.5))
+        for k, u in enumerate(units):
+            for off, arm, filled in ((-0.12, "trimmed", True), (0.12, "untrimmed", False)):
+                r = d.filter((pl.col("unit") == u) & pl.col("arm").str.starts_with(arm)).row(0, named=True)
+                ax.errorbar(k + off, r["corrected"], yerr=[[r["corrected"] - r["corrected_lo"]],
+                                                          [r["corrected_hi"] - r["corrected"]]],
+                            fmt="o", ms=9, capsize=6, lw=2, color=VERMILION,
+                            mfc=VERMILION if filled else "white",
+                            label=(("trimmed (primary)" if filled else "untrimmed (sensitivity)") if k == 0 else None))
+        ax.axhline(0, color=GREY, lw=1)
+        ax.set_xticks(range(len(units)), ["50Hertz", "Amprion", "TransnetBW", "pooled\narea rows", "three-area\naggregate"])
+        ax.set_ylabel("corrected mean of log(H / A)")
+        ax.set_title("Descriptive only: H against the learned potential at negative prices (S2 failed)")
+        ax.legend(frameon=False)
+        save(fig, "16_exp4_bias_descriptive", d)
+
+    if (EXP4 / "domain_scores.parquet").exists():
+        d = exp4_overlap_data()
+        fig, axes = plt.subplots(1, 3, figsize=(15, 4.8), sharey=True)
+        for ax, area in zip(axes, ["50Hertz", "Amprion", "TransnetBW"]):
+            for name, col in (("clean", BLUE), ("target", VERMILION)):
+                q = d.filter((pl.col("area") == area) & (pl.col("set") == name))
+                ax.bar(q["p_lo"].to_numpy(), q["share"].to_numpy(), width=0.02, align="edge",
+                       color=col, alpha=0.55, label=name)
+            ax.axvline(0.99, color="black", ls=":", lw=1.4)
+            ax.set_title(area)
+            ax.set_xlabel("domain score p")
+        axes[0].set_ylabel("share of the set")
+        axes[0].legend(frameon=False)
+        save(fig, "17_exp4_overlap", d, thr=0.99)
     return written
 
 

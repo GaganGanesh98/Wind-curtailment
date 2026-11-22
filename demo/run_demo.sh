@@ -55,7 +55,7 @@ step5() {
 }
 
 step6() {
-  header 6 "regenerate figures 01-09 and 13 from the committed artifacts"
+  header 6 "regenerate figures 01-09 and 13-17 from the committed artifacts"
   $PY -m src.figures --out "$OUT/figures"
 }
 

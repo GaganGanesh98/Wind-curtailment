@@ -1,0 +1,11 @@
+unit,arm,n_target_qh,share_of_target_kept,corrected,corrected_lo,corrected_hi,status
+50Hertz,trimmed (primary),1525,0.74317738791423,0.3529048756949156,0.26413404513987593,0.4407977529077127,"descriptive, S2 failed"
+50Hertz,"untrimmed (sensitivity, extrapolation)",2052,1.0,0.3779152021652661,0.29914515475345627,0.46251744577559023,"descriptive, S2 failed"
+Amprion,trimmed (primary),1916,0.9337231968810916,0.16099749936601307,0.09526767676656102,0.2308017684724075,"descriptive, S2 failed"
+Amprion,"untrimmed (sensitivity, extrapolation)",2052,1.0,0.17283618809161783,0.10680095264508603,0.2417352213782863,"descriptive, S2 failed"
+TransnetBW,trimmed (primary),2008,0.9785575048732943,0.3680417394168888,0.25551314190096325,0.4999583074915214,"descriptive, S2 failed"
+TransnetBW,"untrimmed (sensitivity, extrapolation)",2052,1.0,0.36855362847353135,0.2563419206408209,0.4989953836644868,"descriptive, S2 failed"
+pooled area rows,trimmed (primary),5449,0.8851526965562053,0.2757699976090189,0.2096422579391498,0.3467226419460136,"descriptive, S2 failed"
+pooled area rows,"untrimmed (sensitivity, extrapolation)",6156,1.0,0.28388017658325226,0.2219245223371824,0.3480969366578671,"descriptive, S2 failed"
+three-area aggregate,trimmed (primary),1997,0.973196881091618,0.26652396979856474,0.20999597039576007,0.3236176724717101,"descriptive, S2 failed"
+three-area aggregate,"untrimmed (sensitivity, extrapolation)",2052,1.0,0.27276302910745054,0.21524075279203403,0.32977888193743116,"descriptive, S2 failed"

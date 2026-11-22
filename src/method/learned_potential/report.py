@@ -340,3 +340,67 @@ def arm_note() -> str:
         f"H adding back more than was curtailed apart from Â, which never saw negative-price hours, "
         f"falling short there.",
     ])
+
+
+# ------------------------------------------------------------------ step 5 summaries
+
+def _gap() -> tuple[float, float, str]:
+    e = pl.read_csv(EXPECTATION).filter(pl.col("kind") == "sigma_needed")
+    need = float(e.filter(pl.col("model") != "F")["sigma_needed"].min())
+    have = [m for m in cfg.CANDIDATES if _agg(m, "sigma")]
+    best = min(have, key=lambda m: _agg(m, "sigma")["value"])
+    return need, _agg(best, "sigma")["value"], best
+
+
+def summary_text() -> str:
+    need, got, best = _gap()
+    sel = selected_model()
+    b = _agg(sel, "bias")
+    return "\n".join([
+        f"- **S2 failed.** The selected model, {sel}, has an aggregate look-alike bias of "
+        f"{b['value']:.4f} [{b['lo']:.4f}, {b['hi']:.4f}], not within ±{cfg.S2_HALF_WIDTH:g}. B̂ is "
+        f"therefore not estimable with public inputs, and no reading is classified against a budget.",
+        f"- **The σ gap.** For an unbiased model's interval to fit within ±{cfg.S2_HALF_WIDTH:g}, its "
+        f"aggregate look-alike σ would need to be about {need:.3f} (expectation section above); the best "
+        f"learned model, {best}, reached {got:.3f}. Neither the shift correction nor the temporal model "
+        f"closed that gap.",
+    ])
+
+
+def subquestion_answer() -> str:
+    need, got, _ = _gap()
+    o = {r["unit"]: r for r in pl.read_csv(ART / "domain_overlap.csv").iter_rows(named=True)}
+    return ("**Answer to sub-question 4 (negative result).** Not with these public inputs. The best "
+            f"price-blind learned model's error on negative-price look-alike quarter-hours (σ {got:.3f}) is "
+            f"far above the roughly {need:.3f} needed to pin its own bias within ±{cfg.S2_HALF_WIDTH:g}, so "
+            "the projection's bias at negative prices could not be bounded (S2 failed, "
+            "`docs/12b_learned_potential_results.md`). In 50Hertz "
+            f"{o['50Hertz']['share_no_overlap']:.1%} of the negative-price quarter-hours have no clean "
+            "look-alike at all.")
+
+
+def limitations_text() -> str:
+    d = {r["area"]: r for r in pl.read_csv(ART / "overlap_diagnosis.csv").iter_rows(named=True)}
+    s = _scores().filter((pl.col("subset") == "sunny look-alike days") & (pl.col("unit") == "three-area aggregate"))
+    sunny_days = int(s["n_days"].max())
+    t = pl.read_csv(TRACE_SUMMARY)
+    n_unst = int((t["pattern"] == "unstable").sum())
+    return "\n".join([
+        "- **Experiment 4 rests on assumption A1:** conditional on the price-free inputs, available power "
+        "does not depend on the price. It cannot be proven from data; the look-alike check and the overlap "
+        "report are the only evidence offered.",
+        f"- **Overlap is incomplete in 50Hertz:** only {d['50Hertz']['share_target_with_overlap']:.1%} of its "
+        "negative-price quarter-hours have a clean look-alike, because the clean-set rule (no renewable "
+        "redispatch) removes sunny middays there.",
+        f"- **The sunny-day look-alike set is thin:** {sunny_days} days at the three-area aggregate, so the "
+        "learned potential is barely checked under the conditions where negative prices occur.",
+        f"- **N1's validation curves are unstable** in all {n_unst} fits, so its early-stopping epoch is "
+        "driven largely by noise in the validation loss.",
+    ])
+
+
+def future_work_text() -> str:
+    need, got, _ = _gap()
+    return (f"- Finer price-free weather inputs (for example station wind or numerical weather fields) for "
+            f"the learned potential, judged against the σ target: its aggregate look-alike σ would need to "
+            f"fall from about {got:.3f} to about {need:.3f} before H's bias at negative prices can be bounded.")

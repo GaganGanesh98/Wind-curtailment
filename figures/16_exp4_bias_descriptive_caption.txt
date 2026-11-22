@@ -1,0 +1,5 @@
+16_exp4_bias_descriptive
+
+Experiment 4, descriptive only (S2 failed, so no budget B̂ is defined and no reading is judged against these numbers): the corrected mean of log(H / A) at negative prices, i.e. b̂_H = mean log(H / Â) minus L2's look-alike bias, with day-block 95% intervals, per area, pooled and at the aggregate. Filled: trimmed to target quarter-hours with overlap (primary); open: untrimmed (sensitivity, relies on extrapolation). It cannot separate H adding back more than was curtailed from Â falling short at negative prices.
+
+Source: artifacts/exp4_learned_potential/bias_budget.csv (columns unit, arm, corrected, corrected_lo, corrected_hi).
