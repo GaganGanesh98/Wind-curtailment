@@ -150,8 +150,11 @@ def _pinball(torch, q, y, w):
     return (loss * w).sum() / w.sum()
 
 
-def train_model(Xtr, Str, ytr, wtr, Xva, Sva, yva, wva, layers, channels, max_epochs=None):
-    """Adam, weighted pinball loss, early stopping on the validation span; best weights restored."""
+def train_model(Xtr, Str, ytr, wtr, Xva, Sva, yva, wva, layers, channels, max_epochs=None,
+                trace: list | None = None):
+    """Adam, weighted pinball loss, early stopping on the validation span; best weights restored.
+    If `trace` is a list, one dict per epoch is appended (training and validation loss); this
+    records only and changes nothing in the training."""
     torch = _torch()
     torch.manual_seed(cfg.SEED)
     np.random.seed(cfg.SEED)
@@ -166,14 +169,23 @@ def train_model(Xtr, Str, ytr, wtr, Xva, Sva, yva, wva, layers, channels, max_ep
     for epoch in range(max_epochs or cfg.CNN_FIXED["max_epochs"]):
         model.train()
         perm = torch.randperm(Xtr.shape[0], generator=gen)
+        tr_sum = tr_w = 0.0
         for i in range(0, Xtr.shape[0], bs):
             b = perm[i:i + bs]
             opt.zero_grad()
-            _pinball(torch, model(Xtr[b], Str[b]), ytr[b], wtr[b]).backward()
+            loss = _pinball(torch, model(Xtr[b], Str[b]), ytr[b], wtr[b])
+            loss.backward()
             opt.step()
+            if trace is not None:
+                wb = float(wtr[b].sum())
+                tr_sum += float(loss.detach()) * wb
+                tr_w += wb
         model.eval()
         with torch.no_grad():
             v = float(_pinball(torch, model(Xva, Sva), yva, wva))
+        if trace is not None:
+            trace.append({"epoch": epoch + 1, "train_loss_weighted": tr_sum / tr_w,
+                          "val_loss_weighted": v})
         if v < best - 1e-7:
             best, best_epoch, bad = v, epoch + 1, 0
             best_state = {k: t.detach().clone() for k, t in model.state_dict().items()}
@@ -204,14 +216,16 @@ def _xy(df, ctx, scales):
     return X[ok], S[ok], df["y"].to_numpy()[ok].astype(np.float32), df["w"].to_numpy()[ok].astype(np.float32), ok
 
 
-def fit_on(train: pl.DataFrame, ctx: dict, layers: int, channels: int, max_epochs=None):
+def fit_on(train: pl.DataFrame, ctx: dict, layers: int, channels: int, max_epochs=None,
+           trace: list | None = None):
     scales = fold_scales(train)
     fit, val = _split_val(train)
     a = _xy(fit, ctx, scales)
     b = _xy(val, ctx, scales)
-    model, vloss, epoch = train_model(*a[:4], *b[:4], layers, channels, max_epochs)
+    model, vloss, epoch = train_model(*a[:4], *b[:4], layers, channels, max_epochs, trace)
     return model, scales, {"val_loss": vloss, "best_epoch": epoch, "n_fit": int(a[4].sum()),
-                           "n_val": int(b[4].sum())}
+                           "n_val": int(b[4].sum()), "val_first_day": val["berlin_date"].min(),
+                           "val_last_day": val["berlin_date"].max(), "fit_last_day": fit["berlin_date"].max()}
 
 
 def select(d: pl.DataFrame, ctx: dict) -> tuple[dict, list[dict]]:
@@ -249,11 +263,70 @@ def run_fold(d: pl.DataFrame, ctx: dict, month: str, params: dict) -> pl.DataFra
         (pl.col("p_domain") <= cfg.OVERLAP_TRIM_P).alias("overlap_ok"))
 
 
+TRACE = ART / "cnn_loss_trace.csv"
+
+
+def loss_trace(d: pl.DataFrame, ctx: dict) -> pl.DataFrame:
+    """Re-run the selection fits and every fold exactly as the stored run did, recording the
+    training and validation loss per epoch. Raises if a re-run does not reproduce the stored
+    best epoch, the stored selection loss or the stored out-of-fold quantiles bit for bit."""
+    sel = pl.read_csv(ART / "cnn_selection.csv")
+    oof = pl.read_parquet(ART / "oof_N1.parquet")
+    chosen = sel.filter(pl.col("chosen")).row(0, named=True)
+    out = []
+    tr = d.filter(pl.col("clean") & (pl.col("berlin_date") >= cfg.HISTORY_START)
+                  & (pl.col("berlin_date") <= cfg.SELECTION_TRAIN_END))
+    for r in sel.iter_rows(named=True):
+        trace: list = []
+        _, _, info = fit_on(tr, ctx, r["layers"], r["channels"], trace=trace)
+        if info["best_epoch"] != r["best_epoch"] or info["val_loss"] != r["val_loss"]:
+            raise RuntimeError(f"selection fit {r['layers']}x{r['channels']} did not reproduce")
+        out += [{"fit": "selection", "layers": r["layers"], "channels": r["channels"],
+                 "fit_last_day": info["fit_last_day"], "val_first_day": info["val_first_day"],
+                 "val_last_day": info["val_last_day"], "n_fit": info["n_fit"], "n_val": info["n_val"],
+                 "best_epoch": info["best_epoch"], **e} for e in trace]
+        print(f"  selection {r['layers']}x{r['channels']}: {len(trace)} epochs, reproduced", flush=True)
+    for month in eval_months():
+        trace = []
+        q = run_fold_traced(d, ctx, month, chosen, trace)
+        stored = oof.filter(pl.col("month") == month).sort(["area", "ts_utc"])
+        if q["best_epoch"][0] != stored["best_epoch"][0] or not q.sort(["area", "ts_utc"]).select(QCOLS).equals(stored.select(QCOLS)):
+            raise RuntimeError(f"fold {month} did not reproduce the stored out-of-fold quantiles")
+        info = q["_info"][0]
+        out += [{"fit": month, "layers": chosen["layers"], "channels": chosen["channels"],
+                 "fit_last_day": info["fit_last_day"], "val_first_day": info["val_first_day"],
+                 "val_last_day": info["val_last_day"], "n_fit": info["n_fit"], "n_val": info["n_val"],
+                 "best_epoch": info["best_epoch"], **e} for e in trace]
+        print(f"  fold {month}: {len(trace)} epochs, reproduced", flush=True)
+    return pl.DataFrame(out)
+
+
+def run_fold_traced(d, ctx, month, params, trace) -> pl.DataFrame:
+    tr = d.filter(train_mask(d, month))
+    model, scales, info = fit_on(tr, ctx, params["layers"], params["channels"], trace=trace)
+    te = d.filter((pl.col("month") == month) & pl.col("valid"))
+    X, S, ok = tensors(te, ctx, scales)
+    q = predict(model, X[ok], S[ok])
+    te = te.filter(pl.Series(ok))
+    return te.select(["area", "ts_utc"]).with_columns(
+        *(pl.Series(c, q[:, i]) for i, c in enumerate(QCOLS)),
+        pl.lit(info["best_epoch"]).alias("best_epoch"),
+        pl.Series("_info", [info] * te.height))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--time-one-fold", action="store_true")
+    ap.add_argument("--loss-trace", action="store_true",
+                    help="re-run every fit with per-epoch logging; writes cnn_loss_trace.csv only")
     args = ap.parse_args()
     d, ctx = rows(), context()
+    if args.loss_trace:
+        t = loss_trace(d, ctx)
+        assert "lightgbm" not in sys.modules
+        t.write_csv(TRACE)
+        print(f"wrote {TRACE}")
+        return
     if args.time_one_fold:
         # One epoch of the largest configuration on the largest training span; the full run is
         # bounded by (selection fits + folds) x the pre-registered maximum of epochs.
