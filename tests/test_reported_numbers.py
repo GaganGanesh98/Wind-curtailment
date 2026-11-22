@@ -23,6 +23,7 @@ ACTIVE_DOCS = ("README.md", "docs/00_start_here.md", "docs/01_objective.md", "do
                "docs/05_exp2_bias_robustness_validation.md", "docs/06_exp3_german_application.md",
                "docs/06b_policy_use_and_data_requirement.md", "docs/10_posthoc_breakdown_grid.md",
                "docs/11_redispatch_sensitivity_preregistration.md",
+               "docs/11b_redispatch_sensitivity_results.md",
                "docs/07_limitations_and_future_work.md")
 _GENERATED = re.compile(r"<!-- generated:[a-z0-9_]+ -->.*?<!-- /generated -->", re.S)
 _SKIP = re.compile(r"<!-- numbers-check: skip -->.*?<!-- /numbers-check -->", re.S)

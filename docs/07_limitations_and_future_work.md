@@ -18,6 +18,9 @@
   includes non-wind. Open: 1,322 of 7,067 renewable reduction measures fail the check that mean MW times
   duration equals the stated MWh (more than 2% apart).
 <!-- /generated -->
+<!-- generated:rd_docs07_line -->
+- **Sensitive to redispatch** (`docs/11b_redispatch_sensitivity_results.md`, pre-registered rule): λ₁ (M0, M1), λ₂ (M0, M1), λ₆ (M0, M1). Masking removes 54% to 64% of the negative-price quarter-hours, so this is a sensitivity result and the headline verdicts stand.
+<!-- /generated -->
 - **TenneT is excluded** from every projection aggregate (supervisor minute T-D(vii)); the real
   data cover three of the four control areas.
 - **Synthetic results hold on the tested grid only** (σ and b as listed in experiments 1 and 2).

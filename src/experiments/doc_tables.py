@@ -279,11 +279,20 @@ TABLES = {"available_power_anchors": available_power_anchors,
           "h_grid_note": h_grid_note, "h_scale_line": h_scale_line,
           "h_limitations": h_limitations, "policy_verdict_rule": policy_verdict_rule,
           "redispatch_caveats": redispatch_caveats, "posthoc_06b_line": posthoc_06b_line,
+          "rd_samples": lambda: _rs().table_samples(), "rd_rule": lambda: _rs().table_rule(),
+          "rd_l1_widths": lambda: _rs().table_l1_widths(),
+          "rd_l2_diagnosis": lambda: _rs().table_l2_diagnosis(), "rd_note": lambda: _rs().note(),
+          "rd_docs07_line": lambda: _rs().docs07_line(),
           "posthoc_grid_design": lambda: _ph().design_text(),
           "posthoc_grid_results": lambda: _ph().results_table(),
           "posthoc_l1_edge": lambda: _ph().l1_edge_table(),
           "posthoc_grid_note": lambda: _ph().results_note(),
           "posthoc_docs06_line": lambda: _ph().docs06_line()}
+
+
+def _rs():
+    from src.experiments import exp3_redispatch_sensitivity
+    return exp3_redispatch_sensitivity
 
 
 def _ph():
