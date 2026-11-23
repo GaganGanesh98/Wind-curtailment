@@ -345,7 +345,13 @@ TABLES = {"available_power_anchors": available_power_anchors,
           "hirth_exposure_line": lambda: _ha().exposure_line(),
           "hirth_product": lambda: _ha().product_table(),
           "hirth_product_note": lambda: _ha().product_note(),
-          "hirth_masked_days": lambda: _ha().masked_days_note()}
+          "hirth_masked_days": lambda: _ha().masked_days_note(),
+          "exp4b_design": lambda: _e4b().design_text(),
+          "exp4b_inputs": lambda: _e4b().inputs_text(),
+          "exp4b_redispatch": lambda: _e4bf().redispatch_text(),
+          "exp4b_clean": lambda: _e4bf().clean_text(),
+          "exp4b_fleet": lambda: _e4bf().fleet_text(),
+          "exp4b_dwd": lambda: _e4bf().dwd_text()}
 
 
 def _lp():
@@ -361,6 +367,16 @@ def _rs():
 def _ph():
     from src.experiments import exp3_posthoc_breakdown
     return exp3_posthoc_breakdown
+
+
+def _e4b():
+    from src.method.learned_potential_v2 import config
+    return config
+
+
+def _e4bf():
+    from src.method.learned_potential_v2 import facts
+    return facts
 
 
 def _ha():

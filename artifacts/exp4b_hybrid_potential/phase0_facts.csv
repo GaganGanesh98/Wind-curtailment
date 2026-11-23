@@ -1,0 +1,66 @@
+fact,unit,value
+measures_renewable_reductions,three areas,7328
+measures_solar,three areas,711
+measures_offshore,three areas,1949
+measures_onshore_wind_proxy,three areas,4668
+measures_unit_check_fail,three areas,2250
+measures_first_day,three areas,2024-01-04
+measures_last_day,three areas,2026-10-28
+units_live,50Hertz,11159
+gw_live,50Hertz,23.97
+units_decommissioned_in_period,50Hertz,560
+gw_decommissioned_in_period,50Hertz,0.68
+missing_coordinates_capacity_share,50Hertz,0.0
+missing_hub_height_capacity_share,50Hertz,0.0097
+missing_rotor_diameter_capacity_share,50Hertz,0.0059
+area_proxy_capacity_share,50Hertz,0.0308
+units_live,Amprion,6595
+gw_live,Amprion,15.68
+units_decommissioned_in_period,Amprion,370
+gw_decommissioned_in_period,Amprion,0.43
+missing_coordinates_capacity_share,Amprion,0.0026
+missing_hub_height_capacity_share,Amprion,0.0157
+missing_rotor_diameter_capacity_share,Amprion,0.0087
+area_proxy_capacity_share,Amprion,0.0313
+units_live,TransnetBW,1010
+gw_live,TransnetBW,2.37
+units_decommissioned_in_period,TransnetBW,26
+gw_decommissioned_in_period,TransnetBW,0.03
+missing_coordinates_capacity_share,TransnetBW,0.0002
+missing_hub_height_capacity_share,TransnetBW,0.0111
+missing_rotor_diameter_capacity_share,TransnetBW,0.0084
+area_proxy_capacity_share,TransnetBW,0.0564
+units_live,all,18764
+gw_live,all,42.03
+units_decommissioned_in_period,all,956
+gw_decommissioned_in_period,all,1.13
+missing_coordinates_capacity_share,all,0.001
+missing_hub_height_capacity_share,all,0.012
+missing_rotor_diameter_capacity_share,all,0.0071
+area_proxy_capacity_share,all,0.0324
+dwd_stations_with_data,Germany,296
+dwd_stations_min_coverage,Germany,284
+hours|history,50Hertz,15335
+clean_e4|history,50Hertz,10963
+clean_4b_before_unit_check|history,50Hertz,11220
+clean_4b|history,50Hertz,10978
+hours|history,Amprion,15335
+clean_e4|history,Amprion,13575
+clean_4b_before_unit_check|history,Amprion,13575
+clean_4b|history,Amprion,13575
+hours|history,TransnetBW,15335
+clean_e4|history,TransnetBW,13730
+clean_4b_before_unit_check|history,TransnetBW,13762
+clean_4b|history,TransnetBW,13762
+hours|evaluation window,50Hertz,8760
+clean_e4|evaluation window,50Hertz,6139
+clean_4b_before_unit_check|evaluation window,50Hertz,6230
+clean_4b|evaluation window,50Hertz,6129
+hours|evaluation window,Amprion,8760
+clean_e4|evaluation window,Amprion,7758
+clean_4b_before_unit_check|evaluation window,Amprion,7758
+clean_4b|evaluation window,Amprion,7758
+hours|evaluation window,TransnetBW,8760
+clean_e4|evaluation window,TransnetBW,7556
+clean_4b_before_unit_check|evaluation window,TransnetBW,7556
+clean_4b|evaluation window,TransnetBW,7556
