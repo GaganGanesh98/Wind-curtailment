@@ -191,7 +191,26 @@ def docs06_line() -> str:
             f"{q:.4f}, with almost no margin. The pre-registered 0.01-grid breakdowns stay the result.")
 
 
+def demo_table() -> str:
+    """demo/run_demo.sh step 4: breakdown B per fine-grid reading, read from the cells file,
+    and whether it survives the H anchor's bias. Prints only; writes nothing."""
+    d = summarise().filter(pl.col("lam").is_in(FINE_LAMS))
+    q = list(comparison_values().values())[1]
+    head = f"{'reading':<34}{'breakdown B':>12}   survives |{q:.4f}| (at B = {{need}})"
+    out = [f"post-hoc finer grid (docs/10, {STEP:.4f} steps)"]
+    for r in d.iter_rows(named=True):
+        if len(out) == 1:
+            out.append(head.format(need=f"{r['compare_1_needs_B']:.4f}"))
+        out.append(f"{TESTED[r['lam']]:<34}{r['breakdown_B']:>12}   "
+                   f"{'yes' if r['compare_1_survives'] else 'no'}")
+    return "\n".join(out)
+
+
 def main() -> None:
+    import sys
+    if "--demo-table" in sys.argv[1:]:
+        print(demo_table())
+        return
     d = summarise()
     d.write_csv(SUMMARY)
     print(d)

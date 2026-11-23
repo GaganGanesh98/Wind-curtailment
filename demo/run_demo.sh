@@ -42,11 +42,16 @@ step3() {
   header 3 "experiment 2: one cell whose potential is biased by -0.047 (the operational series' bias; quality-assured: sigma 0.0610, bias -0.0326) -- plain set vs bias-robust set (B = 0.05)"
   have_panel || return 0
   $PY -m src.method.bias_robust --part demo
+  echo
+  echo "extra: at the quality-assured measured bias b = -0.0326 (not pre-registered, illustration only)"
+  $PY -m src.method.bias_robust --part demo-measured
 }
 
 step4() {
   header 4 "experiment 3: the German results table, rebuilt from the artifacts"
   $PY -m src.experiments.doc_tables --table exp3_results
+  echo
+  $PY -m src.experiments.exp3_posthoc_breakdown --demo-table
 }
 
 step5() {

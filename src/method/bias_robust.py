@@ -172,23 +172,24 @@ def run_v2(step: float = STEP, bmax: float = V2_BMAX, out: Path | None = None,
     return out
 
 
-def demo(out: Path, b_true: float = -0.047, budget: float = 0.05) -> Path:
+def demo(out: Path, b_true: float = -0.047, budget: float = 0.05, digits: int = 3) -> Path:
     """One synthetic cell with a known bias, end to end, in seconds (demo/run_demo.sh).
 
     The potential carries a constant bias b_true; the plain set (B = 0) and the bias-robust
     hull for `budget` are printed beside the known truth, per functional. b_true = -0.047 is
     the bias dial's grid point, the operational series' value; the quality-assured series gives σ 0.0610 and bias −0.0326 (docs/03).
+    `digits` is how b_true + b is rounded: 3 for the pre-registered cell, 4 for `demo_measured`.
     """
     rate, gamma, shape, seed, hetero = 0.10, 0.0, "step", SEED_GEN, "homogeneous"
     prep = prepare_cell(rate, gamma, shape, seed, hetero)
     rows = {}
     for b in grid(budget):
-        for r in score_under_potential(prep, 0.0, round(b_true + b, 3), "iid", 0.0, "demo"):
+        for r in score_under_potential(prep, 0.0, round(b_true + b, digits), "iid", 0.0, "demo"):
             if r.get("defined") and r.get("feasible"):
                 rows.setdefault(r["lam"], []).append((b, r["lo"], r["hi"], r["truth"]))
     out.parent.mkdir(parents=True, exist_ok=True)
     lines = [f"cell: {hetero}, rate {rate}, gamma {gamma}, {shape}, seed {seed}; "
-             f"true bias {b_true:+.3f}, budget B = {budget}"]
+             f"true bias {b_true:+.{digits}f}, budget B = {budget}"]
     lines.append(f"{'functional':<11}{'truth':>9}   {'plain set (B = 0)':<22}{'covered':>8}   "
                  f"{'bias-robust set':<22}{'covered':>8}")
     for lam in ("L1", "L2", "L3", "L4", "L6", "L7"):           # lambda-5 left out, as in V0
@@ -205,9 +206,16 @@ def demo(out: Path, b_true: float = -0.047, budget: float = 0.05) -> Path:
     return out
 
 
+def demo_measured(out: Path, budget: float = 0.05) -> Path:
+    """Not pre-registered, illustration only: the demo cell at the quality-assured measured
+    bias of H (the Experiment 3 H anchor, read from its artifact), rounded to 4 places."""
+    from src.experiments.available_power_anchors import primary_h
+    return demo(out, b_true=round(float(primary_h()["bias"]), 4), budget=budget, digits=4)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--part", choices=("v1", "v2", "demo"), required=True)
+    ap.add_argument("--part", choices=("v1", "v2", "demo", "demo-measured"), required=True)
     ap.add_argument("--shard", default="0/1", help="i/n: run cells with index % n == i (V1)")
     ap.add_argument("--step", type=float, default=STEP, help="V2 b-grid step (default 0.01)")
     ap.add_argument("--bmax", type=float, default=V2_BMAX, help="V2 b-grid half-width (0.15)")
@@ -218,6 +226,9 @@ def main() -> None:
     args = ap.parse_args()
     if args.part == "demo":
         demo(REPO_ROOT / "demo" / "output" / "bias_robust_cell.txt")
+        return
+    if args.part == "demo-measured":
+        demo_measured(REPO_ROOT / "demo" / "output" / "bias_robust_cell_measured_bias.txt")
         return
     if args.part == "v1":
         i, n = (int(x) for x in args.shard.split("/"))
