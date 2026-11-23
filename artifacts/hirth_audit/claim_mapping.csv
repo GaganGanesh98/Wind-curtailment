@@ -1,0 +1,26 @@
+claim_id,quantity_type,period,price_band,value,unit,scope_note,comparable,kind,class,band,band_key,reason
+H1a,response_rate,2025,below -50,50.0,% (stated in words as half),"onshore + offshore, all DE",yes,bounded,cross-period,"(−∞, −50]",le_m50,"period overlap partial, October to December 2025 only"
+H1b,curtailment_rate,2025,below -50,50.0,% (stated in words as half),"onshore + offshore, all DE",yes,bounded,cross-period,"(−∞, −50]",le_m50,"period overlap partial, October to December 2025 only"
+H2,exposure_rate,2025,below 0,64.0,%,"onshore + offshore, all DE",yes,plain number,cross-period,"(−∞, 0]",lt_0,"period overlap partial, October to December 2025 only"
+H3,response_rate,2025,below 0,27.0,%,"onshore + offshore, all DE",yes,bounded,cross-period,"(−∞, 0]",lt_0,"period overlap partial, October to December 2025 only"
+H4,curtailment_rate,2025,below 0,17.0,%,"onshore + offshore, all DE",yes,bounded,cross-period,"(−∞, 0]",lt_0,"period overlap partial, October to December 2025 only"
+H5,curtailment_rate,2022 to Oct 2026 pooled,below -100,57.0,%,"onshore + offshore, all DE",yes,bounded,cross-period,"(−∞, −100]",le_m100,"period overlap partial, the whole window lies inside Hirth's period"
+H6,curtailment_rate,2022 to Oct 2026 pooled,-100 to -50,51.0,%,"onshore + offshore, all DE",yes,bounded,cross-period,"(−100, −50]",m100_m50,"period overlap partial, the whole window lies inside Hirth's period"
+H7,curtailment_rate,2022 to Oct 2026 pooled,-50 to -20,35.0,%,"onshore + offshore, all DE",yes,bounded,cross-period,"(−50, −20]",m50_m20,"period overlap partial, the whole window lies inside Hirth's period"
+H8,curtailment_rate,2022 to Oct 2026 pooled,-20 to -10,22.0,%,"onshore + offshore, all DE",yes,bounded,cross-period,"(−20, −10]",m20_m10,"period overlap partial, the whole window lies inside Hirth's period"
+H9,curtailment_rate,2022 to Oct 2026 pooled,-10 to 0,15.0,%,"onshore + offshore, all DE",yes,bounded,cross-period,"(−10, 0]",m10_0,"period overlap partial, the whole window lies inside Hirth's period"
+H10,curtailment_rate,2022 to Oct 2026 pooled,0 to 5 (placebo),5.0,%,"onshore + offshore, all DE",no,,,,,"price ≥ 0, where no cohort is exposed, so the method sets ĉ to 0 by construction and nothing is identified to compare"
+H11,curtailment_rate,2022 to Oct 2026 pooled,above 5 (placebo),-1.0,%,"onshore + offshore, all DE",no,,,,,"price ≥ 0, where no cohort is exposed, so the method sets ĉ to 0 by construction and nothing is identified to compare"
+H12,curtailment_rate,2026 (to Oct),below -100,69.0,%,"onshore + offshore, all DE",yes,bounded,main,"(−∞, −100]",le_m100,"period overlap partial, January to September 2026"
+H13,exposure_rate,2022,below 0,92.0,%,"onshore + offshore, all DE",no,,,,,period does not overlap the Experiment 3 window
+H14,curtailment_rate,2022,below 0,22.0,%,"onshore + offshore, all DE",no,,,,,period does not overlap the Experiment 3 window
+H15,response_rate,2022,below 0,24.0,%,"onshore + offshore, all DE",no,,,,,period does not overlap the Experiment 3 window
+H16,exposure_rate,2023,below 0,56.0,%,"onshore + offshore, all DE",no,,,,,period does not overlap the Experiment 3 window
+H17,curtailment_rate,2023,below 0,18.0,%,"onshore + offshore, all DE",no,,,,,period does not overlap the Experiment 3 window
+H18,response_rate,2023,below 0,32.0,%,"onshore + offshore, all DE",no,,,,,period does not overlap the Experiment 3 window
+H19,exposure_rate,2024,below 0,57.0,%,"onshore + offshore, all DE",no,,,,,period does not overlap the Experiment 3 window
+H20,curtailment_rate,2024,below 0,15.0,%,"onshore + offshore, all DE",no,,,,,period does not overlap the Experiment 3 window
+H21,response_rate,2024,below 0,26.0,%,"onshore + offshore, all DE",no,,,,,period does not overlap the Experiment 3 window
+H22,exposure_rate,2026 (to Oct),below 0,68.0,%,"onshore + offshore, all DE",yes,plain number,main,"(−∞, 0]",lt_0,"period overlap partial, January to September 2026"
+H23,curtailment_rate,2026 (to Oct),below 0,25.0,%,"onshore + offshore, all DE",yes,bounded,main,"(−∞, 0]",lt_0,"period overlap partial, January to September 2026"
+H24,response_rate,2026 (to Oct),below 0,37.0,%,"onshore + offshore, all DE",yes,bounded,main,"(−∞, 0]",lt_0,"period overlap partial, January to September 2026"
