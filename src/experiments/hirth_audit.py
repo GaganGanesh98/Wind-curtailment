@@ -276,3 +276,277 @@ def design_text() -> str:
         f"duration against MWh) fails for {int(unit['count']):,} of {int(unit['of']):,} renewable "
         f"reduction measures (`redispatch_checks.csv`). It is open.",
     ])
+
+
+# ------------------------------------------------------------------ step 2: compute
+VARIANTS = ("headline", "M0", "M1")
+CELLS = OUT_DIR / "claim_cells.csv"
+RANGES = OUT_DIR / "claim_ranges.csv"
+VERDICTS = OUT_DIR / "claim_verdicts.csv"
+MAPPING_CSV = OUT_DIR / "claim_mapping.csv"
+COMMAND = "python -m src.experiments.hirth_audit --run"
+
+
+def v2_grid() -> list[float]:
+    k = int(round(V2_BMAX / V2_STEP))
+    return [round(i * V2_STEP, 2) for i in range(-k, k + 1)]
+
+
+def fine_grid() -> list[float]:
+    k = int(round(FINE_BMAX / FINE_STEP))
+    return [round(i * FINE_STEP, 4) for i in range(-k, k + 1)]
+
+
+def b_union() -> list[float]:
+    return sorted({round(b, 4) for b in v2_grid() + fine_grid()})
+
+
+def functionals_needed() -> list[tuple[str, str, str]]:
+    """(functional key, band key, quantity type) for every compared claim, both weightings."""
+    out = {}
+    for m in amended_mapping():
+        if m["comparable"] != "yes":
+            continue
+        for wt in ("unweighted", "weighted"):
+            out[f"{m['quantity_type']}|{m['band_key']}|{wt}"] = (m["band_key"], m["quantity_type"], wt)
+    return [(k, *v) for k, v in sorted(out.items())]
+
+
+def _band_by_key(key: str) -> Band:
+    return next(b for b in BANDS.values() if b.key == key)
+
+
+def arm_cells(panel: dict, keep, b: float, variant: str, head: str) -> list[dict]:
+    """One (variant, b) refit: run_arm's own design, point fit and ε, then the audit's
+    functionals. Nothing inside the identified set differs from Experiment 3."""
+    import numpy as np
+    from src.method import hirth_functionals as hf
+    from src.method import functionals as fx
+    from src.method.bounds import (build_design, compress_rows, epsilon_from_bootstrap,
+                                   identified_set, point_fit)
+    f = np.asarray(panel["f"], dtype=float) * np.exp(b)
+    price, g, bdate = panel["price"][keep], panel["g"][keep], panel["bdate"][keep]
+    f = f[keep]
+    theta = panel["theta_for"]("main")[:, keep]
+    s = (price[None, :] < theta).astype(float)
+    depth = np.maximum(0.0, theta - price[None, :]) * s
+    runlen = panel["runlen"][:, keep]
+    c_hat_full = 1.0 - g / np.maximum(f, 1e-9)
+    design = build_design(s, depth, panel["shares"], runlen, cohort_ids=panel["ids"])
+    rows = design.rows
+    c_hat = c_hat_full[rows]
+    comp = compress_rows(design.X, c_hat)
+    pf = point_fit(design, c_hat, comp)
+    eps = epsilon_from_bootstrap(design, c_hat, bdate[rows], pf["r"])["eps"]
+    p_rows = price[rows]
+    out = []
+    for fkey, band_key, qt, wt in functionals_needed():
+        band = _band_by_key(band_key)
+        weight = f if wt == "weighted" else None
+        m = (p_rows > band.lo) & (p_rows <= band.hi)
+        base = {"variant": variant, "b": b, "functional": fkey, "band": band_key,
+                "quantity_type": qt, "weighting": wt, "eps": eps,
+                "n_qh": int(m.sum()), "n_event_days": int(np.unique(bdate[rows][m]).size),
+                "git_head": head}
+        if qt == "exposure_rate":
+            e = hf.exposure(design, price, band.lo, band.hi, weight)
+            out.append({**base, "lo": e["value"], "hi": e["value"], "feasible": True,
+                        "defined": e["defined"]})
+            continue
+        spec = (hf.curtailment if qt == "curtailment_rate" else hf.response)(
+            design, price, band.lo, band.hi, weight)
+        if not spec["defined"]:
+            out.append({**base, "lo": float("nan"), "hi": float("nan"), "feasible": False,
+                        "defined": False})
+            continue
+        iv = identified_set(design, c_hat, spec["lam"], eps, comp)
+        out.append({**base, "lo": iv["lo"], "hi": iv["hi"], "feasible": iv["feasible"],
+                    "defined": True})
+    return out
+
+
+def run(variants=VARIANTS, bs: list[float] | None = None, out: Path = CELLS) -> Path:
+    """Every (variant, b) refit, one raw row per functional. Long: see COMMAND."""
+    import time
+    from src.method.bias_robust import redispatch_keep
+    from src.method.potential_error import git_head
+    from src.method.real_panel import THREE_AREA, load_panel
+    bs = b_union() if bs is None else bs
+    panel = load_panel(THREE_AREA, "H")
+    head = git_head()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fh = writer = None
+    try:
+        for v in variants:
+            keep = panel["keep"] if v == "headline" else panel["keep"] & redispatch_keep(panel, v)
+            for b in bs:
+                t0 = time.perf_counter()
+                rows = arm_cells(panel, keep, b, v, head)
+                if writer is None:
+                    fh = open(out, "w", newline="", encoding="utf-8")
+                    writer = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
+                    writer.writeheader()
+                writer.writerows(rows)
+                fh.flush()
+                print(f"{v:<8} b {b:+.4f}  {time.perf_counter() - t0:5.1f}s", flush=True)
+    finally:
+        if fh is not None:
+            fh.close()
+    return out
+
+
+ARM_MIN_EVENT_DAYS = 20               # docs/11's arm rule for masked variants
+
+
+def verdict_at(lo: float, hi: float, v: float, cls: str) -> str:
+    """Amendment 1 order: not decidable, then supported (consistent), then outside."""
+    if not (hi - lo < INFORMATIVE_WIDTH):
+        return "not decidable"
+    if lo <= v <= hi:
+        return "consistent" if cls == "cross-period" else "supported"
+    return "outside"
+
+
+def _hull(cells: list[dict], B: float) -> tuple[float, float] | None:
+    q = [c for c in cells if abs(c["b"]) <= B + 1e-9 and c["feasible"]]
+    if not q:
+        return None
+    return min(c["lo"] for c in q), max(c["hi"] for c in q)
+
+
+def _load_cells(path: Path = CELLS) -> list[dict]:
+    with path.open(newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    for r in rows:
+        r["b"] = round(float(r["b"]), 4)
+        r["lo"], r["hi"] = float(r["lo"]), float(r["hi"])
+        r["feasible"] = r["feasible"] == "True" and r["defined"] == "True"
+        r["n_qh"], r["n_event_days"] = int(r["n_qh"]), int(r["n_event_days"])
+    return rows
+
+
+def _write(path: Path, rows: list[dict]) -> None:
+    with path.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0]), lineterminator="\n")
+        w.writeheader()
+        w.writerows(rows)
+
+
+def summarise(cells_path: Path = CELLS) -> None:
+    """claim_mapping.csv, claim_ranges.csv and claim_verdicts.csv from the raw cells."""
+    cells = _load_cells(cells_path)
+    am = amended_mapping()
+    _write(MAPPING_CSV, [{k: m.get(k, "") for k in
+                          ("claim_id", "quantity_type", "period", "price_band", "value", "unit",
+                           "scope_note", "comparable", "kind", "class", "band", "band_key",
+                           "reason")} for m in am])
+    grids = {"V2 0.01": [round(i * V2_STEP, 2) for i in range(int(round(V2_BMAX / V2_STEP)) + 1)],
+             "fine 0.0025": [round(i * FINE_STEP, 4) for i in range(int(round(FINE_BMAX / FINE_STEP)) + 1)]}
+    on_grid = {"V2 0.01": set(v2_grid()), "fine 0.0025": set(fine_grid())}
+    comp_B = first_fine_at_or_above(abs(float(__import__(
+        "src.experiments.available_power_anchors", fromlist=["primary_h"]).primary_h()["bias"])))
+    present = [v for v in VARIANTS if any(c["variant"] == v for c in cells)]
+    arm_days = {v: max((c["n_event_days"] for c in cells if c["variant"] == v
+                        and c["band"] == "lt_0" and c["b"] == 0.0), default=0)
+                for v in present}
+    ranges, verdicts = [], []
+    for m in am:
+        if m["comparable"] != "yes":
+            verdicts.append({"claim_id": m["claim_id"], "class": "", "variant": "",
+                             "weighting": "", "hirth_value": m["value"], "hirth_unit": m["unit"],
+                             "verdict_B0": "not comparable", "verdict_at_comparison_bias": "",
+                             "reason": m["reason"]})
+            continue
+        v = claim_share(m)
+        for var in present:
+            for wt in ("unweighted", "weighted"):
+                fkey = f"{m['quantity_type']}|{m['band_key']}|{wt}"
+                cc = [c for c in cells if c["variant"] == var and c["functional"] == fkey]
+                if not cc:
+                    raise ValueError(f"no cells for {fkey} {var}; run step 2 first")
+                c0 = next(c for c in cc if c["b"] == 0.0)
+                row = {"claim_id": m["claim_id"], "class": m["class"], "variant": var,
+                       "weighting": wt, "hirth_value": m["value"], "hirth_unit": m["unit"],
+                       "n_qh": c0["n_qh"], "n_event_days": c0["n_event_days"],
+                       "arm_event_days": arm_days[var]}
+                if m["kind"] == "plain number":
+                    verdicts.append({**row, "method_value": c0["lo"],
+                                     "difference": c0["lo"] - v, "verdict_B0": "plain number",
+                                     "verdict_at_comparison_bias": "plain number"})
+                    continue
+                seqs = {}
+                for gname, budgets in grids.items():
+                    gc = [c for c in cc if c["b"] in on_grid[gname]]
+                    seq = []
+                    for B in budgets:
+                        h = _hull(gc, B)
+                        if h is None:
+                            continue
+                        lo, hi = h
+                        vd = verdict_at(lo, hi, v, m["class"])
+                        seq.append((B, lo, hi, vd))
+                        ranges.append({"claim_id": m["claim_id"], "class": m["class"],
+                                       "variant": var, "weighting": wt, "grid": gname, "B": B,
+                                       "lower": lo, "upper": hi,
+                                       "informative": hi - lo < INFORMATIVE_WIDTH,
+                                       "n_qh": c0["n_qh"], "n_event_days": c0["n_event_days"],
+                                       "verdict": vd})
+                    seqs[gname] = seq
+                v2s, fs = seqs["V2 0.01"], seqs["fine 0.0025"]
+                b0 = v2s[0]
+                at_c = next(x for x in fs if abs(x[0] - comp_B) < 1e-9)
+                def holds_to(seq):
+                    last = seq[0][0]
+                    for B, _, _, vd in seq:
+                        if vd != seq[0][3]:
+                            return f"{last:g}"
+                        last = B
+                    return f"> {last:g}"
+                outside_top = v2s[-1][3] == "outside"
+                label = ("counts only" if var != "headline" and arm_days[var] < ARM_MIN_EVENT_DAYS
+                         else None)
+                verdicts.append({**row, "lower_B0": b0[1], "upper_B0": b0[2],
+                                 "lower_at_comparison_bias": at_c[1],
+                                 "upper_at_comparison_bias": at_c[2],
+                                 "comparison_B": comp_B,
+                                 "verdict_B0": label or b0[3],
+                                 "verdict_at_comparison_bias": label or at_c[3],
+                                 "B0_verdict_holds_to_V2": holds_to(v2s),
+                                 "B0_verdict_holds_to_fine": holds_to(fs),
+                                 "outside_at_largest_B": outside_top,
+                                 "claim_level": ("inconsistent" if m["class"] == "cross-period"
+                                                 else "contradicted") if outside_top else ""})
+    # depends on weighting: unweighted and weighted verdicts differ at B = 0 or at the comparison B
+    key = lambda r: (r["claim_id"], r["variant"])
+    by = {}
+    for r in verdicts:
+        if r.get("weighting"):
+            by.setdefault(key(r), {})[r["weighting"]] = r
+    for r in verdicts:
+        pair = by.get(key(r)) if r.get("weighting") else None
+        if pair and len(pair) == 2 and r["verdict_B0"] not in ("plain number",):
+            u, w = pair["unweighted"], pair["weighted"]
+            r["depends_on_weighting"] = (u["verdict_B0"] != w["verdict_B0"]
+                                         or u["verdict_at_comparison_bias"] != w["verdict_at_comparison_bias"])
+        else:
+            r["depends_on_weighting"] = ""
+    cols = ["claim_id", "class", "variant", "weighting", "hirth_value", "hirth_unit", "n_qh",
+            "n_event_days", "arm_event_days", "lower_B0", "upper_B0", "comparison_B",
+            "lower_at_comparison_bias", "upper_at_comparison_bias", "verdict_B0",
+            "verdict_at_comparison_bias", "B0_verdict_holds_to_V2", "B0_verdict_holds_to_fine",
+            "outside_at_largest_B", "claim_level", "method_value", "difference",
+            "depends_on_weighting", "reason"]
+    _write(RANGES, ranges)
+    _write(VERDICTS, [{k: r.get(k, "") for k in cols} for r in verdicts])
+
+
+if __name__ == "__main__":
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--run", action="store_true", help="every variant and b (long)")
+    ap.add_argument("--summarise", action="store_true")
+    a = ap.parse_args()
+    if a.run:
+        run()
+    if a.summarise:
+        summarise()
