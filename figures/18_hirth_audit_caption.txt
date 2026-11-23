@@ -1,0 +1,5 @@
+18_hirth_audit
+
+Post-hoc audit of Hirth (2026), headline ĉ = 1 − G/H, unweighted. For each claim compared with an identified set: the range at B = 0 (thick bar) and at the comparison bias B = 0.035 (thin bar), and Hirth's published value (diamond). In brackets: event days in the claim's price band. Top: main class (Hirth's 2026). Bottom: cross-period class (Hirth's 2025 and pooled rows), shown as ranges and not counted. Grey bars are not decidable (width of 0.25 or more). Verdicts and the masked variants are in docs/23.
+
+Source: artifacts/hirth_audit/claim_verdicts.csv (variant headline, weighting unweighted; columns claim_id, class, hirth_value, lower_B0, upper_B0, comparison_B, lower_at_comparison_bias, upper_at_comparison_bias, verdict_B0, verdict_at_comparison_bias, n_event_days).

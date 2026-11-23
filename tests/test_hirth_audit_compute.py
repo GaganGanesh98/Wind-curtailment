@@ -134,3 +134,21 @@ def test_cross_period_never_supported_or_contradicted():
             if r["class"] == "cross-period":
                 assert "supported" not in (r["verdict_B0"], r["verdict_at_comparison_bias"])
                 assert r["claim_level"] != "contradicted"
+
+
+def test_exposed_share_is_one_below_minus_50():
+    """docs/23: H1a and H1b share a range because e = 1 wherever price <= -50."""
+    import csv
+    p = ha.EXPOSURE
+    if not p.exists():
+        pytest.skip("exposure_check.csv not written")
+    rows = [r for r in csv.DictReader(p.open()) if r["band"] == "le_m50"]
+    assert {r["variant"] for r in rows} == set(ha.VARIANTS)
+    for r in rows:
+        assert float(r["min_e"]) == 1.0 and int(r["n_qh_e_below_1"]) == 0
+    v = {(r["claim_id"], r["variant"], r["weighting"]): r
+         for r in csv.DictReader(ha.VERDICTS.open())}
+    for var in ha.VARIANTS:
+        for wt in ("unweighted", "weighted"):
+            a, b = v[("H1a", var, wt)], v[("H1b", var, wt)]
+            assert a["lower_B0"] == b["lower_B0"] and a["upper_B0"] == b["upper_B0"]

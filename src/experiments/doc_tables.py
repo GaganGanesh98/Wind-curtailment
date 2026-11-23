@@ -337,7 +337,15 @@ TABLES = {"available_power_anchors": available_power_anchors,
           "hirth_mapping_counts": lambda: _ha().mapping_counts(),
           "hirth_design": lambda: _ha().design_text(),
           "hirth_amend_shares": lambda: _ha().amendment_shares_table(),
-          "hirth_amend_classes": lambda: _ha().amendment_class_lines()}
+          "hirth_amend_classes": lambda: _ha().amendment_class_lines(),
+          "hirth_counts": lambda: _ha().results_counts(),
+          "hirth_results_main": lambda: _ha().results_main(),
+          "hirth_results_plain": lambda: _ha().results_plain(),
+          "hirth_results_cross": lambda: _ha().results_cross(),
+          "hirth_exposure_line": lambda: _ha().exposure_line(),
+          "hirth_product": lambda: _ha().product_table(),
+          "hirth_product_note": lambda: _ha().product_note(),
+          "hirth_masked_days": lambda: _ha().masked_days_note()}
 
 
 def _lp():

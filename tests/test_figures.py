@@ -147,3 +147,13 @@ def test_exp3_breakdown_is_the_full_window_hulls():
     assert d.filter(pl.col("lam") == "L1")["breakdown_B"][0] == "0.04"
     _same(d.with_columns(pl.lit(abs(mf.h_bias_primary())).alias("abs_bias_h_positive_prices")),
           _committed("09_exp3_bias_breakdown"))
+
+
+@pytest.mark.skipif(not (mf.HIRTH / "claim_verdicts.csv").exists(), reason="Hirth audit not run")
+def test_fig18_hirth_audit_matches_verdicts():
+    d = mf.hirth_audit_data()
+    assert d.height == 12
+    assert set(d["class"].to_list()) == {"main", "cross-period"}
+    assert (d["lower_at_comparison_bias"] <= d["lower_B0"]).all()
+    assert (d["upper_at_comparison_bias"] >= d["upper_B0"]).all()
+    _same(d, _committed("18_hirth_audit"))

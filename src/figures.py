@@ -1,4 +1,4 @@
-"""The figures, 01-09 and 13-17, in reading order (docs/00_start_here.md).
+"""The figures, 01-09 and 13-18, in reading order (docs/00_start_here.md).
 
     python -m src.figures                  # writes figures/
     python -m src.figures --out demo/output/figures
@@ -278,6 +278,26 @@ def exp4_overlap_data() -> pl.DataFrame:
     return pl.DataFrame(rows)
 
 
+HIRTH = ART / "hirth_audit"
+
+
+def hirth_audit_data() -> pl.DataFrame:
+    """Figure 18: headline, unweighted ranges of every bounded Hirth claim at B = 0 and at the
+    comparison bias, with Hirth's value (claim_verdicts.csv; post-hoc, docs/23)."""
+    order = ["H12", "H23", "H24", "H1a", "H1b", "H3", "H4", "H5", "H6", "H7", "H8", "H9"]
+    d = pl.read_csv(HIRTH / "claim_verdicts.csv", infer_schema_length=None).filter(
+        (pl.col("variant") == "headline") & (pl.col("weighting") == "unweighted")
+        & pl.col("claim_id").is_in(order))
+    d = d.select(["claim_id", "class", pl.col("hirth_value").cast(pl.Float64).truediv(100).alias("hirth"),
+                  pl.col("lower_B0").cast(pl.Float64), pl.col("upper_B0").cast(pl.Float64),
+                  pl.col("comparison_B").cast(pl.Float64),
+                  pl.col("lower_at_comparison_bias").cast(pl.Float64),
+                  pl.col("upper_at_comparison_bias").cast(pl.Float64),
+                  "verdict_B0", "verdict_at_comparison_bias", pl.col("n_event_days").cast(pl.Int64)])
+    return d.with_columns(pl.col("claim_id").replace_strict({c: i for i, c in enumerate(order)})
+                          .alias("_o")).sort("_o").drop("_o")
+
+
 CAPTIONS = {
     "01_motivation_event_day": (
         "Motivation. {day} (Easter Sunday) is the largest-error negative-price event-day of the "
@@ -419,6 +439,17 @@ CAPTIONS = {
         "beyond it have no clean look-alike. 50Hertz has the largest mass there.",
         "artifacts/exp4_learned_potential/domain_scores.parquet (columns area, berlin_date, clean, "
         "target, p)."),
+    "18_hirth_audit": (
+        "Post-hoc audit of Hirth (2026), headline ĉ = 1 − G/H, unweighted. For each claim compared "
+        "with an identified set: the range at B = 0 (thick bar) and at the comparison bias B = {cb} "
+        "(thin bar), and Hirth's published value (diamond). In brackets: event days in the "
+        "claim's price band. Top: main class (Hirth's 2026). Bottom: "
+        "cross-period class (Hirth's 2025 and pooled rows), shown as ranges and not counted. Grey "
+        "bars are not decidable (width of 0.25 or more). Verdicts and the masked variants are in "
+        "docs/23.",
+        "artifacts/hirth_audit/claim_verdicts.csv (variant headline, weighting unweighted; columns "
+        "claim_id, class, hirth_value, lower_B0, upper_B0, comparison_B, lower_at_comparison_bias, "
+        "upper_at_comparison_bias, verdict_B0, verdict_at_comparison_bias, n_event_days)."),
 }
 
 
@@ -809,6 +840,37 @@ def make_all(out: Path) -> list[Path]:
         axes[0].set_ylabel("share of the set")
         axes[0].legend(frameon=False)
         save(fig, "17_exp4_overlap", d, thr=0.99)
+
+    if (HIRTH / "claim_verdicts.csv").exists():
+        d = hirth_audit_data()
+        n = d.height
+        fig, ax = plt.subplots(figsize=(11, 7))
+        for i, r in enumerate(d.iter_rows(named=True)):
+            y = n - 1 - i
+            nd = r["verdict_B0"] == "not decidable"
+            col = GREY if nd else BLUE
+            ax.plot([r["lower_at_comparison_bias"], r["upper_at_comparison_bias"]], [y, y],
+                    color=col, lw=2, solid_capstyle="butt")
+            ax.plot([r["lower_B0"], r["upper_B0"]], [y, y], color=col, lw=8, solid_capstyle="butt",
+                    alpha=0.85)
+            ax.plot(r["hirth"], y, marker="D", ms=9, color=VERMILION, mec="black", ls="none",
+                    label="Hirth's value" if i == 0 else None)
+        n_main = d.filter(pl.col("class") == "main").height
+        ax.axhline(n - n_main - 0.5, color="black", lw=0.8, ls=":")
+        ax.set_yticks(range(n), [f"{c} ({k} d)" for c, k in
+                                 zip(d["claim_id"].to_list()[::-1], d["n_event_days"].to_list()[::-1])])
+        ax.set_xlim(0, 1)
+        ax.set_xlabel("share (curtailment or response rate)")
+        ax.text(0.01, n - 0.7, "main class", ha="left", va="center", style="italic")
+        ax.text(0.01, n - n_main - 0.75, "cross-period class", ha="left", va="center", style="italic")
+        ax.plot([], [], color=BLUE, lw=8, label="range at B = 0")
+        ax.plot([], [], color=BLUE, lw=2, label="range at the comparison bias")
+        ax.plot([], [], color=GREY, lw=8, label="not decidable")
+        ax.legend(frameon=False, loc="lower right", fontsize=11)
+        ax.set_title("Hirth (2026) claims against the identified ranges (post-hoc)")
+        cb = d["comparison_B"].unique().to_list()
+        assert len(cb) == 1
+        save(fig, "18_hirth_audit", d, cb=f"{cb[0]:g}")
     return written
 
 

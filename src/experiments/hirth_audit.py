@@ -540,13 +540,198 @@ def summarise(cells_path: Path = CELLS) -> None:
     _write(VERDICTS, [{k: r.get(k, "") for k in cols} for r in verdicts])
 
 
+# ------------------------------------------------------------------ step 3: report (docs/23)
+EXPOSURE = OUT_DIR / "exposure_check.csv"
+EXPOSURE_BANDS = ("le_m50", "lt_0")
+
+
+def exposure_check(out: Path = EXPOSURE) -> Path:
+    """Band mean, minimum and maximum of e on the design rows at b = 0, per variant.
+
+    Written for docs/23 to explain why H1a (response) and H1b (curtailment) share a range:
+    the response functional divides the curtailment functional by the band mean of e, so the
+    two coincide when that mean is 1. e does not depend on b; the weighted mean uses H."""
+    import numpy as np
+    from src.method import hirth_functionals as hf
+    from src.method.bias_robust import redispatch_keep
+    from src.method.bounds import build_design
+    from src.method.real_panel import THREE_AREA, load_panel
+    panel = load_panel(THREE_AREA, "H")
+    rows = []
+    for v in VARIANTS:
+        keep = panel["keep"] if v == "headline" else panel["keep"] & redispatch_keep(panel, v)
+        price, f = panel["price"][keep], np.asarray(panel["f"], dtype=float)[keep]
+        theta = panel["theta_for"]("main")[:, keep]
+        s = (price[None, :] < theta).astype(float)
+        depth = np.maximum(0.0, theta - price[None, :]) * s
+        design = build_design(s, depth, panel["shares"], panel["runlen"][:, keep],
+                              cohort_ids=panel["ids"])
+        e = hf.exposed_share(design)
+        p_rows = price[design.rows]
+        for key in EXPOSURE_BANDS:
+            band = _band_by_key(key)
+            m = (p_rows > band.lo) & (p_rows <= band.hi)
+            w = f[design.rows][m]
+            rows.append({"variant": v, "band": key, "n_qh": int(m.sum()),
+                         "mean_e": float(e[m].mean()),
+                         "mean_e_weighted": float((w * e[m]).sum() / w.sum()),
+                         "min_e": float(e[m].min()), "max_e": float(e[m].max()),
+                         "n_qh_e_below_1": int((e[m] < 1.0 - 1e-12).sum())})
+    _write(out, rows)
+    return out
+
+
+def _verdicts() -> list[dict]:
+    with VERDICTS.open(newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
+def _exposures() -> list[dict]:
+    with EXPOSURE.open(newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
+def _f(x: str, d: int = 3) -> str:
+    return f"{float(x):.{d}f}"
+
+
+def _bounded_rows(cls: str) -> list[list[str]]:
+    rows = []
+    for r in _verdicts():
+        if r["class"] != cls or r["verdict_B0"] in ("plain number", "not comparable"):
+            continue
+        rows.append([r["claim_id"], r["variant"], r["weighting"], f"{r['hirth_value']} %",
+                     f"{r['n_qh']} / {r['n_event_days']}",
+                     f"[{_f(r['lower_B0'])}, {_f(r['upper_B0'])}]", r["verdict_B0"],
+                     f"[{_f(r['lower_at_comparison_bias'])}, {_f(r['upper_at_comparison_bias'])}]",
+                     r["verdict_at_comparison_bias"], r["B0_verdict_holds_to_V2"],
+                     r["B0_verdict_holds_to_fine"],
+                     "yes" if r["depends_on_weighting"] == "True" else "no"])
+    return rows
+
+
+_RESULT_HEADER = ["claim", "variant", "weighting", "Hirth", "band quarter-hours / event days",
+                  "range at B = 0", "verdict at B = 0", "range at the comparison B",
+                  "verdict at the comparison B", "B = 0 verdict holds to (V2)",
+                  "holds to (fine)", "depends on weighting"]
+
+
+def results_main() -> str:
+    return _md(_RESULT_HEADER, _bounded_rows("main"))
+
+
+def results_cross() -> str:
+    return _md(_RESULT_HEADER, _bounded_rows("cross-period"))
+
+
+def results_plain() -> str:
+    rows = [[r["claim_id"], r["class"], r["variant"], r["weighting"], f"{r['hirth_value']} %",
+             _f(r["method_value"]), f"{float(r['difference']):+.3f}", r["n_event_days"]]
+            for r in _verdicts() if r["verdict_B0"] == "plain number"]
+    return _md(["claim", "class", "variant", "weighting", "Hirth", "method's band mean of e",
+                "method − Hirth", "event days"], rows)
+
+
+def results_counts() -> str:
+    am = amended_mapping()
+    head = {r["claim_id"]: r for r in _verdicts()
+            if r["variant"] == "headline" and r["weighting"] == "unweighted"}
+    main = [m["claim_id"] for m in am if m["class"] == "main" and m["kind"] == "bounded"]
+    def ids(word, at):
+        return ", ".join(c for c in main if head[c][at] == word) or "none"
+    lines = []
+    for at, name in (("verdict_B0", "B = 0"), ("verdict_at_comparison_bias", "the comparison B")):
+        lines.append(f"- Main class, headline, unweighted, at {name}: supported {ids('supported', at)}; "
+                     f"outside {ids('outside', at)}; not decidable {ids('not decidable', at)}.")
+    contra = [r["claim_id"] for r in _verdicts() if r.get("claim_level")]
+    lines.append(f"- Contradicted or inconsistent (outside at B = {V2_BMAX:.2f}): "
+                 f"{', '.join(sorted(set(contra))) or 'none'}.")
+    dw = sorted({r["claim_id"] for r in _verdicts() if r["depends_on_weighting"] == "True"})
+    lines.append(f"- Depends on weighting: {', '.join(dw) or 'none'}.")
+    lines.append("- Cross-period claims are left out of these counts (Amendment 1).")
+    return "\n".join(lines)
+
+
+def exposure_line() -> str:
+    ex = [r for r in _exposures() if r["band"] == "le_m50"]
+    parts = [f"{r['variant']} {float(r['mean_e']):.4f} (weighted {float(r['mean_e_weighted']):.4f}, "
+             f"minimum {float(r['min_e']):.4f}, {r['n_qh']} quarter-hours)" for r in ex]
+    all_one = all(int(r["n_qh_e_below_1"]) == 0 for r in ex)
+    tail = ("e is 1 in every such quarter-hour, so the response functional equals the "
+            "curtailment functional and H1a and H1b share their ranges by construction."
+            if all_one else
+            "e is below 1 in some such quarter-hours, so the two functionals differ; the equal "
+            "ranges are not explained by e alone.")
+    return (f"- **Why H1a and H1b share a range.** Mean exposed share e for price ≤ −50, at b = 0: "
+            + "; ".join(parts) + f" (`exposure_check.csv`). " + tail)
+
+
+def product_table() -> str:
+    """Post-hoc, factual: the method's e (H22 row) × Hirth's response (H24), against H23's range."""
+    v = {(r["claim_id"], r["variant"], r["weighting"]): r for r in _verdicts()}
+    h24 = claim_share(next(m for m in mapping() if m["claim_id"] == "H24"))
+    rows = []
+    for var in VARIANTS:
+        for wt in ("unweighted", "weighted"):
+            e = float(v[("H22", var, wt)]["method_value"])
+            h23 = v[("H23", var, wt)]
+            prod = e * h24
+            def where(lo, hi):
+                lo, hi = float(lo), float(hi)
+                return "inside" if lo <= prod <= hi else ("below" if prod < lo else "above")
+            rows.append([var, wt, f"{e:.3f}", f"{prod:.3f}",
+                         f"[{_f(h23['lower_B0'])}, {_f(h23['upper_B0'])}]",
+                         where(h23["lower_B0"], h23["upper_B0"]),
+                         f"[{_f(h23['lower_at_comparison_bias'])}, {_f(h23['upper_at_comparison_bias'])}]",
+                         where(h23["lower_at_comparison_bias"], h23["upper_at_comparison_bias"])])
+    return _md(["variant", "weighting", "method's e (H22 row)", "e × Hirth's response 0.37",
+                "H23 range at B = 0", "product vs range", "H23 range at the comparison B",
+                "product vs range"], rows)
+
+
+def masked_days_note() -> str:
+    vs = [r for r in _verdicts() if r["variant"] in ("M0", "M1") and r.get("n_event_days")
+          and r["verdict_B0"] != "plain number"]
+    arm = {r["variant"]: r["arm_event_days"] for r in vs}
+    days: dict[str, list[int]] = {}
+    for r in vs:
+        if int(r["n_event_days"]) < ARM_MIN_EVENT_DAYS:
+            days.setdefault(r["claim_id"], []).append(int(r["n_event_days"]))
+    order = sorted(days, key=lambda c: (min(days[c]), int(c[1:].rstrip("ab")), c))
+    def span(c):
+        a, b = min(days[c]), max(days[c])
+        return f"{c} {a}" if a == b else f"{c} {a} to {b}"
+    few = [span(c) for c in order if max(days[c]) <= 6]
+    more = [span(c) for c in order if max(days[c]) > 6]
+    lo = min(min(d) for d in days.values())
+    hi = max(max(d) for d in days.values())
+    return (f"- **Event days under the masks.** The counts-only rule (fewer than "
+            f"{ARM_MIN_EVENT_DAYS} event days) was applied at arm level, as pre-registered in "
+            f"docs/11: M0 keeps {arm['M0']} event days and M1 {arm['M1']}, so neither arm is "
+            f"counts only and every masked range above is reported as a range. Band by band, "
+            f"several masked ranges rest on fewer than {ARM_MIN_EVENT_DAYS} event days "
+            f"({lo} to {hi}, M0 and M1 together): {', '.join(few)}; and {', '.join(more)}. "
+            f"The per-band counts are in the tables above. No verdict or rule is changed.")
+
+
+def product_note() -> str:
+    m = {x["claim_id"]: x for x in mapping()}
+    h22, h24, h23 = (claim_share(m[c]) for c in ("H22", "H24", "H23"))
+    return (f"- For reference, Hirth's own exposure rate times his response rate for 2026, "
+            f"{h22:.2f} × {h24:.2f} = {h22 * h24:.3f}, against his curtailment rate "
+            f"{h23:.2f} (H22, H24, H23; his Table 4 identity).")
+
+
 if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", action="store_true", help="every variant and b (long)")
     ap.add_argument("--summarise", action="store_true")
+    ap.add_argument("--exposure-check", action="store_true")
     a = ap.parse_args()
     if a.run:
         run()
     if a.summarise:
         summarise()
+    if a.exposure_check:
+        exposure_check()
