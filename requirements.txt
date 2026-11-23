@@ -28,3 +28,8 @@ clarabel==0.11.1    # interior-point conic solver (fallback)
 osqp==1.1.3         # ADMM QP solver -- cvxpy's DEFAULT, so this is the primary
 scs==3.3.1          # pulled in by cvxpy
 highspy==1.15.1     # pulled in by cvxpy
+
+# Experiment 4b — ERA5 reanalysis reader (NetCDF-4 / HDF5)
+xarray==2026.9.0
+h5netcdf==1.8.3
+h5py==3.16.0
