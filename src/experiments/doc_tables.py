@@ -335,7 +335,9 @@ TABLES = {"available_power_anchors": available_power_anchors,
           "posthoc_docs06_line": lambda: _ph().docs06_line(),
           "hirth_mapping": lambda: _ha().mapping_table(),
           "hirth_mapping_counts": lambda: _ha().mapping_counts(),
-          "hirth_design": lambda: _ha().design_text()}
+          "hirth_design": lambda: _ha().design_text(),
+          "hirth_amend_shares": lambda: _ha().amendment_shares_table(),
+          "hirth_amend_classes": lambda: _ha().amendment_class_lines()}
 
 
 def _lp():

@@ -156,6 +156,102 @@ def mapping_counts() -> str:
             f"number: {p}. Not comparable: {n - b - p}.")
 
 
+# ------------------------------------------------------------------ Amendment 1 (23 Nov 2026)
+# Written before any audit range was computed. The step 1 blocks above stay as committed.
+INFORMATIVE_WIDTH = 0.25               # the pre-registered rule; replaces NOT_DECIDABLE_WIDTH
+CROSS_PERIOD_ALWAYS = ("2025",)        # Hirth's 2025: the window's 2025 negative QHs are October only
+CROSS_PERIOD_IF_MOSTLY_BEFORE = ("2022 to Oct 2026 pooled",)
+PERIOD_SHARES = OUT_DIR / "period_shares.csv"
+WINDOW_END = "2026-09-30"
+
+
+def _hirth_hours(row: dict) -> float:
+    import re
+    m = re.search(r"([\d,]+) hours", row["quote_or_paraphrase"])
+    if m is None:
+        raise ValueError(f"{row['claim_id']}: no hour count in the claim text")
+    return float(m.group(1).replace(",", ""))
+
+
+def write_period_shares() -> Path:
+    """Share of Hirth's band hours that fall before the window, for the pooled rows.
+
+    Hirth's hours per band come from the claim text (Table 3). The hours inside the window, and
+    after it up to the panel's last day, are this sample's negative-price quarter-hours in the
+    band divided by 4. That counts quarter-hour prices, not Hirth's hourly prices, so the share
+    is an approximation; it is a count of inputs, not a result.
+    """
+    import numpy as np
+    from src.method import real_panel as rp
+    p = rp.load_panel(rp.THREE_AREA, "H")
+    price, bdate, keep = p["price"], p["bdate"], p["keep"]
+    after = bdate > WINDOW_END
+    rows = []
+    for r in checked_claims():
+        if r["period"] not in CROSS_PERIOD_IF_MOSTLY_BEFORE or r["price_band"] not in BANDS:
+            continue
+        b = BANDS[r["price_band"]]
+        m = (price > b.lo) & (price <= b.hi) & (price < 0)
+        hh = _hirth_hours(r)
+        win, aft = float((m & keep).sum()) / 4.0, float((m & after).sum()) / 4.0
+        rows.append({"claim_id": r["claim_id"], "price_band": r["price_band"], "hirth_hours": hh,
+                     "window_hours_approx": win, "after_window_hours_approx": aft,
+                     "share_before_window": 1.0 - (win + aft) / hh})
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    with PERIOD_SHARES.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0]), lineterminator="\n")
+        w.writeheader()
+        w.writerows(rows)
+    return PERIOD_SHARES
+
+
+def period_shares() -> dict[str, float]:
+    with PERIOD_SHARES.open(newline="", encoding="utf-8") as f:
+        return {r["claim_id"]: float(r["share_before_window"]) for r in csv.DictReader(f)}
+
+
+def claim_class(m: dict) -> str:
+    """'main', 'cross-period' or '' (not comparable), by Amendment 1."""
+    if m["comparable"] != "yes":
+        return ""
+    if m["period"] in CROSS_PERIOD_ALWAYS:
+        return "cross-period"
+    if m["period"] in CROSS_PERIOD_IF_MOSTLY_BEFORE:
+        return "cross-period" if period_shares()[m["claim_id"]] > 0.5 else "main"
+    return "main"
+
+
+def amended_mapping() -> list[dict]:
+    return [{**m, "class": claim_class(m)} for m in mapping()]
+
+
+def amendment_shares_table() -> str:
+    rows = []
+    with PERIOD_SHARES.open(newline="", encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            s = float(r["share_before_window"])
+            rows.append([r["claim_id"], r["price_band"], f"{float(r['hirth_hours']):,.0f}",
+                         f"{float(r['window_hours_approx']):,.2f}",
+                         f"{float(r['after_window_hours_approx']):,.2f}", f"{s:.3f}",
+                         "cross-period" if s > 0.5 else "main"])
+    return _md(["claim", "Hirth's band", "Hirth's hours", "hours in the window (QH ÷ 4)",
+                "hours after the window (QH ÷ 4)", "share before the window", "class"], rows)
+
+
+def amendment_class_lines() -> str:
+    am = amended_mapping()
+    def ids(cls, kind):
+        return ", ".join(m["claim_id"] for m in am if m["class"] == cls and m["kind"] == kind) or "none"
+    return "\n".join([
+        f"- Main class, bounded: {ids('main', 'bounded')}. Plain number: {ids('main', 'plain number')}.",
+        f"- Cross-period class, bounded: {ids('cross-period', 'bounded')}. Plain number: "
+        f"{ids('cross-period', 'plain number')}.",
+        f"- Not decidable, corrected: a range is not decidable when it is not informative, that is "
+        f"a width of {INFORMATIVE_WIDTH:.2f} or more of the widest possible range (1 for every "
+        f"compared quantity).",
+    ])
+
+
 def design_text() -> str:
     """docs/22: grids, the comparison bias and the masked variant's caveat, from artifacts."""
     import polars as pl

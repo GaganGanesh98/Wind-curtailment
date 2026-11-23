@@ -54,3 +54,21 @@ def test_no_checked_row_stops(tmp_path, monkeypatch):
     monkeypatch.setattr(ha, "CLAIMS", p)
     with pytest.raises(ValueError):
         ha.checked_claims()
+
+
+def test_amendment1_classes():
+    am = {m["claim_id"]: m for m in ha.amended_mapping()}
+    shares = ha.period_shares()
+    for cid, m in am.items():
+        if m["comparable"] != "yes":
+            assert m["class"] == ""
+        elif m["period"] == "2025":
+            assert m["class"] == "cross-period"
+        elif m["period"] == "2022 to Oct 2026 pooled":
+            assert m["class"] == ("cross-period" if shares[cid] > 0.5 else "main")
+        else:
+            assert m["class"] == "main"
+
+
+def test_amendment1_threshold_is_the_informativeness_rule():
+    assert ha.INFORMATIVE_WIDTH == 0.25

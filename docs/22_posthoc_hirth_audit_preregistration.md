@@ -138,3 +138,57 @@ at allowance B:
 In the folder artifacts/hirth_audit, not yet created: claim_mapping.csv, claim_ranges.csv
 (claim × variant × B × lower × upper × informative flag × quarter-hours × event days) and
 claim_verdicts.csv.
+
+## Amendment 1 (23 Nov 2026), before any range was computed
+
+Written after the student's decisions of 23 Nov 2026 on the four open choices, and committed
+before any ĉ band mean, identified set or verdict was computed. Nothing above is edited; where
+this amendment and the text above differ, this amendment holds.
+
+**1. Response rate.** Approved as written: the band mean of ĉ divided by the band mean of e.
+
+**2. Two classes.** Claims for Hirth's 2025 are cross-period: the window's 2025 negative-price
+quarter-hours are in October only, because November and December have none. The pooled rows
+(2022 to October 2026) are cross-period if more than half of Hirth's hours in the band fall
+before the window. Hirth's hours are his Table 3 counts; the hours in the window, and after it
+up to the panel's last day, are this sample's negative-price quarter-hours in the band divided
+by 4. That counts quarter-hour prices against his hourly prices, so the share is approximate
+(`artifacts/hirth_audit/period_shares.csv`).
+
+<!-- generated:hirth_amend_shares -->
+| claim | Hirth's band | Hirth's hours | hours in the window (QH ÷ 4) | hours after the window (QH ÷ 4) | share before the window | class |
+|---|---|---|---|---|---|---|
+| H5 | below -100 | 44 | 17.00 | 0.00 | 0.614 | cross-period |
+| H6 | -100 to -50 | 62 | 20.25 | 0.00 | 0.673 | cross-period |
+| H7 | -50 to -20 | 176 | 37.00 | 0.00 | 0.790 | cross-period |
+| H8 | -20 to -10 | 167 | 34.75 | 0.00 | 0.792 | cross-period |
+| H9 | -10 to 0 | 1,413 | 404.00 | 1.75 | 0.713 | cross-period |
+<!-- /generated -->
+
+<!-- generated:hirth_amend_classes -->
+- Main class, bounded: H12, H23, H24. Plain number: H22.
+- Cross-period class, bounded: H1a, H1b, H3, H4, H5, H6, H7, H8, H9. Plain number: H2.
+- Not decidable, corrected: a range is not decidable when it is not informative, that is a width of 0.25 or more of the widest possible range (1 for every compared quantity).
+<!-- /generated -->
+
+- Cross-period claims get their ranges as planned. Their verdict words are **consistent**
+  (inside) and **inconsistent** (outside even at the largest B), never supported or
+  contradicted, and they are left out of every summary count.
+- H1b is cross-period, and its reproduction check against λ₂ still applies.
+
+**3. Weighting.** A secondary column for every compared claim: the same band mean, ratio or
+exposure share with each quarter-hour weighted by H. It is a new fixed-weight functional in a
+new file. A constant multiplicative bias scales every weight by the same factor, so the weighted
+functional does not change with b; a test checks this. The unweighted column stays primary. A
+claim whose verdict differs between the two columns at a reported B is marked **depends on
+weighting**.
+
+**4. Not-decidable threshold, corrected.** The 0.75 above was wrong. A range is not decidable
+when it is not informative by the pre-registered rule. The correction was made before any range
+was computed. The verdict order is now: not decidable, then supported (or consistent), then
+outside.
+
+**5. Why the method's exposed share can differ from Hirth's.** His exposure rate is a share of
+potential energy, covers onshore and offshore wind in all of Germany, and comes from his own
+cohort thresholds. The method's is an unweighted mean over quarter-hours, onshore only, three
+areas, with thresholds from the law and MaStR (award setting `main`).
