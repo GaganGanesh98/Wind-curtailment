@@ -332,7 +332,10 @@ TABLES = {"available_power_anchors": available_power_anchors,
           "posthoc_grid_results": lambda: _ph().results_table(),
           "posthoc_l1_edge": lambda: _ph().l1_edge_table(),
           "posthoc_grid_note": lambda: _ph().results_note(),
-          "posthoc_docs06_line": lambda: _ph().docs06_line()}
+          "posthoc_docs06_line": lambda: _ph().docs06_line(),
+          "hirth_mapping": lambda: _ha().mapping_table(),
+          "hirth_mapping_counts": lambda: _ha().mapping_counts(),
+          "hirth_design": lambda: _ha().design_text()}
 
 
 def _lp():
@@ -348,6 +351,11 @@ def _rs():
 def _ph():
     from src.experiments import exp3_posthoc_breakdown
     return exp3_posthoc_breakdown
+
+
+def _ha():
+    from src.experiments import hirth_audit
+    return hirth_audit
 BLOCK = re.compile(r"(<!-- generated:([a-z0-9_]+) -->\n)(.*?)(<!-- /generated -->)", re.S)
 
 
