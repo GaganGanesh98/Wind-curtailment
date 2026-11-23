@@ -2,8 +2,9 @@
 
 Pre-registration and Amendment 1: `docs/12_learned_potential_preregistration.md`. Code
 `src/method/learned_potential/`; artifacts `artifacts/exp4_learned_potential/`. Every table and
-figure below is generated from those artifacts. Steps 3 to 5 (N1, the bias budget and the
-downstream comparisons) are not done yet; this note grows with them.
+figure below is generated from those artifacts. Steps 3 to 5 are done: N1 (step 3), a reduced,
+descriptive step 4 after S2 failed (see the interpretation section before step 4), and the docs and
+figures (step 5).
 
 ## Step 2: L1 and L2 (LightGBM)
 
