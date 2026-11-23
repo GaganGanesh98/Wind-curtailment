@@ -6,7 +6,7 @@ VARS = ["100m_u_component_of_wind", "100m_v_component_of_wind",
         "2m_temperature", "surface_pressure", "instantaneous_10m_wind_gust"]
 AREA = [55.2, 5.8, 47.2, 15.1]            # N, W, S, E: Germany
 months = [(y, m) for y in range(2021, 2027) for m in range(1, 13)
-          if (2021, 10) <= (y, m) <= (2026, 9)]
+          if (2024, 1) <= (y, m) <= (2026, 9)]
 
 c = cdsapi.Client()
 for y, m in months:
